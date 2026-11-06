@@ -73,3 +73,23 @@ func normalizeFinishReason(reason string) string {
 		return "stop"
 	}
 }
+func (a *openAIAdapter) ChatStream(ctx context.Context, account Account, request ChatRequest) (Stream, error) {
+	baseURL := strings.TrimRight(account.BaseURL, "/")
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+	payload := openAIRequest{
+		Model:       request.Model,
+		Messages:    request.Messages,
+		Temperature: request.Temperature,
+		MaxTokens:   request.MaxTokens,
+		Stream:      true,
+	}
+	body, err := postSSE(ctx, a.client, baseURL+"/chat/completions", map[string]string{
+		"Authorization": "Bearer " + account.APIKey,
+	}, payload)
+	if err != nil {
+		return nil, err
+	}
+	return newOpenAIStream(body, request.Model), nil
+}
