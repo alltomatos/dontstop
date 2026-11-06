@@ -19,10 +19,11 @@ curl http://localhost:9090/readyz
 
 ## Database
 
-The gateway uses `DATABASE_URL` when present and exposes the Postgres check in `/readyz`.
+The gateway uses `DATABASE_URL` and `REDIS_URL` when present and exposes both checks in `/readyz`.
 
 ```bash
 export DATABASE_URL='postgres://postgres:postgres@localhost:5432/dontstop?sslmode=disable'
+export REDIS_URL='redis://localhost:6379/0'
 go run ./cmd/migrate
 go run ./cmd/gateway
 ```

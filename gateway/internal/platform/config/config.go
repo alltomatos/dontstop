@@ -12,6 +12,7 @@ const defaultPort = 8080
 type Config struct {
 	Port        int
 	DatabaseURL string
+	RedisURL    string
 }
 
 // Load reads and validates process configuration.
@@ -19,6 +20,7 @@ func Load() (Config, error) {
 	cfg := Config{
 		Port:        defaultPort,
 		DatabaseURL: os.Getenv("DATABASE_URL"),
+		RedisURL:    os.Getenv("REDIS_URL"),
 	}
 	rawPort := os.Getenv("PORT")
 	if rawPort == "" {
