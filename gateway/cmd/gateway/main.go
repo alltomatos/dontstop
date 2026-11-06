@@ -13,6 +13,7 @@ import (
 
 	"github.com/alltomatos/dontstop/gateway/internal/api"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
+	"github.com/alltomatos/dontstop/gateway/internal/platform/database"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
 )
 
@@ -36,6 +37,17 @@ func run(logger *slog.Logger) error {
 	}
 
 	readiness := health.NewRegistry(readinessTimeout)
+	if cfg.DatabaseURL != "" {
+		dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		pool, err := database.Open(dbCtx, cfg.DatabaseURL)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("open database: %w", err)
+		}
+		defer pool.Close()
+		readiness.Register("postgres", pool.Ping)
+	}
+
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
 		Handler:           api.NewRouter(readiness),

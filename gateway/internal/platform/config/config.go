@@ -10,12 +10,16 @@ const defaultPort = 8080
 
 // Config contains process configuration loaded from environment variables.
 type Config struct {
-	Port int
+	Port        int
+	DatabaseURL string
 }
 
 // Load reads and validates process configuration.
 func Load() (Config, error) {
-	cfg := Config{Port: defaultPort}
+	cfg := Config{
+		Port:        defaultPort,
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+	}
 	rawPort := os.Getenv("PORT")
 	if rawPort == "" {
 		return cfg, nil

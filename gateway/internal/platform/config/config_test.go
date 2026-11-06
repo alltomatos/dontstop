@@ -18,6 +18,18 @@ func TestLoadUsesDefaultPort(t *testing.T) {
 	}
 }
 
+func TestLoadReadsDatabaseURL(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/dontstop?sslmode=disable")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.DatabaseURL != "postgres://postgres:postgres@localhost:5432/dontstop?sslmode=disable" {
+		t.Fatalf("unexpected database URL: %q", cfg.DatabaseURL)
+	}
+}
+
 func TestLoadRejectsInvalidPort(t *testing.T) {
 	t.Setenv("PORT", "not-a-port")
 
