@@ -19,7 +19,7 @@ func TestReadinessFailsWhenCheckTimesOut(t *testing.T) {
 		<-ctx.Done()
 		return ctx.Err()
 	})
-	router := api.NewRouter(registry)
+	router := api.NewRouter(api.Dependencies{Readiness: registry})
 
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 	response := httptest.NewRecorder()
@@ -39,7 +39,7 @@ func TestReadinessFailsWhenCheckFails(t *testing.T) {
 	registry.Register("redis", func(context.Context) error {
 		return errors.New("connection refused")
 	})
-	router := api.NewRouter(registry)
+	router := api.NewRouter(api.Dependencies{Readiness: registry})
 
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 	response := httptest.NewRecorder()
@@ -65,7 +65,7 @@ func TestReadinessFailsWhenCheckFails(t *testing.T) {
 }
 
 func TestReadinessReturnsOKWithoutChecks(t *testing.T) {
-	router := api.NewRouter(health.NewRegistry(time.Second))
+	router := api.NewRouter(api.Dependencies{Readiness: health.NewRegistry(time.Second)})
 
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 	response := httptest.NewRecorder()
@@ -85,7 +85,7 @@ func TestReadinessReturnsOKWithoutChecks(t *testing.T) {
 }
 
 func TestLivenessReturnsOK(t *testing.T) {
-	router := api.NewRouter(health.NewRegistry(time.Second))
+	router := api.NewRouter(api.Dependencies{Readiness: health.NewRegistry(time.Second)})
 
 	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	response := httptest.NewRecorder()
