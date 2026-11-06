@@ -1,0 +1,559 @@
+openapi: 3.1.0
+info:
+  title: DonStop IA Gateway API
+  version: 0.1.0
+  description: |
+    Contrato público P0-α do gateway DonStop IA.
+    Cobre os endpoints OpenAI-compatible `/v1/models` e `/v1/chat/completions`
+    (JSON e streaming SSE). O envelope, SLOs e critérios de capacidade estão
+    definidos no ADR-018.
+  contact:
+    name: DonStop IA
+    url: https://github.com/alltomatos/dontstop
+  license:
+    name: Proprietary
+servers:
+  - url: https://gateway.dontstop.corp/v1
+    description: Gateway corporativo
+  - url: http://localhost:20128/v1
+    description: Desenvolvimento local
+tags:
+  - name: Models
+    description: Catálogo de modelos disponíveis para a chave autenticada.
+  - name: Chat
+    description: Geração de chat com resposta JSON ou streaming SSE.
+security:
+  - bearerAuth: []
+paths:
+  /models:
+    get:
+      tags: [Models]
+      operationId: listModels
+      summary: Lista modelos disponíveis
+      description: |
+        Retorna apenas modelos ativos de provedores conectados e permitidos
+        pelo escopo da API key. Modelos em cooldown permanecem listados com
+        `x-dontstop-status: cooldown`.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Catálogo de modelos
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelList'
+              examples:
+                default:
+                  value:
+                    object: list
+                    data:
+                      - id: gpt-4.1
+                        object: model
+                        created: 1762387200
+                        owned_by: openai
+                        x-dontstop-status: active
+                      - id: claude-sonnet-4
+                        object: model
+                        created: 1762387200
+                        owned_by: anthropic
+                        x-dontstop-status: cooldown
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /chat/completions:
+    post:
+      tags: [Chat]
+      operationId: createChatCompletion
+      summary: Cria uma resposta de chat
+      description: |
+        Aceita o formato OpenAI Chat Completions. Com `stream: true`, retorna
+        `text/event-stream` com chunks `data: {...}` e o terminador `data: [DONE]`.
+        Falhas antes do primeiro token podem gerar failover; falhas depois do
+        primeiro token encerram o stream sem retry cego.
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+            examples:
+              streaming:
+                value:
+                  model: gpt-4.1
+                  messages:
+                    - role: user
+                      content: Explique cache semântico em uma frase.
+                  temperature: 0.2
+                  stream: true
+              json:
+                value:
+                  model: claude-sonnet-4
+                  messages:
+                    - role: system
+                      content: Responda em português do Brasil.
+                    - role: user
+                      content: Liste três riscos de um gateway de IA.
+                  max_tokens: 300
+                  stream: false
+      responses:
+        '200':
+          description: Resposta JSON ou stream SSE
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/X-Request-Id'
+            X-Donstop-Provider:
+              $ref: '#/components/headers/X-Donstop-Provider'
+            X-Donstop-Cache:
+              $ref: '#/components/headers/X-Donstop-Cache'
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Eventos `data: <ChatCompletionChunk>` e terminador `data: [DONE]`.
+              example: |
+                data: {"id":"chatcmpl_ds_1","object":"chat.completion.chunk","created":1762387200,"model":"gpt-4.1","choices":[{"index":0,"delta":{"role":"assistant","content":"Cache"},"finish_reason":null}]}
+                data: {"id":"chatcmpl_ds_1","object":"chat.completion.chunk","created":1762387200,"model":"gpt-4.1","choices":[{"index":0,"delta":{"content":" semântico"},"finish_reason":null}]}
+                data: [DONE]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: sk-ds
+      description: API key emitida pelo Gerenciador de API. Exibida apenas na criação.
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: ID de correlação; se ausente, o gateway gera um UUID.
+      schema:
+        type: string
+        maxLength: 128
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        Chave de idempotência para POST não streaming. Repetições com a mesma
+        chave e o mesmo payload retornam a resposta original dentro do TTL de 24 h.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+  headers:
+    X-Request-Id:
+      description: ID de correlação da requisição.
+      schema:
+        type: string
+    X-Donstop-Provider:
+      description: Provider que atendeu a requisição.
+      schema:
+        type: string
+    X-Donstop-Cache:
+      description: Resultado do cache exato.
+      schema:
+        type: string
+        enum: [hit, miss, bypass]
+    X-RateLimit-Limit:
+      description: Limite aplicado à chave/modelo.
+      schema:
+        type: integer
+        minimum: 0
+    X-RateLimit-Remaining:
+      description: Requisições restantes na janela atual.
+      schema:
+        type: integer
+        minimum: 0
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              type: invalid_request_error
+              message: "messages must contain at least one item"
+              param: messages
+              code: invalid_messages
+              request_id: req_01
+    Unauthorized:
+      description: API key ausente, inválida, revogada ou expirada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Escopo, modelo, endpoint ou tenant não permitido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Modelo ou endpoint não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflito de idempotência
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Limite de taxa excedido
+      headers:
+        Retry-After:
+          description: Segundos até a próxima tentativa.
+          schema:
+            type: integer
+            minimum: 1
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/X-RateLimit-Remaining'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Erro interno do gateway
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadGateway:
+      description: Falha ou resposta inválida do provider upstream
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    GatewayTimeout:
+      description: Timeout ao conectar ou aguardar o provider
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    ModelList:
+      type: object
+      required: [object, data]
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+    Model:
+      type: object
+      required: [id, object, created, owned_by]
+      properties:
+        id:
+          type: string
+          examples: [gpt-4.1, claude-sonnet-4]
+        object:
+          type: string
+          const: model
+        created:
+          type: integer
+          format: int64
+        owned_by:
+          type: string
+          examples: [openai, anthropic]
+        x-dontstop-status:
+          type: string
+          enum: [active, cooldown, degraded]
+    ChatCompletionRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+        messages:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 1
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 1
+        max_tokens:
+          type: integer
+          minimum: 1
+          maximum: 32768
+        stream:
+          type: boolean
+          default: false
+        stop:
+          oneOf:
+            - type: string
+            - type: array
+              maxItems: 4
+              items:
+                type: string
+        user:
+          type: string
+          maxLength: 256
+        tools:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/Tool'
+        tool_choice:
+          oneOf:
+            - type: string
+              enum: [none, auto, required]
+            - $ref: '#/components/schemas/ToolChoice'
+        stream_options:
+          $ref: '#/components/schemas/StreamOptions'
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant, tool]
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: '#/components/schemas/ContentPart'
+        name:
+          type: string
+          maxLength: 128
+        tool_call_id:
+          type: string
+          maxLength: 128
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+    ContentPart:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [text, image_url, input_audio]
+        text:
+          type: string
+        image_url:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+            detail:
+              type: string
+              enum: [auto, low, high]
+        input_audio:
+          type: object
+          properties:
+            data:
+              type: string
+            format:
+              type: string
+              enum: [wav, mp3]
+    Tool:
+      type: object
+      required: [type, function]
+      properties:
+        type:
+          type: string
+          const: function
+        function:
+          type: object
+          required: [name, parameters]
+          properties:
+            name:
+              type: string
+              maxLength: 64
+            description:
+              type: string
+              maxLength: 1024
+            parameters:
+              type: object
+              additionalProperties: true
+    ToolChoice:
+      type: object
+      required: [type, function]
+      properties:
+        type:
+          type: string
+          const: function
+        function:
+          type: object
+          required: [name]
+          properties:
+            name:
+              type: string
+              maxLength: 64
+    ToolCall:
+      type: object
+      required: [id, type, function]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          const: function
+        function:
+          type: object
+          required: [name, arguments]
+          properties:
+            name:
+              type: string
+            arguments:
+              type: string
+              description: JSON serializado como string, conforme contrato OpenAI.
+    StreamOptions:
+      type: object
+      properties:
+        include_usage:
+          type: boolean
+          default: false
+    ChatCompletionResponse:
+      type: object
+      required: [id, object, created, model, choices]
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: chat.completion
+        created:
+          type: integer
+          format: int64
+        model:
+          type: string
+        system_fingerprint:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatChoice'
+        usage:
+          $ref: '#/components/schemas/Usage'
+    ChatChoice:
+      type: object
+      required: [index, message, finish_reason]
+      properties:
+        index:
+          type: integer
+        message:
+          $ref: '#/components/schemas/AssistantMessage'
+        finish_reason:
+          type: string
+          enum: [stop, length, tool_calls, content_filter]
+    AssistantMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          const: assistant
+        content:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+    Usage:
+      type: object
+      required: [prompt_tokens, completion_tokens, total_tokens]
+      properties:
+        prompt_tokens:
+          type: integer
+          minimum: 0
+        completion_tokens:
+          type: integer
+          minimum: 0
+        total_tokens:
+          type: integer
+          minimum: 0
+        prompt_tokens_details:
+          type: object
+          properties:
+            cached_tokens:
+              type: integer
+              minimum: 0
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [type, message]
+          properties:
+            type:
+              type: string
+              enum:
+                - invalid_request_error
+                - authentication_error
+                - permission_error
+                - not_found_error
+                - rate_limit_error
+                - api_error
+                - timeout_error
+            message:
+              type: string
+            param:
+              type: [string, 'null']
+            code:
+              type: [string, 'null']
+            request_id:
+              type: string
+x-dontstop-p0-alpha: true

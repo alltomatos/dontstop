@@ -1,7 +1,7 @@
 # dontstop — Backlog de implementação (slices verticais)
 
-> **Status:** pronto para virar Issues. Remote `origin` configurado para `https://github.com/alltomatos/dontstop.git`; o repositório remoto está **vazio** (sem commits). As Issues serão criadas após o commit inicial e a definição da branch padrão.
-> Fontes: [PRD](01-PRD.md), [DER](02-DER.md), [UML](03-UML.md), [Análise de stack](04-ANALISE-STACK.md), [ADRs](05-ADRS.md), [Roadmap](06-ROADMAP-RISCOS.md).
+> **Status:** P0-α fatiado e publicado. O commit inicial está na `main`; a Epic [E1](https://github.com/alltomatos/dontstop/issues/1) e as slices E1.1–E1.11 foram criadas no GitHub. O restante do backlog permanece como candidato para os próximos ciclos.
+> Fontes: [PRD](01-PRD.md), [DER](02-DER.md), [UML](03-UML.md), [Análise de stack](04-ANALISE-STACK.md), [ADRs](05-ADRS.md), [Roadmap](06-ROADMAP-RISCOS.md), [DEVELOPER-ROADMAP](../DEVELOPER-ROADMAP.md) e [OpenAPI](contracts/openapi-v1.yaml).
 
 ## Convenções
 

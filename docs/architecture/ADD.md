@@ -103,6 +103,60 @@ flowchart TB
 | Endpoint + API key | Resolve endpoint/política + escopo da chave → limites → roteamento | [03-UML §6.2](../03-UML.md) |
 | DLP | Scan → decisão (allow/redact/block/audit) → auditoria | [03-UML §6](../03-UML.md) |
 
+### 6.1 Envelope P0-α (primeiro slice vertical)
+
+| Métrica | P0-α | Alvo corporativo |
+|---|---|---|
+| Throughput | 50 RPS sustentado; 150 RPS burst | 1.000 RPS; 3.000 burst |
+| SSE simultâneo | 500 streams | 20.000 streams |
+| Réplicas do gateway | 3 | 5+ |
+| Regiões | 1 | multi-região (P2) |
+| Tenancy | single-tenant | multi-tenant (P1/P2) |
+| Providers | OpenAI + Anthropic | 15+ |
+| Overhead p95 | ≤ 30 ms | ≤ 30 ms |
+| Fim-a-fim p95 | ≤ 800 ms sem tempo do provedor | validar com carga real |
+| Disponibilidade | 99,9% mensal | 99,9% mensal |
+| Teste de carga | 2× envelope (100 RPS/300 burst) | 1.000 RPS/20.000 streams |
+
+> O P0-α é um recorte de entrega, não uma redução do alvo. A evolução para o envelope corporativo é gate de P1 e exige teste de carga/chaos dedicado. Ver [ADR-018](../05-ADRS.md).
+
+### 6.2 Sequência — `/v1/chat/completions` P0-α
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Cliente
+    participant T as Traefik
+    participant G as Gateway
+    participant A as Auth/Tenant
+    participant R as RateLimit
+    participant K as Cache exato
+    participant S as Router/Failover
+    participant P as Provider upstream
+    participant U as Usage/Outbox
+
+    C->>T: POST /v1/chat/completions
+    T->>G: HTTP/2 + SSE
+    G->>A: verificar API key e tenant
+    A-->>G: contexto + escopos
+    G->>R: token bucket (chave/modelo)
+    R-->>G: permitido
+    G->>K: lookup sha256(tenant|modelo|mensagens|params)
+    alt cache hit
+        K-->>G: resposta exata
+        G-->>C: JSON ou SSE cacheado
+    else cache miss
+        G->>S: selecionar conta saudável
+        S->>P: requisição upstream
+        P-->>G: primeiro token / stream
+        G-->>C: chunks SSE
+        G->>U: evento de usage (outbox)
+    end
+
+    Note over G,S: Falha antes do primeiro token → failover para a próxima conta/modelo/provider
+    Note over G,C: Falha depois do primeiro token → encerrar stream com erro SSE, sem retry cego
+```
+
 ## 7. Stack e decisões
 
 | Camada | Decisão | ADR |
@@ -120,6 +174,8 @@ flowchart TB
 | Orquestração | **Docker Swarm** | ADR-010 |
 | Segredos | AES-256-GCM + envelope | ADR-011 |
 | API | OpenAI-compatible | ADR-012 |
+| Contrato público | OpenAPI 3.1 em `docs/contracts/openapi-v1.yaml` | ADR-012, ADR-018 |
+| Envelope P0-α | 50 RPS, 150 burst, 500 SSE, 3 réplicas, 2 providers | ADR-018 |
 | Endpoints/API Manager | Registry + políticas + escopos de chave | ADR-015 |
 | MCP | Desligado por padrão; stdio/SSE/Streamable HTTP; ferramentas com escopo; sem túneis | ADR-016 |
 | i18n/guia | Catálogos JSON, fallback en, onboarding/Settings e guia versionado por slug | ADR-017 |
@@ -132,6 +188,7 @@ flowchart TB
 - **Cache exato:** Redis (payload) + metadados no Postgres para invalidação/estatística.
 - **Cache semântico:** vetores no Qdrant; metadados no Postgres.
 - **Eventos:** NATS JetStream (`usage`, `audit`, `webhooks`, `dlp`).
+- **Outbox:** `usage_outbox`/`audit_outbox` no Postgres garantem que evento e resposta transacional não se percam; publicação no NATS ocorre após commit, com idempotência por `event_id`.
 - **Retenção:** metadados 90 d/1 ano; auditoria 1 ano; payload off por padrão.
 - **Detalhe:** [02-DER.md](../02-DER.md).
 
@@ -189,7 +246,8 @@ flowchart TB
 | Cache semântico errar | Threshold alto, TTL curto, feature flag |
 | Time sem Go | Fallback TypeScript documentado (ADR-001) |
 | Plano Webshare/cloud/compliance | Decisões pendentes em [06-ROADMAP-RISCOS](../06-ROADMAP-RISCOS.md) |
-| OpenAPI e design system ainda não produzidos | Slices S0.17/S0.18 no [BACKLOG](../BACKLOG.md) |
+| Contrato OpenAPI ainda sem lint/geração no CI | Slice S0.17 no [BACKLOG](../BACKLOG.md); contrato inicial em `docs/contracts/openapi-v1.yaml` |
+| P0-α ainda não implementado | Executar o grafo de Issues do [DEVELOPER-ROADMAP](../../DEVELOPER-ROADMAP.md) |
 
 ## 14. Documentos relacionados
 
@@ -201,6 +259,8 @@ flowchart TB
 - [ADRs](../05-ADRS.md)
 - [Roadmap e riscos](../06-ROADMAP-RISCOS.md)
 - [Backlog de implementação](../BACKLOG.md)
+- [Contrato OpenAPI v1](../contracts/openapi-v1.yaml)
+- [DEVELOPER-ROADMAP](../../DEVELOPER-ROADMAP.md)
 
 ## 15. Fontes consultadas
 

@@ -25,11 +25,13 @@ A arquitetura inicial é **single-tenant (instância única)**, mas o modelo de 
 | 02 | [DER](02-DER.md) | Entidades, relacionamentos, cardinalidades, chaves, índices, RLS e retenção |
 | 03 | [UML](03-UML.md) | Componentes, sequências (request, cache, failover, proxy, DLP), classes e implantação |
 | 04 | [Análise de stack](04-ANALISE-STACK.md) | Comparação de alternativas, cálculos de capacidade e recomendação única |
-| 05 | [ADRs](05-ADRS.md) | 17 Architecture Decision Records com contexto, alternativas e consequências |
+| 05 | [ADRs](05-ADRS.md) | 18 Architecture Decision Records com contexto, alternativas e consequências |
 | 06 | [Roadmap e riscos](06-ROADMAP-RISCOS.md) | Fases P0/P1/P2, critérios de saída, riscos, mitigação e decisões pendentes |
 | 07 | [i18n e guia do usuário](07-I18N-E-USER-GUIDE.md) | Idiomas, preferência, fallback, links contextuais e estrutura do guia versionado |
 | — | [ADD](architecture/ADD.md) | Documento consolidado de arquitetura (C4, NFRs, stack, segurança, deploy Swarm) |
 | — | [Backlog](BACKLOG.md) | Slices verticais prontos para Issues, com dependências e critérios de aceite |
+| — | [DEVELOPER-ROADMAP](../DEVELOPER-ROADMAP.md) | Epic E1 e slices P0-α com links para as Issues no GitHub |
+| — | [Contrato OpenAPI v1](contracts/openapi-v1.yaml) | Contrato público de `/v1/models` e `/v1/chat/completions` (JSON + SSE) |
 | — | [Design System](../design-system/MASTER.md) | Tokens, componentes e regras visuais (corporate navy/slate) |
 | — | [Mockup do console](../design-system/mockups/console.html) | Mockup navegável: Dashboard, Providers, Endpoints, API Manager, MCP, Cache, DLP, Observabilidade, Custo, Configurações e onboarding |
 | — | [Guia do usuário](user-guide/README.md) | Guias por página/modal em 6 idiomas, com imagens, alt e fallback |
