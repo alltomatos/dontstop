@@ -42,6 +42,18 @@ func TestLoadReadsRedisURL(t *testing.T) {
 	}
 }
 
+func TestLoadReadsMasterKey(t *testing.T) {
+	t.Setenv("MASTER_KEY", "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.MasterKey != "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=" {
+		t.Fatalf("unexpected master key")
+	}
+}
+
 func TestLoadRejectsInvalidPort(t *testing.T) {
 	t.Setenv("PORT", "not-a-port")
 

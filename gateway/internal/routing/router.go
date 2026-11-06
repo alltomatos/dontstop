@@ -26,14 +26,16 @@ var (
 
 // Candidate is an account that can serve a model request.
 type Candidate struct {
-	TenantID         string
-	AccountID        string
-	ProviderID       string
-	ProviderName     string
-	ProviderKind     string
-	Priority         int
-	Weight           int
-	CredentialCipher []byte
+	TenantID             string
+	AccountID            string
+	ProviderID           string
+	ProviderName         string
+	ProviderKind         string
+	Priority             int
+	Weight               int
+	BaseURL              string
+	CredentialCipher     []byte
+	CredentialKeyVersion int
 }
 
 // Repository lists candidates for a tenant/model.
