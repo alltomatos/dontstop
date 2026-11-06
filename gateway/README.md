@@ -30,6 +30,17 @@ go run ./cmd/gateway
 
 Migrations are embedded in `migrations/` and are applied transactionally with an advisory lock. They are idempotent on re-run.
 
+## Provider credentials
+
+Provider credentials are encrypted with AES-256-GCM. `MASTER_KEY` must be a base64-encoded 32-byte key.
+
+```bash
+export MASTER_KEY='<base64-32-byte-key>'
+printf '%s' 'sk-provider-secret' | go run ./cmd/encrypt-secret
+```
+
+Store the base64 ciphertext in `provider_accounts.credential_cipher` and the provider endpoint in `provider_accounts.base_url`. The gateway never logs the plaintext credential.
+
 ## Validate
 
 ```bash

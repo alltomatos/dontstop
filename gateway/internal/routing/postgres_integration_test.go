@@ -42,11 +42,11 @@ func TestPostgresRepositoryListsEligibleAccountsInPriorityOrder(t *testing.T) {
 		t.Fatalf("insert providers: %v", err)
 	}
 	_, err = pool.Exec(ctx, `
-		INSERT INTO provider_accounts (tenant_id, provider_id, name, credential_cipher, priority, weight, status, cooldown_until) VALUES
-			($1, (SELECT id FROM providers WHERE name='openai'), 'openai-primary', '\x01'::bytea, 20, 1, 'active', NULL),
-			($1, (SELECT id FROM providers WHERE name='anthropic'), 'anthropic-primary', '\x02'::bytea, 10, 1, 'active', NULL),
-			($1, (SELECT id FROM providers WHERE name='openai'), 'openai-cooldown', '\x03'::bytea, 5, 1, 'active', now() + interval '5 minutes'),
-			($1, (SELECT id FROM providers WHERE name='disabled'), 'disabled-account', '\x04'::bytea, 1, 1, 'active', NULL)
+		INSERT INTO provider_accounts (tenant_id, provider_id, name, base_url, credential_cipher, priority, weight, status, cooldown_until) VALUES
+			($1, (SELECT id FROM providers WHERE name='openai'), 'openai-primary', 'https://openai.example/v1', '\x01'::bytea, 20, 1, 'active', NULL),
+			($1, (SELECT id FROM providers WHERE name='anthropic'), 'anthropic-primary', 'https://anthropic.example', '\x02'::bytea, 10, 1, 'active', NULL),
+			($1, (SELECT id FROM providers WHERE name='openai'), 'openai-cooldown', 'https://openai.example/v1', '\x03'::bytea, 5, 1, 'active', now() + interval '5 minutes'),
+			($1, (SELECT id FROM providers WHERE name='disabled'), 'disabled-account', 'https://disabled.example', '\x04'::bytea, 1, 1, 'active', NULL)
 	`, tenantID)
 	if err != nil {
 		t.Fatalf("insert accounts: %v", err)
@@ -77,5 +77,8 @@ func TestPostgresRepositoryListsEligibleAccountsInPriorityOrder(t *testing.T) {
 	}
 	if len(candidates[0].CredentialCipher) == 0 {
 		t.Fatal("credential cipher was not loaded")
+	}
+	if candidates[0].BaseURL != "https://anthropic.example" || candidates[0].CredentialKeyVersion != 1 {
+		t.Fatalf("unexpected endpoint metadata: %+v", candidates[0])
 	}
 }

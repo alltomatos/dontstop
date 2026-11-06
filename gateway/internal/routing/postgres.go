@@ -21,7 +21,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model string) ([]Candidate, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT pa.tenant_id::text, pa.id::text, pa.provider_id::text,
-		       p.name, p.kind, pa.priority, pa.weight, pa.credential_cipher
+		       p.name, p.kind, pa.priority, pa.weight, pa.base_url, pa.credential_cipher, pa.credential_key_version
 		FROM provider_accounts pa
 		JOIN providers p ON p.id = pa.provider_id AND p.tenant_id = pa.tenant_id
 		JOIN provider_models pm ON pm.provider_id = p.id AND pm.tenant_id = pa.tenant_id
@@ -49,7 +49,9 @@ func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model str
 			&candidate.ProviderKind,
 			&candidate.Priority,
 			&candidate.Weight,
+			&candidate.BaseURL,
 			&candidate.CredentialCipher,
+			&candidate.CredentialKeyVersion,
 		); err != nil {
 			return nil, fmt.Errorf("scan routing candidate: %w", err)
 		}
