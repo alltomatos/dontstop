@@ -14,14 +14,19 @@ import (
 )
 
 type fakeChatService struct {
-	response provider.ChatResponse
-	err      error
-	calls    int
+	response    provider.ChatResponse
+	err         error
+	calls       int
+	cacheStatus string
 }
 
-func (s *fakeChatService) Chat(context.Context, string, provider.ChatRequest, string) (provider.ChatResponse, error) {
+func (s *fakeChatService) Chat(context.Context, string, provider.ChatRequest, string) (provider.ChatResponse, string, error) {
 	s.calls++
-	return s.response, s.err
+	status := s.cacheStatus
+	if status == "" {
+		status = "bypass"
+	}
+	return s.response, status, s.err
 }
 
 func (s *fakeChatService) Stream(_ context.Context, _ string, _ provider.ChatRequest, writer http.ResponseWriter) error {
@@ -114,6 +119,20 @@ func TestChatReturnsJSONResponse(t *testing.T) {
 	}
 }
 
+func TestChatSetsCacheHeader(t *testing.T) {
+	service := &fakeChatService{
+		response:    provider.ChatResponse{ID: "chat-1", Model: "gpt-4.1", Content: "cache", FinishReason: "stop"},
+		cacheStatus: "hit",
+	}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-4.1","messages":[{"role":"user","content":"Oi"}]}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Header().Get("X-Donstop-Cache") != "hit" {
+		t.Fatalf("expected cache header hit, got %q", response.Header().Get("X-Donstop-Cache"))
+	}
+}
 func TestChatStreamsSSE(t *testing.T) {
 	service := &fakeChatService{}
 	router, key := chatRouter(t, service, []string{"chat:write"})

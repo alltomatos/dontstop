@@ -15,7 +15,7 @@ import (
 
 // ChatService executes chat completions for the HTTP layer.
 type ChatService interface {
-	Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, error)
+	Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, string, error)
 	Stream(ctx context.Context, tenantID string, request provider.ChatRequest, writer http.ResponseWriter) error
 }
 
@@ -47,12 +47,13 @@ func chatCompletions(service ChatService) http.HandlerFunc {
 			return
 		}
 
-		response, err := service.Chat(request.Context(), principal.TenantID, payload, request.Header.Get("Idempotency-Key"))
+		response, cacheStatus, err := service.Chat(request.Context(), principal.TenantID, payload, request.Header.Get("Idempotency-Key"))
 		if err != nil {
 			writeChatError(w, err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("X-Donstop-Cache", cacheStatus)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id":      response.ID,
 			"object":  "chat.completion",
