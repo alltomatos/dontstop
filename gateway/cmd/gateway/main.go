@@ -16,6 +16,7 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/database"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
+	redisclient "github.com/alltomatos/dontstop/gateway/internal/platform/redis"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 )
 
@@ -51,6 +52,18 @@ func run(logger *slog.Logger) error {
 		readiness.Register("postgres", pool.Ping)
 		deps.Models = provider.NewCatalog(pool)
 		deps.Verifier = auth.NewVerifier(auth.NewPostgresRepository(pool))
+	}
+	if cfg.RedisURL != "" {
+		redisCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		client, err := redisclient.Open(redisCtx, cfg.RedisURL)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("open Redis: %w", err)
+		}
+		defer func() { _ = client.Close() }()
+		readiness.Register("redis", func(ctx context.Context) error {
+			return client.Ping(ctx).Err()
+		})
 	}
 
 	server := &http.Server{

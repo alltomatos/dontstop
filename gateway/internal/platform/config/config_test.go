@@ -30,6 +30,18 @@ func TestLoadReadsDatabaseURL(t *testing.T) {
 	}
 }
 
+func TestLoadReadsRedisURL(t *testing.T) {
+	t.Setenv("REDIS_URL", "redis://localhost:6379/0")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.RedisURL != "redis://localhost:6379/0" {
+		t.Fatalf("unexpected Redis URL: %q", cfg.RedisURL)
+	}
+}
+
 func TestLoadRejectsInvalidPort(t *testing.T) {
 	t.Setenv("PORT", "not-a-port")
 
