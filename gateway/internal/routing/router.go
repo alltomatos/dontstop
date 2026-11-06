@@ -128,7 +128,7 @@ func (r *Router) Route(ctx context.Context, tenantID, model string, attempt Atte
 	}
 
 	if lastErr != nil {
-		return Candidate{}, fmt.Errorf("%w: %v", ErrAllCandidatesFailed, lastErr)
+		return Candidate{}, fmt.Errorf("%w: %w", ErrAllCandidatesFailed, lastErr)
 	}
 	return Candidate{}, ErrAllCandidatesFailed
 }

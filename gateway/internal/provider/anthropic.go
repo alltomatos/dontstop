@@ -16,6 +16,7 @@ type anthropicRequest struct {
 	System      string        `json:"system,omitempty"`
 	Messages    []ChatMessage `json:"messages"`
 	Temperature *float64      `json:"temperature,omitempty"`
+	Stream      bool          `json:"stream"`
 }
 
 type anthropicResponse struct {
@@ -85,4 +86,39 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 			TotalTokens:      response.Usage.InputTokens + response.Usage.OutputTokens,
 		},
 	}, nil
+}
+func (a *anthropicAdapter) ChatStream(ctx context.Context, account Account, request ChatRequest) (Stream, error) {
+	baseURL := strings.TrimRight(account.BaseURL, "/")
+	if baseURL == "" {
+		baseURL = "https://api.anthropic.com"
+	}
+	system := make([]string, 0)
+	messages := make([]ChatMessage, 0, len(request.Messages))
+	for _, message := range request.Messages {
+		if message.Role == "system" {
+			system = append(system, message.Content)
+			continue
+		}
+		messages = append(messages, message)
+	}
+	maxTokens := request.MaxTokens
+	if maxTokens <= 0 {
+		maxTokens = 1024
+	}
+	payload := anthropicRequest{
+		Model:       request.Model,
+		MaxTokens:   maxTokens,
+		System:      strings.Join(system, "\n"),
+		Messages:    messages,
+		Temperature: request.Temperature,
+		Stream:      true,
+	}
+	body, err := postSSE(ctx, a.client, baseURL+"/v1/messages", map[string]string{
+		"x-api-key":         account.APIKey,
+		"anthropic-version": "2023-06-01",
+	}, payload)
+	if err != nil {
+		return nil, err
+	}
+	return newAnthropicStream(body), nil
 }

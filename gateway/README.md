@@ -41,6 +41,19 @@ printf '%s' 'sk-provider-secret' | go run ./cmd/encrypt-secret
 
 Store the base64 ciphertext in `provider_accounts.credential_cipher` and the provider endpoint in `provider_accounts.base_url`. The gateway never logs the plaintext credential.
 
+## Chat completions
+
+`POST /v1/chat/completions` requires a Bearer key with `chat:write`.
+
+```bash
+curl -s http://localhost:8080/v1/chat/completions \
+  -H "Authorization: Bearer $DONTSTOP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4.1","messages":[{"role":"user","content":"Olá"}],"stream":false}'
+```
+
+Use `"stream": true` for SSE; non-streaming requests accept `Idempotency-Key`.
+
 ## Validate
 
 ```bash

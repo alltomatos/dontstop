@@ -20,6 +20,7 @@ type Dependencies struct {
 	Readiness *health.Registry
 	Verifier  *auth.Verifier
 	Models    ModelLister
+	Chat      ChatService
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
@@ -33,6 +34,9 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("GET /v1/models", deps.Verifier.Middleware(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 			listModels(w, request, deps.Models)
 		})))
+	}
+	if deps.Verifier != nil && deps.Chat != nil {
+		mux.Handle("POST /v1/chat/completions", deps.Verifier.Middleware(chatCompletions(deps.Chat)))
 	}
 	return mux
 }
