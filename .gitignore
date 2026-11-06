@@ -1,0 +1,68 @@
+# ============================================================
+# dontstop — arquivos locais que NÃO devem ir para o Git
+# ============================================================
+
+# Mapeamentos/auditorias locais (insumos, não documentação pública)
+/MAPEAMENTO-ARQUITETURAL-9ROUTER.md
+/MAPEAMENTO-ARQUITETURAL-OMNIROUTE.md
+/MAPEAMENTO-PROVEDORES-ALLCODE.md
+/MAPEAMENTO-*.md
+
+# Segredos e ambiente
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+.secrets/
+
+# Dados locais e backups
+/data/
+/backups/
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+
+# Go
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.out
+coverage.html
+vendor/
+
+# Node / TypeScript
+node_modules/
+admin/dist/
+.next/
+out/
+dist/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+.npm/
+.pnpm-store/
+
+# Docker / Swarm (overrides locais)
+stack.*.local.yml
+docker-compose.override.yml
+*.local.env
+
+# Logs e temporários
+*.log
+tmp/
+temp/
+.cache/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp

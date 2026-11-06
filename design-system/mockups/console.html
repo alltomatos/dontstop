@@ -1,0 +1,1282 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dontstop — Console (mockup)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary:#1E3A8A; --on-primary:#fff; --secondary:#0F766E; --accent:#0EA5E9;
+      --bg:#F8FAFC; --surface:#fff; --fg:#0F172A; --muted:#F1F5F9; --muted-fg:#475569;
+      --border:#E2E8F0; --danger:#DC2626; --success:#059669; --warning:#D97706; --info:#0284C7;
+      --ring:#1E3A8A; --radius:12px; --shadow:0 4px 6px rgba(15,23,42,.06);
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; height:100%; }
+    body { font-family:"Fira Sans",system-ui,sans-serif; background:var(--bg); color:var(--fg); font-size:16px; line-height:1.5; }
+    code, .mono, .num { font-family:"Fira Code",monospace; font-variant-numeric:tabular-nums; }
+    .app { display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+    .sidebar { background:var(--primary); color:#e2e8f0; padding:16px 12px; display:flex; flex-direction:column; gap:4px; }
+    .brand { display:flex; align-items:center; gap:10px; padding:8px 10px 20px; font-weight:700; color:#fff; letter-spacing:.2px; }
+    .brand .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); }
+    .nav { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border:0; border-radius:8px; background:transparent; color:#cbd5e1; font:inherit; cursor:pointer; text-align:left; }
+    .nav:hover { background:rgba(255,255,255,.08); color:#fff; }
+    .nav[aria-current="page"] { background:rgba(255,255,255,.14); color:#fff; box-shadow:inset 3px 0 0 var(--accent); }
+    .nav svg { width:18px; height:18px; flex:0 0 18px; }
+    .sidebar .foot { margin-top:auto; font-size:12px; color:#94a3b8; padding:12px; }
+    .main { min-width:0; display:flex; flex-direction:column; }
+    .topbar { height:56px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 24px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+    .search { flex:1; max-width:520px; display:flex; align-items:center; gap:8px; background:var(--muted); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--muted-fg); }
+    .search kbd { margin-left:auto; font:12px "Fira Code"; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:2px 6px; }
+    .who { display:flex; align-items:center; gap:12px; color:var(--muted-fg); font-size:14px; }
+    .avatar { width:32px; height:32px; border-radius:50%; background:var(--secondary); color:#fff; display:grid; place-items:center; font-weight:600; }
+    .content { padding:24px; max-width:1440px; width:100%; margin:0 auto; }
+    h1 { font-size:24px; line-height:1.2; margin:0 0 4px; }
+    h2 { font-size:18px; margin:0 0 12px; }
+    .sub { color:var(--muted-fg); font-size:14px; margin:0 0 20px; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .tabs { display:flex; gap:8px; border-bottom:1px solid var(--border); margin-bottom:20px; overflow:auto; }
+    .tab { border:0; background:transparent; padding:10px 12px; font:inherit; color:var(--muted-fg); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; }
+    .tab[aria-selected="true"] { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+    .grid { display:grid; gap:16px; }
+    .kpis { grid-template-columns:repeat(6,minmax(0,1fr)); }
+    .two { grid-template-columns:2fr 1fr; }
+    .two-even { grid-template-columns:1fr 1fr; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
+    .kpi .label { color:var(--muted-fg); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+    .kpi .value { font-size:26px; font-weight:600; margin:6px 0 2px; }
+    .kpi .delta { font-size:12px; color:var(--success); }
+    .kpi .delta.warn { color:var(--warning); }
+    .kpi .delta.bad { color:var(--danger); }
+    .chart { height:180px; border-radius:8px; background:linear-gradient(180deg,var(--muted),transparent); display:flex; align-items:flex-end; gap:6px; padding:12px; }
+    .bar { flex:1; background:var(--primary); opacity:.85; border-radius:4px 4px 0 0; min-height:8px; }
+    .bar.alt { background:var(--accent); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th { text-align:left; color:var(--muted-fg); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em; padding:8px 10px; border-bottom:1px solid var(--border); }
+    td { padding:10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:0; }
+    tbody tr:hover { background:var(--muted); }
+    .num { text-align:right; }
+    .chip { display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--border); background:var(--muted); color:var(--muted-fg); }
+    .chip.ok { color:var(--success); border-color:#a7f3d0; background:#ecfdf5; }
+    .chip.warn { color:var(--warning); border-color:#fde68a; background:#fffbeb; }
+    .chip.bad { color:var(--danger); border-color:#fecaca; background:#fef2f2; }
+    .dot { width:8px; height:8px; border-radius:50%; display:inline-block; background:currentColor; }
+    .btn { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border); background:var(--surface); color:var(--fg); padding:8px 12px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; }
+    .btn:hover { background:var(--muted); }
+    .btn.primary { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
+    .btn.primary:hover { filter:brightness(1.08); }
+    .btn.danger { color:var(--danger); border-color:#fecaca; background:#fef2f2; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .muted { color:var(--muted-fg); }
+    .right { text-align:right; }
+    .list { display:flex; flex-direction:column; gap:8px; }
+    .list-item { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; }
+    .list-item:last-child { border:0; }
+    .drawer { border-left:3px solid var(--accent); }
+    .field { display:grid; gap:4px; margin-bottom:12px; }
+    .field label { font-size:12px; color:var(--muted-fg); text-transform:uppercase; letter-spacing:.05em; }
+    .input { border:1px solid var(--border); background:var(--surface); border-radius:8px; padding:10px 12px; font:inherit; color:var(--fg); }
+    .codebox { background:#0f172a; color:#e2e8f0; border-radius:8px; padding:12px; font:13px/1.5 "Fira Code"; overflow:auto; }
+    .hidden { display:none !important; }
+    .panel { scroll-margin-top:72px; }
+    .group-label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted-fg); margin:18px 0 8px; font-weight:600; }
+    .urlbox { display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:var(--muted); margin-bottom:8px; flex-wrap:wrap; }
+    .endpoint-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .endpoint-tile { border:1px solid var(--border); border-radius:10px; background:var(--surface); padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .endpoint-tile .top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .endpoint-tile .name { font-weight:600; font-size:14px; }
+    .endpoint-tile .count { font-size:12px; color:var(--muted-fg); }
+    .endpoint-tile .path { font:12px "Fira Code"; color:var(--muted-fg); }
+    .icon-tile { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:var(--muted); color:var(--primary); }
+    .toolbar { display:grid; grid-template-columns:1.2fr 1fr auto; gap:8px; align-items:center; }
+    .filter-chips { display:flex; flex-wrap:wrap; gap:8px; }
+    .filter-chip { border:1px solid var(--border); background:var(--surface); border-radius:999px; padding:6px 10px; font:inherit; font-size:12px; color:var(--muted-fg); cursor:pointer; display:inline-flex; gap:6px; align-items:center; }
+    .filter-chip.active { border-color:var(--primary); color:var(--primary); background:#eef2ff; }
+    .filter-chip .count { font-family:"Fira Code"; font-size:11px; color:var(--muted-fg); }
+    .provider-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .provider-card { border:1px solid var(--border); border-radius:12px; background:var(--surface); padding:14px; display:flex; flex-direction:column; gap:10px; }
+    .provider-card .top { display:flex; align-items:flex-start; gap:10px; }
+    .provider-icon { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--muted); color:var(--primary); font-weight:700; flex:0 0 36px; font-size:12px; }
+    .provider-card .name { font-weight:600; line-height:1.2; }
+    .provider-card .meta { font-size:12px; color:var(--muted-fg); }
+    .provider-card .caps { display:flex; flex-wrap:wrap; gap:6px; }
+    .provider-card .foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto; }
+    .switch { width:34px; height:18px; border-radius:999px; background:var(--success); position:relative; display:inline-block; flex:0 0 34px; }
+    .switch::after { content:""; position:absolute; top:2px; right:2px; width:14px; height:14px; border-radius:50%; background:#fff; }
+    .switch.off { background:var(--border); }
+    .switch.off::after { right:auto; left:2px; }
+    #providers.view-list .provider-grid { display:flex; flex-direction:column; gap:8px; }
+    #providers.view-list .provider-card { display:grid; grid-template-columns:minmax(220px,1.6fr) minmax(180px,1fr) minmax(160px,1fr) auto; align-items:center; gap:12px; padding:10px 14px; }
+    #providers.view-list .provider-card .top { align-items:center; }
+    #providers.view-list .provider-card .caps { flex-wrap:nowrap; overflow:hidden; }
+    #providers.view-list .provider-card .foot { justify-content:flex-end; margin-top:0; }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.55); display:grid; place-items:center; padding:16px; z-index:1000; }
+    .modal { width:min(760px,100%); max-height:90vh; overflow:auto; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:0 24px 60px rgba(15,23,42,.28); padding:20px; }
+    .modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:4px; }
+    .modal-head h2 { margin:0; }
+    .modal-close { border:1px solid var(--border); background:var(--surface); color:var(--muted-fg); width:32px; height:32px; border-radius:8px; cursor:pointer; display:grid; place-items:center; }
+    .modal-close:hover { background:var(--muted); }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+    .form-grid .full { grid-column:1/-1; }
+    .check-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .check { display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; background:var(--surface); }
+    .check input { accent-color:var(--primary); }
+    .modal-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+    .success-icon { width:44px; height:44px; border-radius:50%; background:#ecfdf5; color:var(--success); display:grid; place-items:center; margin-bottom:12px; }
+    .secret-box { background:#0f172a; color:#e2e8f0; border-radius:8px; padding:12px; font:13px/1.5 "Fira Code"; overflow:auto; word-break:break-all; }
+    .model-picker { border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--surface); }
+    .model-search { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+    .model-selected { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; min-height:24px; max-height:96px; overflow:auto; }
+    .model-chip { display:inline-flex; align-items:center; gap:6px; background:var(--muted); border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:12px; }
+    .model-chip button { border:0; background:transparent; cursor:pointer; color:var(--muted-fg); font-size:14px; line-height:1; padding:0; }
+    .model-chip button:hover { color:var(--danger); }
+    .model-actions { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .model-list { max-height:240px; overflow:auto; border:1px solid var(--border); border-radius:8px; margin-top:10px; }
+    .model-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:0; border-bottom:1px solid var(--border); background:var(--surface); width:100%; text-align:left; cursor:pointer; font:inherit; }
+    .model-row:last-child { border-bottom:0; }
+    .model-row:hover { background:var(--muted); }
+    .model-row[aria-selected="true"] { background:#eef2ff; }
+    .model-check { width:16px; height:16px; border:1px solid var(--muted-fg); border-radius:4px; display:grid; place-items:center; flex:0 0 16px; }
+    .model-row[aria-selected="true"] .model-check { background:var(--primary); border-color:var(--primary); color:#fff; }
+    .model-row .model-id { font-family:"Fira Code"; font-size:12px; }
+    .model-row .model-provider { margin-left:auto; color:var(--muted-fg); font-size:11px; }
+    .model-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; }
+    .model-empty { padding:16px; text-align:center; color:var(--muted-fg); font-size:13px; }
+    .model-skeleton { height:34px; border-radius:6px; background:linear-gradient(90deg,var(--muted),#fff,var(--muted)); background-size:200% 100%; animation:shimmer 1.2s infinite; margin:6px; }
+    @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+    @media (max-width:700px) { .form-grid { grid-template-columns:1fr; } .check-grid { grid-template-columns:1fr 1fr; } }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .locale-select { border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:8px; padding:6px 8px; font:inherit; font-size:12px; cursor:pointer; }
+    .btn.help { padding:5px 10px; font-size:12px; text-decoration:none; }
+    .language-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; border:0; margin:0; padding:0; }
+    .language-card { position:relative; display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); background:var(--surface); border-radius:10px; padding:12px; cursor:pointer; }
+    .language-card:has(input:checked) { border-color:var(--primary); background:#eef2ff; box-shadow:inset 0 0 0 1px var(--primary); }
+    .language-card input { margin-top:2px; accent-color:var(--primary); }
+    .language-card strong { display:block; font-size:14px; }
+    .language-card span { display:block; font-size:12px; color:var(--muted-fg); margin-top:2px; }
+    .language-card:focus-within { outline:2px solid var(--primary); outline-offset:2px; }
+    .settings-meta { display:grid; gap:6px; font-size:13px; color:var(--muted-fg); }
+    .settings-meta code { color:var(--fg); }
+    .mcp-transport-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+    .mcp-transport { border:1px solid var(--border); background:var(--surface); border-radius:10px; padding:10px; text-align:left; cursor:pointer; font:inherit; color:var(--fg); }
+    .mcp-transport.active { border-color:var(--primary); background:#eef2ff; box-shadow:inset 0 0 0 1px var(--primary); }
+    .mcp-transport .meta { display:block; font-size:11px; color:var(--muted-fg); margin-top:4px; }
+    .mcp-instructions { margin:0; padding-left:18px; font-size:13px; color:var(--muted-fg); display:grid; gap:4px; }
+    .mcp-status-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    button.switch { border:0; padding:0; cursor:pointer; }
+    @media (max-width:900px) { .mcp-transport-grid, .mcp-status-grid, .language-grid { grid-template-columns:1fr; } }
+    @media (max-width:1200px) { .endpoint-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .provider-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:900px) { #providers.view-list .provider-card { grid-template-columns:1fr; } #providers.view-list .provider-card .foot { justify-content:space-between; } }
+    @media (max-width:700px) { .endpoint-grid { grid-template-columns:1fr; } .provider-grid { grid-template-columns:1fr; } .toolbar { grid-template-columns:1fr; } }
+    @media (max-width:1200px) { .kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    @media (max-width:900px) {
+      .app { grid-template-columns:1fr; }
+      .sidebar { display:none; }
+      .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .two, .two-even { grid-template-columns:1fr; }
+      .content { padding:16px; }
+      .topbar { padding:0 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Navegação principal">
+    <div class="brand"><span class="dot"></span> DonStop IA</div>
+    <button class="nav" data-tab="dashboard" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="nav" data-tab="providers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/></svg>
+      Provedores
+    </button>
+    <button class="nav" data-tab="endpoints">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h6a3 3 0 0 1 3 3v4a3 3 0 0 0 3 3h4"/><circle cx="4" cy="7" r="2"/><circle cx="20" cy="17" r="2"/></svg>
+      Endpoints
+    </button>
+    <button class="nav" data-tab="api-manager">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="15" r="4"/><path d="M11 12l7-7 3 3-3 3-2-2-2 2"/></svg>
+      Gerenciador de API
+    </button>
+    <button class="nav" data-tab="mcp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3v6M15 3v6M6 9h12v4a6 6 0 0 1-12 0V9z"/><path d="M12 19v2"/></svg>
+      MCP
+    </button>
+    <button class="nav" data-tab="cache">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+      Cache
+    </button>
+    <button class="nav" data-tab="dlp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      DLP
+    </button>
+    <button class="nav" data-tab="observability">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
+      Observabilidade
+    </button>
+    <button class="nav" data-tab="cost">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18"/><path d="M17 7.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 2 2.7 5 3.3 5 1.4 5 3.2-2.2 3-5 3-5-1.1-5-3"/></svg>
+      Custo
+    </button>
+    <button class="nav" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.4 2.4-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-3.4v-.5a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L5.6 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H4v-3.4h.5a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L5.6 7.6 8 5.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h3.4v.5a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.4 2.4-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.5v3.4h-.5a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Configurações
+    </button>
+    <div class="foot" data-i18n="common.footer">v0.1 mockup · ambiente corporativo</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="search" role="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        Buscar provider, modelo, chave, request-id…
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="who">
+        <select id="locale-select" class="locale-select" aria-label="Idioma"></select>
+        <a id="context-help" class="btn help" data-guide-slug="dashboard" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ajuda" title="Ajuda">Ajuda</a>
+        <span>Tenant padrão</span><span class="chip">produção</span><span class="avatar">AD</span>
+      </div>
+      <div id="locale-live" class="sr-only" role="status" aria-live="polite"></div>
+    </header>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="panel">
+        <div class="row">
+          <div><h1>Visão geral</h1><p class="sub">Saúde, custo e desempenho do gateway nas últimas 24 horas.</p></div>
+          <div class="actions"><button class="btn">Últimas 24h ▾</button><button class="btn primary">Atualizar</button></div>
+        </div>
+        <div class="grid kpis">
+          <div class="card kpi"><div class="label">RPS</div><div class="value num">842</div><div class="delta">+12% vs. ontem</div></div>
+          <div class="card kpi"><div class="label">Streams ativos</div><div class="value num">3.184</div><div class="delta">+8%</div></div>
+          <div class="card kpi"><div class="label">p95</div><div class="value num">28 ms</div><div class="delta">-3 ms</div></div>
+          <div class="card kpi"><div class="label">Erros</div><div class="value num">0,4%</div><div class="delta">-0,1 pp</div></div>
+          <div class="card kpi"><div class="label">Cache hit</div><div class="value num">41,2%</div><div class="delta">+5,1 pp</div></div>
+          <div class="card kpi"><div class="label">Custo hoje</div><div class="value num">US$ 312</div><div class="delta">-18%</div></div>
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card">
+            <div class="row"><h2>Tráfego e latência</h2><span class="chip">24h</span></div>
+            <div class="chart" aria-label="Gráfico de tráfego e latência (mockup)">
+              <div class="bar" style="height:38%"></div><div class="bar" style="height:52%"></div><div class="bar" style="height:44%"></div><div class="bar" style="height:66%"></div><div class="bar" style="height:58%"></div><div class="bar" style="height:74%"></div><div class="bar" style="height:62%"></div><div class="bar" style="height:81%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:88%"></div><div class="bar" style="height:76%"></div><div class="bar" style="height:92%"></div>
+              <div class="bar alt" style="height:30%"></div><div class="bar alt" style="height:36%"></div><div class="bar alt" style="height:34%"></div><div class="bar alt" style="height:42%"></div><div class="bar alt" style="height:39%"></div><div class="bar alt" style="height:48%"></div><div class="bar alt" style="height:45%"></div><div class="bar alt" style="height:55%"></div><div class="bar alt" style="height:50%"></div><div class="bar alt" style="height:60%"></div><div class="bar alt" style="height:56%"></div><div class="bar alt" style="height:64%"></div>
+            </div>
+            <p class="muted" style="font-size:12px;margin:8px 0 0">Série azul: RPS. Série ciano: p95. Gráfico carregado sob demanda com skeleton.</p>
+          </div>
+          <div class="card">
+            <h2>Custo por provider</h2>
+            <div class="list">
+              <div class="list-item"><span>OpenAI</span><span class="num">US$ 148 · 47%</span></div>
+              <div class="list-item"><span>Anthropic</span><span class="num">US$ 96 · 31%</span></div>
+              <div class="list-item"><span>Gemini</span><span class="num">US$ 42 · 13%</span></div>
+              <div class="list-item"><span>Outros</span><span class="num">US$ 26 · 9%</span></div>
+            </div>
+            <p class="muted" style="font-size:12px;margin:8px 0 0">Bullet chart com valor visível; meta de custo por provider.</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="row"><h2>Saúde dos providers</h2><button class="btn">Ver todos</button></div>
+          <table>
+            <thead><tr><th>Provider</th><th>Contas</th><th>Status</th><th class="num">p95</th><th class="num">Erros</th><th class="num">Cache</th></tr></thead>
+            <tbody>
+              <tr><td>OpenAI</td><td class="num">3/3</td><td><span class="chip ok"><span class="dot"></span>Saudável</span></td><td class="num">210 ms</td><td class="num">0,2%</td><td class="num">38%</td></tr>
+              <tr><td>Anthropic</td><td class="num">2/3</td><td><span class="chip warn"><span class="dot"></span>Cooldown</span></td><td class="num">240 ms</td><td class="num">1,1%</td><td class="num">44%</td></tr>
+              <tr><td>Gemini</td><td class="num">1/1</td><td><span class="chip ok"><span class="dot"></span>Saudável</span></td><td class="num">180 ms</td><td class="num">0,3%</td><td class="num">51%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PROVIDERS -->
+      <section id="providers" class="panel hidden view-grid">
+        <div class="row"><div><h1>Provedores</h1><p class="sub">Gerencie suas conexões de provedores de IA.</p></div><div class="actions"><button class="btn">Testar todos</button><button class="btn">Importar</button><button class="btn primary">+ Adicionar provider</button></div></div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="toolbar">
+            <input class="input" placeholder="Buscar provedores..." aria-label="Buscar provedores" />
+            <input class="input" placeholder="Buscar por modelo..." aria-label="Buscar por modelo" />
+            <div class="actions"><button class="btn primary" data-view="grid" aria-pressed="true">Grade</button><button class="btn" data-view="list" aria-pressed="false">Lista</button></div>
+          </div>
+          <div class="filter-chips" style="margin-top:12px">
+            <button class="filter-chip active">Total <span class="count">42</span></button>
+            <button class="filter-chip">OAuth <span class="count">12/18</span></button>
+            <button class="filter-chip">Chave de API <span class="count">22/50</span></button>
+            <button class="filter-chip">Compatível <span class="count">6/6</span></button>
+            <button class="filter-chip">Sem auth <span class="count">2/8</span></button>
+            <button class="filter-chip">Local <span class="count">1/4</span></button>
+            <button class="filter-chip">Upstream proxy <span class="count">3/10</span></button>
+            <button class="filter-chip">Cookie web <span class="count">1/6</span></button>
+            <button class="filter-chip">Pesquisa <span class="count">0/4</span></button>
+            <button class="filter-chip">Web fetch <span class="count">0/3</span></button>
+            <button class="filter-chip">Áudio <span class="count">0/5</span></button>
+            <button class="filter-chip">Agente em nuvem <span class="count">0/3</span></button>
+          </div>
+          <div class="filter-chips" style="margin-top:8px">
+            <button class="filter-chip">Imagem <span class="count">2/8</span></button>
+            <button class="filter-chip">Vídeo <span class="count">1/4</span></button>
+            <button class="filter-chip">Música <span class="count">0/3</span></button>
+            <button class="filter-chip">Texto→Fala <span class="count">1/5</span></button>
+            <button class="filter-chip">Fala→Texto <span class="count">1/4</span></button>
+            <button class="filter-chip">Embedding <span class="count">3/9</span></button>
+            <button class="filter-chip">Visão <span class="count">5/12</span></button>
+            <button class="filter-chip">Tools <span class="count">8/20</span></button>
+          </div>
+        </div>
+
+        <div class="row"><div><h2>Provedores compatíveis <span class="muted" style="font-size:13px">6/6</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Endpoints compatíveis com OpenAI ou Anthropic que você mesmo hospeda ou configura.</p></div><div class="actions"><button class="btn">Adicionar compatível</button></div></div>
+        <div class="provider-grid" style="margin-top:12px">
+          <div class="provider-card"><div class="top"><span class="provider-icon">NA</span><div><div class="name">Naga AI - EMB</div><div class="meta">Compatível · Embed</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Embed</span><span class="chip">Batch</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">TR</span><div><div class="name">TokenRouter</div><div class="meta">Compatível · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">OA</span><div><div class="name">OpenAI-compatible</div><div class="meta">Compatível · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">2 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">AN</span><div><div class="name">Anthropic-compatible</div><div class="meta">Compatível · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+        </div>
+
+        <div class="row" style="margin-top:24px"><div><h2>Provedores OAuth <span class="muted" style="font-size:13px">12/18</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Login uma vez; o gateway cuida da renovação automática dos tokens.</p></div><div class="actions"><button class="btn">Reparar env</button><button class="btn">Testar todos</button></div></div>
+        <div class="provider-grid" style="margin-top:12px">
+          <div class="provider-card"><div class="top"><span class="provider-icon">AG</span><div><div class="name">Antigravity</div><div class="meta">OAuth · IDE</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">5 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">CC</span><div><div class="name">Claude Code</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span><span class="chip">Vision</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">KC</span><div><div class="name">Kilo Code</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">KI</span><div><div class="name">Kiro AI</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">2 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">CX</span><div><div class="name">OpenAI Codex</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">GC</span><div><div class="name">Gemini CLI</div><div class="meta">OAuth · Chat</div></div><span class="chip warn" title="Cooldown"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+        </div>
+
+        <div class="row" style="margin-top:24px"><div><h2>Provedores por chave de API <span class="muted" style="font-size:13px">22/50</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Conexões com API key, com múltiplas contas e prioridade.</p></div><div class="actions"><button class="btn">Testar todos</button></div></div>
+        <div class="provider-grid" style="margin-top:12px">
+          <div class="provider-card"><div class="top"><span class="provider-icon">OA</span><div><div class="name">OpenAI</div><div class="meta">API key · OpenAI</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">3 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">AN</span><div><div class="name">Anthropic</div><div class="meta">API key · Anthropic</div></div><span class="chip warn" title="Cooldown"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span><span class="chip">Vision</span></div><div class="foot"><span class="meta">2/3 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">GE</span><div><div class="name">Gemini</div><div class="meta">API key · Gemini</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">AZ</span><div><div class="name">Azure OpenAI</div><div class="meta">API key · Azure</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">2 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">BR</span><div><div class="name">Amazon Bedrock</div><div class="meta">API key · Bedrock</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">GR</span><div><div class="name">Groq</div><div class="meta">API key · Groq</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+        </div>
+
+        <div class="row" style="margin-top:24px"><div><h2>Locais e sem autenticação <span class="muted" style="font-size:13px">3/12</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Servidores locais e provedores públicos sem chave.</p></div></div>
+        <div class="provider-grid" style="margin-top:12px">
+          <div class="provider-card"><div class="top"><span class="provider-icon">OL</span><div><div class="name">Ollama Local</div><div class="meta">Local · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Embed</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">LM</span><div><div class="name">LM Studio</div><div class="meta">Local · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+          <div class="provider-card"><div class="top"><span class="provider-icon">OC</span><div><div class="name">OpenCode Free</div><div class="meta">Público · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+        </div>
+      </section>
+
+      <!-- ENDPOINTS -->
+      <section id="endpoints" class="panel hidden">
+        <div class="row"><div><h1>Endpoint final</h1><p class="sub">Use o endpoint compatível com OpenAI na maioria dos SDKs e ferramentas.</p></div><div class="actions"><button class="btn">Testar endpoint</button><button class="btn primary">Gerenciar políticas</button></div></div>
+        <div class="actions" style="margin-bottom:16px">
+          <span class="chip ok">APIs compatíveis com OpenAI</span>
+          <span class="chip">Políticas</span>
+          <span class="chip">Aliases</span>
+          <span class="chip">Saúde</span>
+        </div>
+
+        <div class="card">
+          <h2>Endpoint da API</h2>
+          <div class="group-label">Endpoints ativos</div>
+          <div class="urlbox"><span><span class="chip ok"><span class="dot"></span>Público</span> <span class="mono">https://gateway.dontstop.corp/v1</span></span><button class="btn">Copiar</button></div>
+          <div class="urlbox"><span><span class="chip ok"><span class="dot"></span>Local</span> <span class="mono">http://localhost:20128/v1</span></span><button class="btn">Copiar</button></div>
+
+          <div class="group-label">Servidor local</div>
+          <div class="row">
+            <div class="actions">
+              <span class="chip mono">0.0.0.0:20128</span>
+              <span class="chip mono">127.0.0.1:20128</span>
+              <span class="chip mono">[::]:20128</span>
+            </div>
+            <span class="chip ok"><span class="dot"></span>Running</span>
+          </div>
+
+          <div class="group-label">Segurança e prompt</div>
+          <div class="row" style="padding:10px 0;border-bottom:1px solid var(--border)">
+            <div><p style="margin:0;font-weight:500">Require API key</p><p class="muted" style="margin:2px 0 0;font-size:12px">Chaves, escopos e quotas são gerenciados no Gerenciador de API.</p></div>
+            <div class="actions"><span class="chip ok">Ativado</span><button class="btn">Abrir Gerenciador de API</button></div>
+          </div>
+          <div class="row" style="padding:10px 0">
+            <div><p style="margin:0;font-weight:500">System prompt padrão</p><p class="muted" style="margin:2px 0 0;font-size:12px">Injeta um system prompt em toda requisição (auditado).</p></div>
+            <div class="actions"><span class="chip">Desligado</span><button class="btn">Editar</button></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="row"><h2>Endpoints disponíveis</h2><span class="muted">1.208 modelos em 15 endpoints</span></div>
+
+          <div class="group-label">APIs principais</div>
+          <div class="endpoint-grid">
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 3V5z"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Chat Completions</div><div class="count">1.208 modelos</div><div class="path">/v1/chat/completions</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v10H8l-4 3V6z"/><path d="M8 10h8"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Respostas</div><div class="count">1.208 modelos</div><div class="path">/v1/responses</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5h14v14H5z"/><path d="M9 9h6M9 12h6M9 15h4"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Mensagens <span class="muted" style="font-size:10px">ANTHROPIC</span></div><div class="count">1.208 modelos</div><div class="path">/v1/messages</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Completions <span class="muted" style="font-size:10px">LEGACY</span></div><div class="count">1.208 modelos</div><div class="path">/v1/completions</div></div>
+          </div>
+
+          <div class="group-label">Mídia e multimodal</div>
+          <div class="endpoint-grid">
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h7"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Embeddings</div><div class="count">13 modelos</div><div class="path">/v1/embeddings</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M20 16l-5-5-7 8"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Geração de imagens</div><div class="count">204 modelos</div><div class="path">/v1/images/generations</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 15l3-3 3 3 2-2 2 2"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Edições de imagem</div><div class="count">204 modelos</div><div class="path">/v1/images/edits</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h3l2-5 4 10 2-5h5"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Transcrição de áudio</div><div class="count">11 modelos</div><div class="path">/v1/audio/transcriptions</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Texto para fala</div><div class="count">11 modelos</div><div class="path">/v1/audio/speech</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Geração de vídeo</div><div class="count">4 modelos</div><div class="path">/v1/videos/generations</div></div>
+          </div>
+
+          <div class="group-label">Search & discovery</div>
+          <div class="endpoint-grid">
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Web Search</div><div class="count">21 modelos</div><div class="path">/v1/search</div></div>
+          </div>
+
+          <div class="group-label">Utilidades e gerenciamento</div>
+          <div class="endpoint-grid">
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h7"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Rerank</div><div class="count">3 modelos</div><div class="path">/v1/rerank</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Moderações</div><div class="count">0 modelos</div><div class="path">/v1/moderations</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v10H4zM8 7v10M16 7v10"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">API de lote <span class="muted" style="font-size:10px">OPENAI</span></div><div class="count">OpenAI</div><div class="path">/v1/batches</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h6l2 2h8v9H4z"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">API de arquivos</div><div class="count">—</div><div class="path">/v1/files</div></div>
+            <div class="endpoint-tile"><div class="top"><span class="icon-tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><button class="btn" style="padding:4px 8px">Copiar</button></div><div class="name">Listar modelos</div><div class="count">1.208 modelos</div><div class="path">/v1/models</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="row"><h2>Aliases para CLIs</h2><span class="chip">compatibilidade</span></div>
+          <div class="urlbox"><span><span class="chip">Base URL</span> <span class="mono">https://gateway.dontstop.corp/v1</span></span><button class="btn">Copiar</button></div>
+          <div class="urlbox"><span><span class="chip">Modelos</span> <span class="mono">https://gateway.dontstop.corp/v1/models</span></span><button class="btn">Copiar</button></div>
+          <div class="urlbox"><span><span class="chip">Chat Completions</span> <span class="mono">https://gateway.dontstop.corp/v1/chat/completions</span></span><button class="btn">Copiar</button></div>
+        </div>
+      </section>
+
+      <!-- API MANAGER -->
+      <section id="api-manager" class="panel hidden">
+        <div class="row"><div><h1>Gerenciador de API</h1><p class="sub">Chaves, consumidores, escopos, quotas e uso por endpoint.</p></div><div class="actions"><button class="btn">Exportar</button><button class="btn primary" id="new-key-btn" aria-haspopup="dialog">+ Nova chave</button></div></div>
+        <div class="grid kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="card kpi"><div class="label">Chaves ativas</div><div class="value num" id="active-keys-count">42</div><div class="delta">+3 este mês</div></div>
+          <div class="card kpi"><div class="label">Requests 24h</div><div class="value num">184,2k</div><div class="delta">+12%</div></div>
+          <div class="card kpi"><div class="label">Custo 24h</div><div class="value num">US$ 312</div><div class="delta">-18%</div></div>
+          <div class="card kpi"><div class="label">Expirando</div><div class="value num">3</div><div class="delta warn">próximos 30 dias</div></div>
+        </div>
+        <div class="tabs" style="margin-top:16px" role="tablist"><button class="tab" aria-selected="true">Chaves</button><button class="tab">Consumidores</button><button class="tab">Escopos</button><button class="tab">Uso</button><button class="tab">Auditoria</button></div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Nome</th><th>Prefixo</th><th>Escopos</th><th class="num">Quota</th><th>Último uso</th><th>Status</th></tr></thead>
+            <tbody id="keys-tbody">
+              <tr><td>prod-web</td><td class="mono">sk-9f2…</td><td class="mono">chat</td><td class="num">50M</td><td>há 2 min</td><td><span class="chip ok"><span class="dot"></span>Ativa</span></td></tr>
+              <tr><td>etl-batch</td><td class="mono">sk-1a4…</td><td class="mono">embed</td><td class="num">10M</td><td>há 1 h</td><td><span class="chip warn"><span class="dot"></span>96%</span></td></tr>
+              <tr><td>sandbox</td><td class="mono">sk-7c1…</td><td class="mono">chat</td><td class="num">1M</td><td>há 3 dias</td><td><span class="chip ok"><span class="dot"></span>Ativa</span></td></tr>
+              <tr><td>legacy-report</td><td class="mono">sk-0b8…</td><td class="mono">models</td><td class="num">5M</td><td>há 12 dias</td><td><span class="chip bad"><span class="dot"></span>Expirando</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- MCP -->
+      <section id="mcp" class="panel hidden">
+        <div class="row"><div><h1>MCP</h1><p class="sub">Model Context Protocol — servidor de ferramentas para agentes e IDEs.</p></div><div class="actions"><button class="btn">Reiniciar</button></div></div>
+
+        <div class="card">
+          <div class="row">
+            <div>
+              <h2>Servidor MCP</h2>
+              <p class="muted" style="margin:4px 0 0;font-size:13px">6 ferramentas em 5 escopos, 3 transportes (stdio / SSE / Streamable HTTP).</p>
+            </div>
+            <div class="actions">
+              <span class="chip ok" id="mcp-status-chip"><span class="dot"></span>Online</span>
+              <button class="switch" id="mcp-toggle" role="switch" aria-checked="true" aria-label="Ativar servidor MCP"></button>
+              <span id="mcp-toggle-label" style="font-weight:600;color:var(--success)">ON</span>
+            </div>
+          </div>
+
+          <div class="mcp-body">
+            <div class="group-label">Como conectar</div>
+            <ol class="mcp-instructions">
+              <li>Execute o servidor via <code>dontstop mcp</code>.</li>
+              <li>Configure seu cliente MCP para conectar via stdio ou HTTP.</li>
+              <li>Invoque ferramentas como <code>dontstop_chat</code>.</li>
+            </ol>
+
+            <div class="group-label">Modo de transporte</div>
+            <div class="mcp-transport-grid">
+              <button type="button" class="mcp-transport" data-mcp-transport="stdio">stdio<span class="meta">Local — a IDE inicia o processo</span></button>
+              <button type="button" class="mcp-transport" data-mcp-transport="sse">SSE<span class="meta">Remoto — Server-Sent Events via HTTP</span></button>
+              <button type="button" class="mcp-transport active" data-mcp-transport="streamable-http">Streamable HTTP<span class="meta">Remoto — HTTP bidirecional moderno</span></button>
+            </div>
+            <div class="urlbox" style="margin-top:10px">
+              <span class="mono" id="mcp-endpoint" data-i18n-skip>https://gateway.dontstop.corp/api/mcp/stream</span>
+              <button class="btn" id="copy-mcp-endpoint">Copiar</button>
+            </div>
+
+            <div class="mcp-status-grid" style="margin-top:12px">
+              <div class="card"><div class="label" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg)">Status do processo</div><div class="value" style="font-size:20px;font-weight:600;margin-top:4px">Online</div></div>
+              <div class="card"><div class="label" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg)">PID</div><div class="value num" style="font-size:20px;font-weight:600;margin-top:4px">—</div></div>
+              <div class="card"><div class="label" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg)">Uptime da sessão</div><div class="value num" style="font-size:20px;font-weight:600;margin-top:4px">2h 14m</div></div>
+              <div class="card"><div class="label" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg)">Último heartbeat</div><div class="value num" style="font-size:20px;font-weight:600;margin-top:4px">12 s</div></div>
+            </div>
+
+            <div class="card" style="margin-top:12px;background:var(--muted)">
+              <h2>Atividade (24h)</h2>
+              <div class="grid kpis" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px">
+                <div class="card kpi" style="box-shadow:none"><div class="label">Total de chamadas</div><div class="value num">1.284</div><div class="delta">+18%</div></div>
+                <div class="card kpi" style="box-shadow:none"><div class="label">Taxa de sucesso</div><div class="value num">99,2%</div><div class="delta">+0,4 pp</div></div>
+                <div class="card kpi" style="box-shadow:none"><div class="label">Latência média</div><div class="value num">107 ms</div><div class="delta">-12 ms</div></div>
+              </div>
+              <div class="grid two-even" style="margin-top:12px">
+                <div>
+                  <h3 style="margin-top:0">Top ferramentas</h3>
+                  <div class="list">
+                    <div class="list-item"><span class="mono">dontstop_chat</span><span class="num">812</span></div>
+                    <div class="list-item"><span class="mono">dontstop_models</span><span class="num">221</span></div>
+                    <div class="list-item"><span class="mono">dontstop_embeddings</span><span class="num">144</span></div>
+                    <div class="list-item"><span class="mono">dontstop_web_search</span><span class="num">72</span></div>
+                  </div>
+                </div>
+                <div>
+                  <h3 style="margin-top:0">Detalhes de runtime</h3>
+                  <div class="list">
+                    <div class="list-item"><span>Transporte</span><span class="mono" id="mcp-runtime-transport">streamable-http</span></div>
+                    <div class="list-item"><span>Escopos aplicados</span><span class="mono">chat:write, models:read</span></div>
+                    <div class="list-item"><span>Última chamada</span><span class="mono">dontstop_chat · 14:55:37</span></div>
+                    <div class="list-item"><span>Autenticação</span><span class="chip">Bearer / local-only</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:12px">
+              <h2>Ferramentas e escopos</h2>
+              <table>
+                <thead><tr><th>Ferramenta</th><th>Escopo</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">dontstop_chat</td><td class="mono">chat:write</td><td><button class="switch mcp-tool-toggle" role="switch" aria-checked="true" aria-label="Desativar dontstop_chat"></button></td></tr>
+                  <tr><td class="mono">dontstop_models</td><td class="mono">models:read</td><td><button class="switch mcp-tool-toggle" role="switch" aria-checked="true" aria-label="Desativar dontstop_models"></button></td></tr>
+                  <tr><td class="mono">dontstop_embeddings</td><td class="mono">embeddings:write</td><td><button class="switch mcp-tool-toggle" role="switch" aria-checked="true" aria-label="Desativar dontstop_embeddings"></button></td></tr>
+                  <tr><td class="mono">dontstop_web_search</td><td class="mono">web:read</td><td><button class="switch mcp-tool-toggle" role="switch" aria-checked="true" aria-label="Desativar dontstop_web_search"></button></td></tr>
+                  <tr><td class="mono">dontstop_web_fetch</td><td class="mono">web:read</td><td><button class="switch mcp-tool-toggle" role="switch" aria-checked="true" aria-label="Desativar dontstop_web_fetch"></button></td></tr>
+                  <tr><td class="mono">dontstop_usage</td><td class="mono">usage:read</td><td><button class="switch mcp-tool-toggle" role="switch" aria-checked="true" aria-label="Desativar dontstop_usage"></button></td></tr>
+                </tbody>
+              </table>
+              <p class="muted" style="font-size:12px;margin:12px 0 0">Desativar uma ferramenta remove seu anúncio do MCP; chamadas existentes retornam erro de escopo.</p>
+            </div>
+          </div>
+
+          <div id="mcp-disabled-panel" class="hidden">
+            <div class="model-empty">
+              <h3 style="margin:0 0 6px">MCP desativado</h3>
+              <p style="margin:0 0 14px">Ative o servidor para expor ferramentas aos clientes MCP.</p>
+              <button class="btn primary" id="enable-mcp">Ativar MCP</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CACHE -->
+      <section id="cache" class="panel hidden">
+        <div class="row"><div><h1>Cache</h1><p class="sub">Economia, hit rate e invalidação por escopo.</p></div><div class="actions"><button class="btn danger">Invalidar…</button></div></div>
+        <div class="grid kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="card kpi"><div class="label">Hit total</div><div class="value num">41,2%</div><div class="delta">+5,1 pp</div></div>
+          <div class="card kpi"><div class="label">Exact hit</div><div class="value num">26,4%</div><div class="delta">+2,0 pp</div></div>
+          <div class="card kpi"><div class="label">Semantic hit</div><div class="value num">14,8%</div><div class="delta">+3,1 pp</div></div>
+          <div class="card kpi"><div class="label">Economia 24h</div><div class="value num">US$ 1.284</div><div class="delta">-32% custo</div></div>
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card"><div class="row"><h2>Hit rate por dia</h2><span class="chip">30d</span></div><div class="chart" aria-label="Hit rate por dia (mockup)"><div class="bar" style="height:42%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:45%"></div><div class="bar" style="height:56%"></div><div class="bar" style="height:52%"></div><div class="bar" style="height:61%"></div><div class="bar" style="height:58%"></div><div class="bar" style="height:67%"></div><div class="bar" style="height:63%"></div><div class="bar" style="height:72%"></div></div></div>
+          <div class="card"><h2>Camadas</h2><div class="list"><div class="list-item"><span>L1 in-process</span><span class="mono">TTL 10 s</span></div><div class="list-item"><span>L2 Redis</span><span class="mono">TTL 1 h</span></div><div class="list-item"><span>Semântico (Qdrant)</span><span class="mono">0,95 · 24 h</span></div><div class="list-item"><span>Escopo</span><span class="mono">t:{tenant}:</span></div></div><div class="actions" style="margin-top:12px"><button class="btn">Editar TTL</button><button class="btn">Reindexar</button></div></div>
+        </div>
+        <div class="card" style="margin-top:16px"><h2>Eventos recentes</h2><table><thead><tr><th>Hora</th><th>Tipo</th><th>Modelo</th><th class="num">Similaridade</th><th class="num">Latência</th><th class="num">Economia</th></tr></thead><tbody><tr><td class="mono">10:44</td><td><span class="chip ok">exact</span></td><td>gpt-4.1</td><td class="num">—</td><td class="num">12 ms</td><td class="num">1.2k tokens</td></tr><tr><td class="mono">10:43</td><td><span class="chip">semantic</span></td><td>claude-sonnet</td><td class="num">0,97</td><td class="num">28 ms</td><td class="num">2.4k tokens</td></tr><tr><td class="mono">10:42</td><td><span class="chip bad">miss</span></td><td>gemini-2.5</td><td class="num">0,82</td><td class="num">—</td><td class="num">—</td></tr></tbody></table></div>
+      </section>
+
+      <!-- DLP -->
+      <section id="dlp" class="panel hidden">
+        <div class="row"><div><h1>DLP e Políticas</h1><p class="sub">Regras, teste e auditoria sem expor PII.</p></div><div class="actions"><button class="btn">Testar</button><button class="btn primary">+ Nova regra</button></div></div>
+        <div class="tabs"><button class="tab" aria-selected="true">Regras</button><button class="tab">Políticas</button><button class="tab">Eventos</button><button class="tab">Auditoria</button></div>
+        <div class="card"><table><thead><tr><th>Regra</th><th>Tipo</th><th>Ação</th><th>Severidade</th><th>Status</th></tr></thead><tbody><tr><td>CPF/CNPJ</td><td>PII</td><td><span class="chip warn">Redact</span></td><td>Alta</td><td><span class="chip ok"><span class="dot"></span>Ativa</span></td></tr><tr><td>Chaves AWS</td><td>Secret</td><td><span class="chip bad">Block</span></td><td>Crítica</td><td><span class="chip ok"><span class="dot"></span>Ativa</span></td></tr><tr><td>Prompt injection</td><td>Injection</td><td><span class="chip">Audit</span></td><td>Média</td><td><span class="chip warn">Audit</span></td></tr></tbody></table></div>
+        <div class="grid two-even" style="margin-top:16px">
+          <div class="card"><h2>Teste de regra</h2><div class="field"><label>Texto</label><div class="input">Meu CPF é 123.456.789-09 e meu e-mail é ana@empresa.com</div></div><div class="codebox">2 achados · ação REDACT
+Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actions" style="margin-top:12px"><button class="btn primary">Executar teste</button><button class="btn">Salvar caso</button></div></div>
+          <div class="card"><h2>Eventos recentes</h2><div class="list"><div class="list-item"><span class="mono">10:45 · block · AWS key</span><span class="chip bad">request 8f2a</span></div><div class="list-item"><span class="mono">10:44 · redact · CPF</span><span class="chip warn">request 7c1b</span></div><div class="list-item"><span class="mono">10:41 · audit · injection</span><span class="chip">request 6a90</span></div></div><p class="muted" style="font-size:12px;margin:12px 0 0">Eventos guardam detector, ação e hash — nunca o valor bruto.</p></div>
+        </div>
+      </section>
+
+      <!-- OBSERVABILITY -->
+      <section id="observability" class="panel hidden">
+        <div class="row"><div><h1>Observabilidade</h1><p class="sub">SLOs e saúde via backend gerenciado (sem Grafana/Prometheus).</p></div><div class="actions"><button class="btn primary">Abrir no backend ↗</button></div></div>
+        <div class="grid kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="card kpi"><div class="label">SLO disponibilidade</div><div class="value num">99,94%</div><div class="delta">meta 99,9%</div></div>
+          <div class="card kpi"><div class="label">p95</div><div class="value num">28 ms</div><div class="delta">meta 30 ms</div></div>
+          <div class="card kpi"><div class="label">Erros</div><div class="value num">0,4%</div><div class="delta">meta 1%</div></div>
+          <div class="card kpi"><div class="label">Saturação</div><div class="value num">62%</div><div class="delta warn">8 réplicas</div></div>
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card"><h2>Latência p50/p95/p99</h2><div class="chart"><div class="bar" style="height:30%"></div><div class="bar" style="height:36%"></div><div class="bar" style="height:34%"></div><div class="bar" style="height:42%"></div><div class="bar" style="height:39%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:45%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:50%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:56%"></div><div class="bar" style="height:64%"></div></div></div>
+          <div class="card"><h2>SLOs e burn rate</h2><div class="list"><div class="list-item"><span>Disponibilidade</span><span class="chip ok">burn 0,4x</span></div><div class="list-item"><span>Latência p95</span><span class="chip ok">burn 0,8x</span></div><div class="list-item"><span>Taxa de erro</span><span class="chip warn">burn 1,2x</span></div></div><p class="muted" style="font-size:12px;margin:12px 0 0">Dados vêm de OTel → Datadog/Azure Monitor; o console só lê agregados e deep links.</p></div>
+        </div>
+        <div class="card" style="margin-top:16px"><h2>Alertas ativos</h2><div class="list"><div class="list-item"><span><span class="chip warn"><span class="dot"></span>Anthropic 429 elevado</span> há 12 min</span><span class="actions"><button class="btn">Ver trace</button><button class="btn">Silenciar</button></span></div><div class="list-item"><span><span class="chip">Cache L2 latência</span> p95 4 ms</span><span class="chip ok">OK</span></div></div></div>
+      </section>
+
+      <!-- COST -->
+      <section id="cost" class="panel hidden">
+        <div class="row"><div><h1>Custo e Quotas</h1><p class="sub">FinOps, orçamento e chargeback por tenant.</p></div><div class="actions"><button class="btn">Exportar</button><button class="btn primary">+ Nova quota</button></div></div>
+        <div class="grid kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="card kpi"><div class="label">Custo mês</div><div class="value num">US$ 8.420</div><div class="delta bad">+18%</div></div>
+          <div class="card kpi"><div class="label">Economia cache</div><div class="value num">US$ 3.910</div><div class="delta">-32%</div></div>
+          <div class="card kpi"><div class="label">Orçamento</div><div class="value num">62%</div><div class="delta">US$ 13.500</div></div>
+          <div class="card kpi"><div class="label">Projeção</div><div class="value num">US$ 13.580</div><div class="delta warn">+8% acima</div></div>
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card"><h2>Custo por dia</h2><div class="chart"><div class="bar" style="height:35%"></div><div class="bar" style="height:42%"></div><div class="bar" style="height:38%"></div><div class="bar" style="height:50%"></div><div class="bar" style="height:46%"></div><div class="bar" style="height:58%"></div><div class="bar" style="height:54%"></div><div class="bar" style="height:64%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:70%"></div></div></div>
+          <div class="card"><h2>Top modelos</h2><div class="list"><div class="list-item"><span>gpt-4.1</span><span class="num">US$ 3.120 · 37%</span></div><div class="list-item"><span>claude-sonnet</span><span class="num">US$ 2.480 · 29%</span></div><div class="list-item"><span>gemini-2.5-pro</span><span class="num">US$ 1.240 · 15%</span></div><div class="list-item"><span>o4-mini</span><span class="num">US$ 860 · 10%</span></div></div></div>
+        </div>
+        <div class="card" style="margin-top:16px"><h2>Quotas e orçamentos</h2><table><thead><tr><th>Escopo</th><th>Métrica</th><th class="num">Limite</th><th class="num">Usado</th><th>Status</th></tr></thead><tbody><tr><td>tenant padrão</td><td>custo</td><td class="num">US$ 13.500</td><td class="num">62%</td><td><span class="chip ok"><span class="dot"></span>OK</span></td></tr><tr><td class="mono">key: prod-1</td><td>tokens</td><td class="num">50M</td><td class="num">48,2M</td><td><span class="chip warn"><span class="dot"></span>96%</span></td></tr><tr><td>provider: openai</td><td>custo</td><td class="num">US$ 6.000</td><td class="num">US$ 3.980</td><td><span class="chip ok"><span class="dot"></span>OK</span></td></tr></tbody></table></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="settings" class="panel hidden">
+        <div class="row">
+          <div>
+            <h1 data-i18n="settings.title">Configurações</h1>
+            <p class="sub" data-i18n="settings.subtitle">Idioma, preferências e ajuda do console.</p>
+          </div>
+          <div class="actions">
+            <a class="btn help" data-guide-slug="settings" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ajuda" title="Ajuda" data-i18n-aria-label="common.helpFor" data-i18n-title="common.helpFor">Ajuda</a>
+          </div>
+        </div>
+        <div class="card">
+          <h2 data-i18n="settings.language">Idioma</h2>
+          <p class="muted" style="margin:4px 0 12px;font-size:13px" data-i18n="settings.languageHint">Escolha o idioma da interface.</p>
+          <fieldset class="language-grid" id="settings-language-grid">
+            <legend class="sr-only" data-i18n="settings.languageLegend">Idioma da interface</legend>
+          </fieldset>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h2 data-i18n="settings.preference">Preferência</h2>
+          <div class="settings-meta" style="margin-top:8px">
+            <span data-i18n="settings.persistenceHint">A mudança é aplicada imediatamente e salva neste navegador.</span>
+            <span data-i18n="settings.storageKey">Armazenado como dontstop.locale neste navegador.</span>
+            <span data-i18n="settings.fallbackNote">Traduções ausentes usam o inglês como fallback.</span>
+          </div>
+          <p style="margin:14px 0 0"><a class="btn help" data-guide-slug="settings" href="#" target="_blank" rel="noopener noreferrer" data-i18n="settings.openGuide">Abrir guia do usuário</a></p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div id="new-key-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="new-key-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="new-key-title">Nova chave de API</h2>
+        <p class="muted" style="margin:4px 0 0;font-size:13px">Defina escopos, limites e validade. A chave é exibida apenas uma vez.</p>
+      </div>
+      <div class="actions" style="align-items:center">
+        <a class="btn help" data-guide-slug="new-api-key" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ajuda" title="Ajuda">Ajuda</a>
+        <button class="modal-close" id="close-new-key" aria-label="Fechar" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <form id="new-key-form">
+      <div id="new-key-step-1">
+        <div class="form-grid">
+          <div class="field"><label for="key-name">Nome *</label><input class="input" id="key-name" name="name" placeholder="prod-web" required maxlength="120" /></div>
+          <div class="field"><label for="key-cost-center">Centro de custo</label><input class="input" id="key-cost-center" name="costCenter" value="CC-102" /></div>
+          <div class="field">
+            <label for="key-expiry">Expiração</label>
+            <input class="input" id="key-expiry" name="expiry" type="date" value="2027-03-01" />
+            <label class="check" style="margin-top:6px"><input type="checkbox" id="key-no-expiry" /> Sem expiração</label>
+          </div>
+          <div class="field"><label for="key-quota">Quota de tokens / mês</label><input class="input" id="key-quota" name="quota" placeholder="50M" value="50M" /></div>
+          <div class="field"><label for="key-max-sessions">Max sessions</label><input class="input" id="key-max-sessions" name="maxSessions" type="number" min="0" value="10" /></div>
+        </div>
+
+        <div class="group-label">Endpoints permitidos</div>
+        <div class="check-grid">
+          <label class="check"><input type="checkbox" name="endpoints" value="chat" checked /> Chat</label>
+          <label class="check"><input type="checkbox" name="endpoints" value="models" checked /> Models</label>
+          <label class="check"><input type="checkbox" name="endpoints" value="embeddings" /> Embeddings</label>
+          <label class="check"><input type="checkbox" name="endpoints" value="images" /> Imagens</label>
+          <label class="check"><input type="checkbox" name="endpoints" value="audio" /> Áudio</label>
+          <label class="check"><input type="checkbox" name="endpoints" value="search" /> Web Search</label>
+        </div>
+
+        <div class="group-label">Modelos permitidos</div>
+        <div class="model-picker" id="model-picker">
+          <p class="muted" id="model-source" style="font-size:12px;margin:0 0 10px"></p>
+          <div class="model-search">
+            <input class="input" id="model-search" type="search" placeholder="Buscar por nome ou id do modelo..." aria-label="Buscar modelos" autocomplete="off" />
+            <span class="muted" id="model-search-status" aria-live="polite" style="font-size:12px"></span>
+          </div>
+          <div class="model-selected" id="model-selected" aria-label="Modelos selecionados" data-i18n-skip></div>
+          <div class="model-actions">
+            <button type="button" class="btn" id="select-all-models">Selecionar todos os resultados</button>
+            <button type="button" class="btn" id="clear-models">Limpar seleção</button>
+          </div>
+          <div class="model-list" id="model-list" role="listbox" aria-multiselectable="true" aria-label="Catálogo de modelos" data-i18n-skip></div>
+          <div class="model-empty hidden" id="model-empty">Nenhum modelo encontrado.</div>
+          <div class="model-empty hidden" id="model-error">
+            Falha ao carregar modelos.
+            <button type="button" class="btn" id="retry-models" style="margin-left:8px">Tentar novamente</button>
+          </div>
+          <div class="model-footer">
+            <span class="muted" id="model-count" style="font-size:12px"></span>
+            <button type="button" class="btn" id="load-more-models">Carregar mais</button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field"><label for="key-rpm">RPM</label><input class="input" id="key-rpm" name="rpm" type="number" min="0" value="20" /></div>
+          <div class="field"><label for="key-tpm">TPM</label><input class="input" id="key-tpm" name="tpm" type="number" min="0" value="100000" /></div>
+          <div class="field"><label for="key-monthly-usd">Limite USD / mês</label><input class="input" id="key-monthly-usd" name="monthlyUsd" type="number" min="0" value="500" /></div>
+          <div class="field"><label for="key-ips">IP allowlist</label><input class="input mono" id="key-ips" name="ips" value="10.0.0.0/8" /></div>
+        </div>
+
+        <div class="group-label">Escopos de gestão</div>
+        <div class="check-grid">
+          <label class="check"><input type="checkbox" name="scopes" value="self:usage" checked /> self:usage</label>
+          <label class="check"><input type="checkbox" name="scopes" value="self:account-quota" /> self:account-quota</label>
+          <label class="check"><input type="checkbox" name="scopes" value="manage" /> manage</label>
+        </div>
+
+        <div class="modal-foot">
+          <button class="btn" type="button" id="cancel-new-key">Cancelar</button>
+          <button class="btn primary" type="submit">Criar chave</button>
+        </div>
+      </div>
+
+      <div id="new-key-step-2" class="hidden" aria-live="polite">
+        <div class="success-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5L20 7"/></svg>
+        </div>
+        <h2 style="margin:0 0 4px">Chave criada</h2>
+        <p class="muted" style="margin:0 0 12px;font-size:13px">Copie agora. Por segurança, ela não será exibida novamente.</p>
+        <div class="secret-box" id="new-key-secret" data-i18n-skip>—</div>
+        <div class="list" style="margin-top:12px">
+          <div class="list-item"><span>Endpoints</span><span id="new-key-endpoints-summary">—</span></div>
+          <div class="list-item"><span>Modelos</span><span id="new-key-models-summary">—</span></div>
+          <div class="list-item"><span>Quota / limites</span><span id="new-key-limits-summary">—</span></div>
+          <div class="list-item"><span>Expiração</span><span id="new-key-expiry-summary">—</span></div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" type="button" id="copy-new-key">Copiar chave</button>
+          <button class="btn primary" type="button" id="finish-new-key">Concluir</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="onboarding-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-describedby="onboarding-subtitle">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-head">
+      <div>
+        <h2 id="onboarding-title" data-i18n="onboarding.title">Escolha seu idioma</h2>
+        <p class="muted" id="onboarding-subtitle" style="margin:4px 0 0;font-size:13px" data-i18n="onboarding.subtitle">Selecione o idioma do console. Você pode alterá-lo depois em Configurações.</p>
+      </div>
+    </div>
+    <p class="muted" id="onboarding-detected" style="margin:12px 0;font-size:13px" data-i18n-skip></p>
+    <fieldset class="language-grid" id="onboarding-language-grid">
+      <legend class="sr-only" data-i18n="onboarding.languageLegend">Idioma da interface</legend>
+    </fieldset>
+    <div class="modal-foot" style="justify-content:space-between;align-items:center">
+      <a class="btn help" data-guide-slug="onboarding" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ajuda" title="Ajuda" data-i18n="onboarding.help">Sobre o onboarding</a>
+      <button class="btn primary" id="onboarding-confirm" type="button" data-i18n="onboarding.confirm">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../admin/src/i18n.js?v=2"></script>
+<script src="../../admin/src/preferences.js?v=2"></script>
+<script src="../../admin/src/source-keys.js?v=2"></script>
+<script src="../../admin/src/guide-links.js?v=2"></script>
+<script src="../../admin/src/console-runtime.js?v=2"></script>
+<script>
+  const tabs = document.querySelectorAll('[data-tab]');
+  const panels = document.querySelectorAll('.panel');
+  function show(id) {
+    panels.forEach(p => p.classList.toggle('hidden', p.id !== id));
+    tabs.forEach(t => t.setAttribute('aria-current', t.dataset.tab === id ? 'page' : 'false'));
+    const url = new URL(location.href);
+    url.hash = id;
+    history.replaceState(null, '', url);
+    window.DontstopConsoleI18n?.updateContextHelp();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+  tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.tab)));
+  window.addEventListener('hashchange', () => {
+    const id = location.hash.replace('#', '') || 'dashboard';
+    if (document.getElementById(id)) show(id);
+  });
+  const viewButtons = document.querySelectorAll('[data-view]');
+  function setView(view, persist = true) {
+    const panel = document.getElementById('providers');
+    const isList = view === 'list';
+    panel.classList.toggle('view-list', isList);
+    panel.classList.toggle('view-grid', !isList);
+    viewButtons.forEach(item => {
+      const active = item.dataset.view === view;
+      item.classList.toggle('primary', active);
+      item.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    if (persist) {
+      const url = new URL(location.href);
+      url.searchParams.set('view', view);
+      history.replaceState(null, '', url);
+      try { localStorage.setItem('dontstop.providers.view', view); } catch {}
+    }
+  }
+  viewButtons.forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+  const viewParam = new URL(location.href).searchParams.get('view');
+  let storedView = null;
+  try { storedView = localStorage.getItem('dontstop.providers.view'); } catch {}
+  setView(viewParam === 'list' || (!viewParam && storedView === 'list') ? 'list' : 'grid', false);
+  const initial = location.hash.replace('#','') || 'dashboard';
+  if (document.getElementById(initial)) show(initial);
+
+  // Nova chave de API — modal de criação
+  const newKeyModal = document.getElementById('new-key-modal');
+  const newKeyBtn = document.getElementById('new-key-btn');
+  const newKeyForm = document.getElementById('new-key-form');
+  const newKeyStep1 = document.getElementById('new-key-step-1');
+  const newKeyStep2 = document.getElementById('new-key-step-2');
+  const newKeySecret = document.getElementById('new-key-secret');
+  const keyName = document.getElementById('key-name');
+  const keyExpiry = document.getElementById('key-expiry');
+  const keyNoExpiry = document.getElementById('key-no-expiry');
+  keyNoExpiry.addEventListener('change', () => {
+    keyExpiry.disabled = keyNoExpiry.checked;
+    if (keyNoExpiry.checked) keyExpiry.value = '';
+  });
+  let pendingKey = null;
+  let lastFocused = null;
+
+  // O catálogo do seletor vem apenas dos provedores conectados e modelos ativos.
+  const MODEL_PAGE_SIZE = 20;
+  const CONNECTED_PROVIDERS = [
+    { id: "openai", name: "OpenAI", auth: "API key", accounts: 3, status: "ok", models: [
+      { id: "gpt-4.1", active: true }, { id: "gpt-4.1-mini", active: true }, { id: "gpt-4o", active: true },
+      { id: "gpt-4o-mini", active: true }, { id: "o4-mini", active: true }, { id: "o3", active: true },
+      { id: "text-embedding-3-large", active: true }, { id: "dall-e-3", active: true },
+      { id: "gpt-3.5-turbo", active: false }
+    ] },
+    { id: "anthropic", name: "Anthropic", auth: "API key", accounts: 2, status: "cooldown", models: [
+      { id: "claude-sonnet-4", active: true }, { id: "claude-opus-4", active: true },
+      { id: "claude-haiku-3.5", active: true }, { id: "claude-sonnet-3.7", active: true },
+      { id: "claude-2.1", active: false }
+    ] },
+    { id: "google", name: "Gemini", auth: "API key", accounts: 1, status: "ok", models: [
+      { id: "gemini-2.5-pro", active: true }, { id: "gemini-2.5-flash", active: true },
+      { id: "gemini-2.5-flash-lite", active: true }, { id: "gemini-2.0-pro", active: true },
+      { id: "text-embedding-004", active: true }, { id: "imagen-3", active: true }
+    ] },
+    { id: "azure", name: "Azure OpenAI", auth: "API key", accounts: 2, status: "ok", models: [
+      { id: "gpt-4.1", active: true }, { id: "gpt-4o", active: true },
+      { id: "o4-mini", active: true }, { id: "text-embedding-3-large", active: true }
+    ] },
+    { id: "bedrock", name: "Amazon Bedrock", auth: "API key", accounts: 1, status: "ok", models: [
+      { id: "anthropic.claude-sonnet-4", active: true }, { id: "amazon.nova-pro", active: true },
+      { id: "amazon.nova-lite", active: true }, { id: "meta.llama3-3-70b", active: true },
+      { id: "cohere.command-r-plus", active: true }
+    ] },
+    { id: "groq", name: "Groq", auth: "API key", accounts: 1, status: "ok", models: [
+      { id: "llama-3.3-70b-versatile", active: true }, { id: "mixtral-8x7b-32768", active: true },
+      { id: "whisper-large-v3", active: true }, { id: "gemma2-9b-it", active: true }
+    ] },
+    { id: "antigravity", name: "Antigravity", auth: "OAuth", accounts: 5, status: "ok", models: [
+      { id: "gemini-3.8-flash-high", active: true }, { id: "gemini-3.8-flash-medium", active: true },
+      { id: "gemini-3.1-pro-high", active: true }
+    ] },
+    { id: "claude-code", name: "Claude Code", auth: "OAuth", accounts: 1, status: "ok", models: [
+      { id: "claude-sonnet-4", active: true }, { id: "claude-opus-4", active: true },
+      { id: "claude-haiku-4.5", active: true }
+    ] },
+    { id: "kiro", name: "Kiro AI", auth: "OAuth", accounts: 2, status: "ok", models: [
+      { id: "claude-sonnet-4", active: true }, { id: "claude-haiku-4.5", active: true },
+      { id: "claude-sonnet-3.7", active: true }
+    ] },
+    { id: "ollama", name: "Ollama Local", auth: "Local", accounts: 1, status: "ok", models: [
+      { id: "llama3.3:70b", active: true }, { id: "qwen2.5:32b", active: true },
+      { id: "nomic-embed-text", active: true }, { id: "deepseek-r1:32b", active: true }
+    ] }
+  ];
+  const activeProviders = CONNECTED_PROVIDERS.filter(provider => provider.models.some(model => model.active));
+  const activeModelCount = activeProviders.reduce((total, provider) => total + provider.models.filter(model => model.active).length, 0);
+  function buildModelCatalog() {
+    const models = [{ id: "auto", provider: "dontstop", providerName: "dontstop", providerStatus: "ok" }];
+    for (const provider of activeProviders) {
+      for (const model of provider.models) {
+        if (!model.active) continue;
+        models.push({
+          id: `${provider.id}/${model.id}`,
+          provider: provider.id,
+          providerName: provider.name,
+          providerStatus: provider.status
+        });
+      }
+    }
+    return models;
+  }
+  const modelCatalog = buildModelCatalog();
+  const defaultModelIds = ["auto", "openai/gpt-4.1", "anthropic/claude-sonnet-4"];
+  let selectedModels = new Set();
+  let filteredModels = modelCatalog;
+  let renderedModels = 0;
+  let modelSearchTimer = null;
+  let modelError = false;
+  const modelSearch = document.getElementById("model-search");
+  const modelSearchStatus = document.getElementById("model-search-status");
+  const modelSource = document.getElementById("model-source");
+  const modelSelected = document.getElementById("model-selected");
+  const modelList = document.getElementById("model-list");
+  const modelEmpty = document.getElementById("model-empty");
+  const modelErrorBox = document.getElementById("model-error");
+  const modelCount = document.getElementById("model-count");
+  const loadMoreModels = document.getElementById("load-more-models");
+  const selectAllModels = document.getElementById("select-all-models");
+  const clearModels = document.getElementById("clear-models");
+  const retryModels = document.getElementById("retry-models");
+
+  function renderSelectedModels() {
+    modelSelected.innerHTML = "";
+    if (selectedModels.size === 0) {
+      modelSelected.innerHTML = `<span class="muted" style="font-size:12px">${escapeHtml(window.tr('common.noModelsSelected'))}</span>`;
+      return;
+    }
+    for (const id of selectedModels) {
+      const chip = document.createElement("span");
+      chip.className = "model-chip";
+      const label = document.createElement("span");
+      label.textContent = id;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", window.tr("models.remove", { id }));
+      remove.addEventListener("click", () => toggleModel(id));
+      chip.append(label, remove);
+      modelSelected.append(chip);
+    }
+  }
+
+  function refreshModelRows() {
+    modelList.querySelectorAll(".model-row").forEach(row => {
+      const selected = selectedModels.has(row.dataset.modelId);
+      row.setAttribute("aria-selected", selected ? "true" : "false");
+      const check = row.querySelector(".model-check");
+      if (check) check.textContent = selected ? "✓" : "";
+    });
+  }
+
+  function updateModelFooter() {
+    modelCount.textContent = filteredModels.length
+      ? window.tr('models.footer', { shown: renderedModels, total: filteredModels.length })
+      : "";
+    loadMoreModels.hidden = renderedModels >= filteredModels.length || modelError;
+    selectAllModels.disabled = filteredModels.length === 0 || modelError;
+  }
+
+  function renderModelList(reset = false) {
+    if (reset) {
+      renderedModels = 0;
+      modelList.innerHTML = "";
+    }
+    const next = filteredModels.slice(renderedModels, renderedModels + MODEL_PAGE_SIZE);
+    for (const model of next) {
+      const selected = selectedModels.has(model.id);
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "model-row";
+      row.dataset.modelId = model.id;
+      row.setAttribute("role", "option");
+      row.setAttribute("aria-selected", selected ? "true" : "false");
+      const providerLabel = model.providerStatus === "cooldown" ? window.tr('models.providerCooldown', { provider: model.providerName }) : model.providerName;
+      row.innerHTML = `<span class="model-check">${selected ? "✓" : ""}</span><span class="model-id">${escapeHtml(model.id)}</span><span class="model-provider">${escapeHtml(providerLabel)}</span>`;
+      row.addEventListener("click", () => toggleModel(model.id));
+      modelList.append(row);
+    }
+    renderedModels += next.length;
+    updateModelFooter();
+  }
+
+  function toggleModel(id) {
+    if (selectedModels.has(id)) selectedModels.delete(id);
+    else selectedModels.add(id);
+    renderSelectedModels();
+    refreshModelRows();
+  }
+
+  function setModelLoading() {
+    modelList.innerHTML = Array.from({ length: 4 }, () => '<div class="model-skeleton"></div>').join("");
+    modelList.setAttribute("aria-busy", "true");
+    modelEmpty.classList.add("hidden");
+    modelErrorBox.classList.add("hidden");
+    loadMoreModels.hidden = true;
+    selectAllModels.disabled = true;
+    modelCount.textContent = "";
+    modelSearchStatus.textContent = window.tr("common.loading");
+  }
+
+  function applyModelFilter(rawQuery) {
+    const query = rawQuery.trim().toLowerCase();
+    modelError = query === "erro";
+    modelList.removeAttribute("aria-busy");
+    if (modelError) {
+      filteredModels = [];
+      renderedModels = 0;
+      modelList.innerHTML = "";
+      modelEmpty.classList.add("hidden");
+      modelErrorBox.classList.remove("hidden");
+      modelSearchStatus.textContent = window.tr("common.error");
+      updateModelFooter();
+      return;
+    }
+    filteredModels = query
+      ? modelCatalog.filter(model => model.id.toLowerCase().includes(query) || model.providerName.toLowerCase().includes(query))
+      : modelCatalog;
+    modelErrorBox.classList.add("hidden");
+    modelEmpty.classList.toggle("hidden", filteredModels.length > 0);
+    modelList.innerHTML = "";
+    renderModelList(true);
+    modelSearchStatus.textContent = window.tr("models.results", { count: filteredModels.length });
+  }
+
+  function resetModelPicker() {
+    selectedModels = new Set(defaultModelIds.filter(id => modelCatalog.some(model => model.id === id)));
+    modelSearch.value = "";
+    modelError = false;
+    filteredModels = modelCatalog;
+    renderedModels = 0;
+    modelList.innerHTML = "";
+    modelList.removeAttribute("aria-busy");
+    modelEmpty.classList.add("hidden");
+    modelErrorBox.classList.add("hidden");
+    renderSelectedModels();
+    renderModelList(true);
+    modelSource.textContent = window.tr("models.activeCount", { count: activeModelCount, providers: activeProviders.length });
+    modelSearchStatus.textContent = window.tr("models.active", { count: activeModelCount });
+  }
+
+  modelSearch.addEventListener("input", () => {
+    clearTimeout(modelSearchTimer);
+    setModelLoading();
+    modelSearchTimer = setTimeout(() => applyModelFilter(modelSearch.value), 250);
+  });
+
+  selectAllModels.addEventListener("click", () => {
+    filteredModels.forEach(model => selectedModels.add(model.id));
+    renderSelectedModels();
+    refreshModelRows();
+  });
+
+  clearModels.addEventListener("click", () => {
+    selectedModels.clear();
+    renderSelectedModels();
+    refreshModelRows();
+  });
+
+  loadMoreModels.addEventListener("click", () => renderModelList(false));
+
+  retryModels.addEventListener("click", () => {
+    modelSearch.value = "";
+    setModelLoading();
+    setTimeout(() => applyModelFilter(""), 250);
+  });
+
+  function openNewKey() {
+    lastFocused = document.activeElement;
+    newKeyForm.reset();
+    keyNoExpiry.checked = false;
+    keyExpiry.disabled = false;
+    resetModelPicker();
+    newKeyStep1.classList.remove('hidden');
+    newKeyStep2.classList.add('hidden');
+    newKeySecret.textContent = '—';
+    pendingKey = null;
+    newKeyModal.classList.remove('hidden');
+    window.DontstopConsoleI18n?.updateContextHelp();
+    keyName.focus();
+  }
+
+  function closeNewKey() {
+    newKeyModal.classList.add('hidden');
+    pendingKey = null;
+    window.DontstopConsoleI18n?.updateContextHelp();
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+  }
+
+  function selectedValues(name) {
+    return [...newKeyForm.querySelectorAll(`input[name="${name}"]:checked`)].map(input => input.value);
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+  }
+
+  newKeyBtn.addEventListener('click', openNewKey);
+  document.getElementById('close-new-key').addEventListener('click', closeNewKey);
+  document.getElementById('cancel-new-key').addEventListener('click', closeNewKey);
+  newKeyModal.addEventListener('click', event => { if (event.target === newKeyModal) closeNewKey(); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !newKeyModal.classList.contains('hidden')) closeNewKey();
+  });
+  newKeyModal.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const focusable = [...newKeyModal.querySelectorAll('button, input, select, textarea, [href]')]
+      .filter(element => !element.disabled && element.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      last.focus();
+      event.preventDefault();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      first.focus();
+      event.preventDefault();
+    }
+  });
+
+  newKeyForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const name = keyName.value.trim();
+    if (!name) {
+      keyName.reportValidity?.();
+      keyName.focus();
+      return;
+    }
+    const bytes = new Uint8Array(18);
+    crypto.getRandomValues(bytes);
+    const token = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const endpoints = selectedValues('endpoints');
+    const models = [...selectedModels];
+    const scopes = selectedValues('scopes');
+    const quota = document.getElementById('key-quota').value.trim() || '—';
+    const noExpiry = document.getElementById('key-no-expiry').checked;
+    const expiryRaw = document.getElementById('key-expiry').value;
+    const expiry = noExpiry ? window.tr("newKey.noExpiration") : (expiryRaw || '—');
+    const rpm = document.getElementById('key-rpm').value.trim() || '0';
+    const tpm = document.getElementById('key-tpm').value.trim() || '0';
+    const monthly = document.getElementById('key-monthly-usd').value.trim() || '0';
+    pendingKey = { name, endpoints, models, scopes, quota, expiry, expiryRaw, noExpiry, key: `sk-ds-${token}` };
+    newKeySecret.textContent = pendingKey.key;
+    document.getElementById('new-key-endpoints-summary').textContent = endpoints.join(', ') || '—';
+    document.getElementById('new-key-models-summary').textContent = models.length
+      ? (models.length > 4 ? `${models.slice(0, 4).join(', ')} +${models.length - 4}` : models.join(', '))
+      : '—';
+    document.getElementById("new-key-limits-summary").textContent = window.tr("newKey.summaryLimits", { quota, models: models.length, rpm, tpm, monthly });
+    document.getElementById('new-key-expiry-summary').textContent = expiry;
+    newKeyStep1.classList.add('hidden');
+    newKeyStep2.classList.remove('hidden');
+    document.getElementById('copy-new-key').focus();
+  });
+
+  document.getElementById('copy-new-key').addEventListener('click', async event => {
+    if (!pendingKey) return;
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(pendingKey.key);
+      button.textContent = window.tr("common.copied");
+    } catch {
+      button.textContent = window.tr("common.selectAndCopy");
+      newKeySecret.focus?.();
+    }
+    setTimeout(() => { button.textContent = window.tr("common.copyKey"); }, 1600);
+  });
+
+  document.getElementById('finish-new-key').addEventListener('click', () => {
+    if (!pendingKey) return closeNewKey();
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${escapeHtml(pendingKey.name)}</td>
+      <td class="mono">${escapeHtml(pendingKey.key.slice(0, 7))}…</td>
+      <td class="mono">${escapeHtml(pendingKey.endpoints.join(', ') || '—')}</td>
+      <td class="num">${escapeHtml(pendingKey.quota)}</td>
+      <td>${window.tr("newKey.now")}</td>
+      <td><span class="chip ok"><span class="dot"></span>${window.tr("common.active")}</span></td>`;
+    document.getElementById('keys-tbody').prepend(row);
+    const count = document.getElementById('active-keys-count');
+    count.textContent = String(Number(count.textContent) + 1);
+    closeNewKey();
+  });
+  // MCP server — enable/disable, transport e ferramentas
+  const mcpToggle = document.getElementById('mcp-toggle');
+  const mcpToggleLabel = document.getElementById('mcp-toggle-label');
+  const mcpStatusChip = document.getElementById('mcp-status-chip');
+  const mcpBody = document.querySelector('#mcp .mcp-body');
+  const mcpDisabledPanel = document.getElementById('mcp-disabled-panel');
+  const mcpEndpoint = document.getElementById('mcp-endpoint');
+  const mcpRuntimeTransport = document.getElementById('mcp-runtime-transport');
+  const MCP_ENDPOINTS = {
+    'stdio': 'dontstop mcp',
+    'sse': 'https://gateway.dontstop.corp/api/mcp/sse',
+    'streamable-http': 'https://gateway.dontstop.corp/api/mcp/stream'
+  };
+  const mcpTransports = document.querySelectorAll('[data-mcp-transport]');
+
+  function setMcpEnabled(enabled) {
+    mcpToggle.classList.toggle('off', !enabled);
+    mcpToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+    mcpToggle.setAttribute("aria-label", window.tr(enabled ? "mcp.disableServer" : "mcp.enableServer"));
+    mcpToggleLabel.textContent = window.tr(enabled ? "mcp.toggleOn" : "mcp.toggleOff");
+    mcpToggleLabel.style.color = enabled ? 'var(--success)' : 'var(--muted-fg)';
+    mcpStatusChip.className = enabled ? 'chip ok' : 'chip';
+    mcpStatusChip.innerHTML = `<span class="dot"></span>${window.tr(enabled ? "common.online" : "common.offline")}`;
+    mcpBody.classList.toggle('hidden', !enabled);
+    mcpDisabledPanel.classList.toggle('hidden', enabled);
+  }
+
+  mcpToggle.addEventListener('click', () => setMcpEnabled(mcpToggle.getAttribute('aria-checked') !== 'true'));
+  document.getElementById('enable-mcp').addEventListener('click', () => setMcpEnabled(true));
+
+  mcpTransports.forEach(button => button.addEventListener('click', () => {
+    mcpTransports.forEach(item => item.classList.toggle('active', item === button));
+    mcpEndpoint.textContent = MCP_ENDPOINTS[button.dataset.mcpTransport];
+    mcpRuntimeTransport.textContent = button.dataset.mcpTransport;
+  }));
+
+  document.getElementById('copy-mcp-endpoint').addEventListener('click', async event => {
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(mcpEndpoint.textContent);
+      button.textContent = window.tr("common.copied");
+    } catch {
+      button.textContent = window.tr("common.selectAndCopy");
+    }
+    setTimeout(() => { button.textContent = window.tr("common.copy"); }, 1600);
+  });
+
+  document.querySelectorAll('.mcp-tool-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const enabled = toggle.getAttribute('aria-checked') === 'true';
+      toggle.classList.toggle('off', enabled);
+      toggle.setAttribute('aria-checked', enabled ? 'false' : 'true');
+      const toolName = toggle.closest("tr").querySelector("td").textContent;
+      toggle.setAttribute("aria-label", window.tr(enabled ? "mcp.toolEnable" : "mcp.toolDisable", { tool: toolName }));
+    });
+  });
+
+  setMcpEnabled(true);
+
+  window.onLocaleChanged = function () {
+    renderSelectedModels();
+    updateModelFooter();
+    modelSource.textContent = window.tr('models.activeCount', { count: activeModelCount, providers: activeProviders.length });
+    if (modelError) modelSearchStatus.textContent = window.tr('common.error');
+    else if (modelList.getAttribute('aria-busy') === 'true') modelSearchStatus.textContent = window.tr('common.loading');
+    else modelSearchStatus.textContent = window.tr('models.results', { count: filteredModels.length });
+    setMcpEnabled(mcpToggle.getAttribute('aria-checked') === 'true');
+    document.querySelectorAll('.mcp-tool-toggle').forEach(toggle => {
+      const toolName = toggle.closest('tr').querySelector('td').textContent;
+      const enabled = toggle.getAttribute('aria-checked') === 'true';
+      toggle.setAttribute('aria-label', window.tr(enabled ? 'mcp.toolDisable' : 'mcp.toolEnable', { tool: toolName }));
+    });
+    if (pendingKey) {
+      document.getElementById('new-key-expiry-summary').textContent = pendingKey.noExpiry
+        ? window.tr('newKey.noExpiration')
+        : (pendingKey.expiryRaw || '—');
+    }
+  };
+
+  if (new URLSearchParams(location.search).get('open') === 'new-key') {
+    window.setTimeout(openNewKey, 0);
+  }
+</script>
+</body>
+</html>

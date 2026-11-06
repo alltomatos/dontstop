@@ -1,0 +1,11 @@
+{
+  "name": "dontstop-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runtime de i18n, links de ajuda e validação do console administrativo donStop IA.",
+  "scripts": {
+    "lint": "node scripts/validate.js",
+    "test": "node --test tests/*.test.js",
+    "build": "node scripts/build.js"
+  }
+}

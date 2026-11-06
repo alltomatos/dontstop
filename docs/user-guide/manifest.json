@@ -1,0 +1,133 @@
+{
+  "defaultLocale": "en",
+  "locales": [
+    "en",
+    "pt-PT",
+    "pt-BR",
+    "es",
+    "fr",
+    "de"
+  ],
+  "guides": {
+    "dashboard": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "providers": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "endpoints": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "api-manager": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "mcp": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "cache": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "dlp": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "observability": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "cost": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "settings": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "new-api-key": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
+    "onboarding": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    }
+  }
+}
