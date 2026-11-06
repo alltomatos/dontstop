@@ -12,9 +12,11 @@ import (
 	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/api"
+	"github.com/alltomatos/dontstop/gateway/internal/auth"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/database"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
+	"github.com/alltomatos/dontstop/gateway/internal/provider"
 )
 
 const (
@@ -37,6 +39,7 @@ func run(logger *slog.Logger) error {
 	}
 
 	readiness := health.NewRegistry(readinessTimeout)
+	deps := api.Dependencies{Readiness: readiness}
 	if cfg.DatabaseURL != "" {
 		dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		pool, err := database.Open(dbCtx, cfg.DatabaseURL)
@@ -46,11 +49,13 @@ func run(logger *slog.Logger) error {
 		}
 		defer pool.Close()
 		readiness.Register("postgres", pool.Ping)
+		deps.Models = provider.NewCatalog(pool)
+		deps.Verifier = auth.NewVerifier(auth.NewPostgresRepository(pool))
 	}
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           api.NewRouter(readiness),
+		Handler:           api.NewRouter(deps),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}
