@@ -54,6 +54,10 @@ curl -s http://localhost:8080/v1/chat/completions \
 
 Use `"stream": true` for SSE; non-streaming requests accept `Idempotency-Key`.
 
+## Exact cache
+
+Non-streaming responses are cached in Redis for 1 h. The response header `X-Donstop-Cache` reports `hit`, `miss` or `bypass`. Streaming requests bypass the exact cache. If Redis is unavailable, the gateway bypasses the cache without failing the request.
+
 ## Validate
 
 ```bash

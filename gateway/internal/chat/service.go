@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/alltomatos/dontstop/gateway/internal/cache"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
 )
@@ -27,27 +28,56 @@ type IdempotencyStore interface {
 
 // Service executes chat requests through the account router and adapters.
 type Service struct {
-	router    AccountRouter
-	decrypter routing.Decrypter
-	adapters  func(kind string) (provider.Adapter, error)
-	store     IdempotencyStore
+	router        AccountRouter
+	decrypter     routing.Decrypter
+	adapters      func(kind string) (provider.Adapter, error)
+	store         IdempotencyStore
+	cache         cache.ExactCache
+	promptVersion string
 }
 
 // NewService creates a chat service.
-func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func(string) (provider.Adapter, error), store IdempotencyStore) *Service {
-	return &Service{router: router, decrypter: decrypter, adapters: adapters, store: store}
+func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func(string) (provider.Adapter, error), store IdempotencyStore, exactCache cache.ExactCache, promptVersion string) *Service {
+	return &Service{
+		router:        router,
+		decrypter:     decrypter,
+		adapters:      adapters,
+		store:         store,
+		cache:         exactCache,
+		promptVersion: promptVersion,
+	}
 }
 
 // Chat executes a non-streaming chat completion.
-func (s *Service) Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, error) {
+func (s *Service) Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, string, error) {
 	if idempotencyKey != "" && s.store != nil {
 		if cached, found, err := s.store.Get(ctx, tenantID+":"+idempotencyKey); err == nil && found {
-			return cached, nil
+			return cached, "bypass", nil
+		}
+	}
+
+	cacheKey := ""
+	cacheStatus := "bypass"
+	if s.cache != nil {
+		key, err := cache.BuildKey(cache.KeyInput{
+			TenantID: tenantID, Scope: "chat:write", Model: request.Model,
+			PromptVersion: s.promptVersion, Messages: request.Messages,
+			Temperature: request.Temperature, MaxTokens: request.MaxTokens,
+		})
+		if err == nil {
+			cacheKey = key
+			entry, found, err := s.cache.Get(ctx, key)
+			if err == nil && found && entry.ErrorCode == "" {
+				return entry.Response, "hit", nil
+			}
+			if err == nil {
+				cacheStatus = "miss"
+			}
 		}
 	}
 
 	var response provider.ChatResponse
-	_, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		adapter, account, err := s.resolve(candidate)
 		if err != nil {
 			return routing.AttemptResult{Failure: routing.FailureUnknown}, err
@@ -60,12 +90,18 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 		return routing.AttemptResult{}, nil
 	})
 	if err != nil {
-		return provider.ChatResponse{}, err
+		return provider.ChatResponse{}, "", err
 	}
 	if idempotencyKey != "" && s.store != nil {
 		_ = s.store.Set(ctx, tenantID+":"+idempotencyKey, response)
 	}
-	return response, nil
+	if cacheKey != "" {
+		_ = s.cache.Set(ctx, cacheKey, cache.Meta{
+			TenantID: tenantID, Model: request.Model, Provider: selected.ProviderName,
+			PromptVersion: s.promptVersion,
+		}, cache.Entry{Response: response}, time.Hour)
+	}
+	return response, cacheStatus, nil
 }
 
 // Stream executes a streaming chat completion and writes OpenAI-compatible SSE.
@@ -134,6 +170,7 @@ func (s *streamState) ensureHeaders() error {
 	s.writer.Header().Set("Cache-Control", "no-cache")
 	s.writer.Header().Set("Connection", "keep-alive")
 	s.writer.Header().Set("X-Accel-Buffering", "no")
+	s.writer.Header().Set("X-Donstop-Cache", "bypass")
 	s.writer.WriteHeader(http.StatusOK)
 	s.started = true
 	return nil

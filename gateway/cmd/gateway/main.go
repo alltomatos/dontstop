@@ -13,6 +13,7 @@ import (
 
 	"github.com/alltomatos/dontstop/gateway/internal/api"
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
+	"github.com/alltomatos/dontstop/gateway/internal/cache"
 	"github.com/alltomatos/dontstop/gateway/internal/chat"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/database"
@@ -81,7 +82,7 @@ func run(logger *slog.Logger) error {
 		}
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
-		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store)
+		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1")
 	} else if cfg.DatabaseURL != "" {
 		logger.Warn("chat completions disabled", "reason", "DATABASE_URL, REDIS_URL and MASTER_KEY are required")
 	}
