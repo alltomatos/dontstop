@@ -328,6 +328,29 @@
 - (+) Sem dependência, fallback testável, guia versionado e links determinísticos.
 - (−) Migração incremental de strings antigas via `source-keys.js`; ao criar o admin Next.js, avaliar adoção de `next-intl` mantendo os mesmos catálogos/chaves.
 
+## ADR-018 — Envelope P0-α e primeiro slice vertical do gateway
+
+**Status:** Aceito
+**Contexto:** a arquitetura-alvo suporta 20.000 streams SSE e 1.000 RPS (ADR-001/ADR-010), mas o repositório ainda não tem data plane. Entregar esse envelope de uma vez aumenta o risco de integração entre auth, providers, cache, streaming e usage. O primeiro ciclo precisa de uma meta mensurável, conservadora e compatível com a evolução para o alvo.
+
+**Decisão:**
+- O primeiro slice vertical (**P0-α**) entrega `/v1/chat/completions` (JSON + SSE) e `/v1/models` com **2 provedores** (OpenAI e Anthropic), API keys, failover multi-conta, cache exato Redis e usage/custo no Postgres.
+- Envelope de entrega: **50 RPS sustentado**, **150 RPS de burst**, **500 streams SSE simultâneos**, **3 réplicas** do gateway, **1 região** e **single-tenant**.
+- Metas: overhead do gateway **p95 ≤ 30 ms**, latência fim-a-fim **p95 ≤ 800 ms sem o tempo do provedor**, sucesso **≥ 99,5%** e disponibilidade **99,9%** mensal.
+- Teste de carga em **2× o envelope** (100 RPS/300 burst) antes do GA do slice; o alvo de 1.000 RPS/20.000 streams permanece como meta de evolução, não como critério do P0-α.
+- Guardrails obrigatórios: timeouts de conexão/primeiro token/total, retry somente antes do primeiro token, circuit breaker + cooldown, rate limit por chave/modelo, `Idempotency-Key` para POST não streaming, redaction de PII, payload off por padrão e outbox para usage/audit.
+- O contrato público é versionado em `docs/contracts/openapi-v1.yaml`; mudanças incompatíveis exigem nova versão e ADR.
+
+**Alternativas:**
+- Entregar direto o alvo de 1.000 RPS/20.000 streams: maior risco de regressão e difícil atribuir gargalos entre auth, cache, provider e streaming.
+- Slice somente `/v1/models`: reduz risco, mas não valida o caminho quente nem streaming.
+- Slice sem cache/usage: simplifica, porém não valida custo, isolamento e invalidação, que são requisitos centrais do produto.
+
+**Consequências:**
+- (+) Primeiro fluxo ponta a ponta verificável, com SLOs e capacidade explícitos; base para escalar sem reescrever.
+- (−) O P0-α não atende ainda o envelope corporativo completo; o roadmap deve manter os testes de 1.000 RPS/20.000 streams como gate de P1.
+- (−) O envelope exige disciplina de capacidade e observabilidade desde o primeiro deploy; sem isso, a meta de 99,9% não é verificável.
+
 ## Fontes consultadas
 
 - `[MAP-9R]` — fallback, cache, SQLite, multitenancy, mutex global e segredos em texto plano.

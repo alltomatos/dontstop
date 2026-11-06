@@ -125,6 +125,8 @@ sequenceDiagram
     end
 ```
 
+> **P0-α:** o primeiro slice executa Auth → RateLimit → ExactCache → Router/Failover → Provider → Usage/Outbox. DLP e cache semântico entram no P0-β/P1 sem alterar o contrato público. A sequência de entrega está em [ADD §6.2](architecture/ADD.md).
+
 ## 3. Sequência — cache semântico
 
 ```mermaid

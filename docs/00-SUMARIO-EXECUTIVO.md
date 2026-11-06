@@ -26,6 +26,7 @@ O dontstop será o **gateway corporativo de IA** da organização: um único end
 | 13 | Endpoints/API Manager | Registry versionado + políticas por endpoint + API keys com escopos | Governança da superfície pública e menor privilégio | ADR-015 |
 | 14 | MCP | Desligado por padrão; stdio/SSE/Streamable HTTP; ferramentas com escopo; local-only e sem túneis | Expor ferramentas sem ampliar a superfície de ataque | ADR-016 |
 | 15 | i18n e guia | Seis locales com fallback en, onboarding e Settings; guia versionado por página/modal | Interface acessível e ajuda contextual em qualquer idioma | ADR-017 |
+| 16 | Envelope P0-α | 50 RPS, 150 burst, 500 SSE, 3 réplicas, 2 providers; contrato OpenAPI versionado | Primeiro fluxo ponta a ponta verificável antes da escala corporativa | ADR-018 |
 
 ## 3. Metas numéricas (alvos a validar)
 
