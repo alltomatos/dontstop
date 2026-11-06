@@ -17,6 +17,18 @@ curl http://localhost:9090/healthz
 curl http://localhost:9090/readyz
 ```
 
+## Database
+
+The gateway uses `DATABASE_URL` when present and exposes the Postgres check in `/readyz`.
+
+```bash
+export DATABASE_URL='postgres://postgres:postgres@localhost:5432/dontstop?sslmode=disable'
+go run ./cmd/migrate
+go run ./cmd/gateway
+```
+
+Migrations are embedded in `migrations/` and are applied transactionally with an advisory lock. They are idempotent on re-run.
+
 ## Validate
 
 ```bash
