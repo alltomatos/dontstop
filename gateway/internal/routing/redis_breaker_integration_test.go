@@ -67,3 +67,38 @@ func TestRedisBreakerOpensHalfOpensAndCloses(t *testing.T) {
 		t.Fatalf("expected closed, got %q err=%v", state, err)
 	}
 }
+
+func TestRedisBreakerIsTenantScoped(t *testing.T) {
+	url := os.Getenv("TEST_REDIS_URL")
+	if url == "" {
+		t.Skip("TEST_REDIS_URL is not set")
+	}
+	options, err := redis.ParseURL(url)
+	if err != nil {
+		t.Fatalf("parse redis URL: %v", err)
+	}
+	client := redis.NewClient(options)
+	defer func() { _ = client.Close() }()
+	ctx := context.Background()
+	if err := client.FlushDB(ctx).Err(); err != nil {
+		t.Fatalf("flush redis: %v", err)
+	}
+	breaker := routing.NewRedisBreaker(client, routing.BreakerConfig{
+		BaseDelays: map[routing.FailureKind]time.Duration{routing.FailureRateLimit: time.Minute},
+		MaxDelay:   time.Minute,
+		FailureTTL: time.Minute,
+		ProbeTTL:   time.Second,
+	})
+	tenantA := routing.Candidate{TenantID: "tenant-a", AccountID: "shared-id"}
+	tenantB := routing.Candidate{TenantID: "tenant-b", AccountID: "shared-id"}
+
+	if err := breaker.Failure(ctx, tenantA, routing.FailureRateLimit); err != nil {
+		t.Fatalf("record tenant A failure: %v", err)
+	}
+	if allowed, err := breaker.Allow(ctx, tenantA); err != nil || allowed {
+		t.Fatalf("tenant A must be blocked: allowed=%v err=%v", allowed, err)
+	}
+	if allowed, err := breaker.Allow(ctx, tenantB); err != nil || !allowed {
+		t.Fatalf("tenant B must not inherit tenant A state: allowed=%v err=%v", allowed, err)
+	}
+}
