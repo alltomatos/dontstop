@@ -4,9 +4,21 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const defaultPort = 8080
+
+func secretValue(name string) string {
+	if path := os.Getenv(name + "_FILE"); path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(string(data))
+	}
+	return os.Getenv(name)
+}
 
 // Config contains process configuration loaded from environment variables.
 type Config struct {
@@ -21,10 +33,10 @@ type Config struct {
 func Load() (Config, error) {
 	cfg := Config{
 		Port:        defaultPort,
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		RedisURL:    os.Getenv("REDIS_URL"),
-		MasterKey:   os.Getenv("MASTER_KEY"),
-		NATSURL:     os.Getenv("NATS_URL"),
+		DatabaseURL: secretValue("DATABASE_URL"),
+		RedisURL:    secretValue("REDIS_URL"),
+		MasterKey:   secretValue("MASTER_KEY"),
+		NATSURL:     secretValue("NATS_URL"),
 	}
 	rawPort := os.Getenv("PORT")
 	if rawPort == "" {

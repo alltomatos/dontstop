@@ -35,11 +35,34 @@ const (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		if err := healthcheck(); err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	if err := run(logger); err != nil {
 		logger.Error("gateway stopped", "error", err)
 		os.Exit(1)
 	}
+}
+
+func healthcheck() error {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	client := &http.Client{Timeout: 2 * time.Second}
+	response, err := client.Get("http://127.0.0.1:" + port + "/readyz")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("readiness returned %d", response.StatusCode)
+	}
+	return nil
 }
 
 func run(logger *slog.Logger) error {
