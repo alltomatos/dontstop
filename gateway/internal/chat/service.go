@@ -14,7 +14,12 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
 	"github.com/alltomatos/dontstop/gateway/internal/usage"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("dontstop/gateway/chat")
 
 // AccountRouter selects an account and applies failover.
 type AccountRouter interface {
@@ -58,6 +63,9 @@ func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func
 
 // Chat executes a non-streaming chat completion.
 func (s *Service) Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, string, error) {
+	ctx, span := tracer.Start(ctx, "chat.completion")
+	defer span.End()
+	span.SetAttributes(attribute.String("gen_ai.request.model", request.Model))
 	started := time.Now()
 	if idempotencyKey != "" && s.store != nil {
 		if cached, found, err := s.store.Get(ctx, tenantID+":"+idempotencyKey); err == nil && found {
@@ -75,7 +83,14 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 		})
 		if err == nil {
 			cacheKey = key
-			entry, found, err := s.cache.Get(ctx, key)
+			cacheCtx, cacheSpan := tracer.Start(ctx, "cache.exact.get")
+			entry, found, err := s.cache.Get(cacheCtx, key)
+			cacheSpan.SetAttributes(attribute.Bool("cache.hit", found))
+			if err != nil {
+				cacheSpan.RecordError(err)
+				cacheSpan.SetStatus(codes.Error, "cache read failed")
+			}
+			cacheSpan.End()
 			if err == nil && found && entry.ErrorCode == "" {
 				s.recordUsage(ctx, tenantID, "", "", request.Model, "success", "hit", entry.Response.Usage, time.Since(started))
 				return entry.Response, "hit", nil
@@ -87,18 +102,30 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 	}
 
 	var response provider.ChatResponse
-	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+	routeCtx, routeSpan := tracer.Start(ctx, "routing.select")
+	selected, err := s.router.Route(routeCtx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		adapter, account, err := s.resolve(candidate)
 		if err != nil {
 			return routing.AttemptResult{Failure: routing.FailureUnknown}, err
 		}
-		result, err := adapter.Chat(ctx, account, request)
+		providerCtx, providerSpan := tracer.Start(ctx, "provider.chat")
+		providerSpan.SetAttributes(
+			attribute.String("gen_ai.provider.name", candidate.ProviderName),
+			attribute.String("gen_ai.request.model", request.Model),
+		)
+		result, err := adapter.Chat(providerCtx, account, request)
+		if err != nil {
+			providerSpan.RecordError(err)
+			providerSpan.SetStatus(codes.Error, "provider request failed")
+		}
+		providerSpan.End()
 		if err != nil {
 			return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
 		}
 		response = result
 		return routing.AttemptResult{}, nil
 	})
+	routeSpan.End()
 	if err != nil {
 		return provider.ChatResponse{}, "", err
 	}
@@ -111,12 +138,16 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 			PromptVersion: s.promptVersion,
 		}, cache.Entry{Response: response}, time.Hour)
 	}
+	span.SetAttributes(attribute.String("cache.status", cacheStatus))
 	s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", cacheStatus, response.Usage, time.Since(started))
 	return response, cacheStatus, nil
 }
 
 // Stream executes a streaming chat completion and writes OpenAI-compatible SSE.
 func (s *Service) Stream(ctx context.Context, tenantID string, request provider.ChatRequest, writer http.ResponseWriter) error {
+	ctx, span := tracer.Start(ctx, "chat.stream")
+	defer span.End()
+	span.SetAttributes(attribute.String("gen_ai.request.model", request.Model))
 	started := time.Now()
 	state := &streamState{writer: writer, id: newCompletionID(), model: request.Model, created: time.Now().Unix()}
 	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
@@ -124,10 +155,16 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 		if err != nil {
 			return routing.AttemptResult{Failure: routing.FailureUnknown}, err
 		}
-		stream, err := adapter.ChatStream(ctx, account, request)
+		providerCtx, providerSpan := tracer.Start(ctx, "provider.stream")
+		providerSpan.SetAttributes(attribute.String("gen_ai.provider.name", candidate.ProviderName))
+		stream, err := adapter.ChatStream(providerCtx, account, request)
 		if err != nil {
+			providerSpan.RecordError(err)
+			providerSpan.SetStatus(codes.Error, "provider stream failed")
+			providerSpan.End()
 			return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
 		}
+		defer providerSpan.End()
 		defer func() { _ = stream.Close() }()
 
 		for {
@@ -258,6 +295,13 @@ func (s *Service) recordUsage(ctx context.Context, tenantID, providerID, account
 	if s.recorder == nil {
 		return
 	}
+	ctx, span := tracer.Start(ctx, "usage.record")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("gen_ai.request.model", model),
+		attribute.Int("gen_ai.usage.input_tokens", tokens.PromptTokens),
+		attribute.Int("gen_ai.usage.output_tokens", tokens.CompletionTokens),
+	)
 	_ = s.recorder.Record(ctx, usage.Event{
 		RequestID: newRequestID(), TenantID: tenantID,
 		ProviderID: providerID, AccountID: accountID, Model: model,

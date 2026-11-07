@@ -20,11 +20,13 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
 	redisclient "github.com/alltomatos/dontstop/gateway/internal/platform/redis"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/secret"
+	"github.com/alltomatos/dontstop/gateway/internal/platform/telemetry"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
 	"github.com/alltomatos/dontstop/gateway/internal/usage"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const (
@@ -45,6 +47,12 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+
+	telemetryProvider, err := telemetry.Setup(context.Background(), "dontstop-gateway", "0.1.0")
+	if err != nil {
+		return fmt.Errorf("setup telemetry: %w", err)
+	}
+	defer func() { _ = telemetryProvider.Shutdown(context.Background()) }()
 
 	readiness := health.NewRegistry(readinessTimeout)
 	deps := api.Dependencies{Readiness: readiness}
@@ -101,7 +109,7 @@ func run(logger *slog.Logger) error {
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           api.NewRouter(deps),
+		Handler:           otelhttp.NewHandler(api.NewRouter(deps), "gateway"),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       120 * time.Second,
 	}

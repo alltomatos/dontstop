@@ -4,13 +4,22 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // Middleware authenticates Bearer API keys and attaches the principal.
 func (v *Verifier) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		principal, err := v.Authenticate(request.Context(), request.Header.Get("Authorization"))
+		ctx, span := otel.Tracer("dontstop/gateway/auth").Start(request.Context(), "auth.authenticate")
+		defer span.End()
+		principal, err := v.Authenticate(ctx, request.Header.Get("Authorization"))
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "authentication failed")
+			span.SetAttributes(attribute.Bool("auth.authenticated", false))
 			switch {
 			case errors.Is(err, ErrInvalidAuthorization), errors.Is(err, ErrInvalidKey),
 				errors.Is(err, ErrKeyRevoked), errors.Is(err, ErrKeyExpired):
@@ -20,7 +29,8 @@ func (v *Verifier) Middleware(next http.Handler) http.Handler {
 			}
 			return
 		}
-		next.ServeHTTP(w, request.WithContext(WithPrincipal(request.Context(), principal)))
+		span.SetAttributes(attribute.Bool("auth.authenticated", true))
+		next.ServeHTTP(w, request.WithContext(WithPrincipal(ctx, principal)))
 	})
 }
 
