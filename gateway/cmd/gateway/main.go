@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alltomatos/dontstop/gateway/internal/admin"
 	"github.com/alltomatos/dontstop/gateway/internal/api"
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
 	"github.com/alltomatos/dontstop/gateway/internal/cache"
@@ -116,6 +117,7 @@ func run(logger *slog.Logger) error {
 		if err != nil {
 			return fmt.Errorf("load master key: %w", err)
 		}
+		deps.Admin = admin.NewProviderService(pool, box)
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)

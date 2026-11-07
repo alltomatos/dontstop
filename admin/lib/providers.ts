@@ -19,6 +19,7 @@ export interface Provider {
   capabilities: string[];
   origins: ProviderOrigin[];
   accounts: ProviderAccount[];
+  accountsCount?: number;
   signupUrl: string;
   guide: string;
   configured: boolean;

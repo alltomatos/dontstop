@@ -6,11 +6,11 @@ import { Plus } from "lucide-react";
 import { Breadcrumbs, EmptyState, PageHeader } from "@/components/console/page";
 import { ProviderCard } from "@/components/console/provider-card";
 import { useI18n } from "@/components/console/i18n-provider";
-import { CONFIGURED_PROVIDERS, ORIGIN_ORDER, type ProviderOrigin } from "@/lib/providers";
+import { ORIGIN_ORDER, type Provider, type ProviderOrigin } from "@/lib/providers";
 
 type OriginFilter = ProviderOrigin | "all";
 
-export function ProvidersView({ empty = false }: { empty?: boolean }) {
+export function ProvidersView({ providers, empty = false }: { providers: Provider[]; empty?: boolean }) {
   const { t, tp } = useI18n();
   const [query, setQuery] = useState("");
   const [origin, setOrigin] = useState<OriginFilter>("all");
@@ -19,12 +19,12 @@ export function ProvidersView({ empty = false }: { empty?: boolean }) {
   const visible = useMemo(() => {
     if (empty) return [];
     const normalized = query.trim().toLowerCase();
-    return CONFIGURED_PROVIDERS.filter(provider => {
+    return providers.filter(provider => {
       const matchesQuery = !normalized || provider.name.toLowerCase().includes(normalized);
       const matchesOrigin = origin === "all" || provider.origins.includes(origin);
       return matchesQuery && matchesOrigin;
     });
-  }, [empty, origin, query]);
+  }, [empty, origin, providers, query]);
 
   const noResults = !empty && visible.length === 0;
 
