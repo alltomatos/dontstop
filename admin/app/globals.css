@@ -252,6 +252,10 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
   .two { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 700px) {
+  .card:has(.table) { overflow-x: auto; }
+  .table { min-width: 640px; }
+}
 @media (max-width: 520px) {
   .content { padding: 12px; }
   .kpis { grid-template-columns: 1fr; }
@@ -297,3 +301,9 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
 @media (max-width:900px) { .grid-2, .grid-3 { grid-template-columns:1fr; } }
 
 .card.selected { border-color: var(--primary); background:#eef2ff; }
+
+.skeleton { background:linear-gradient(90deg,var(--muted),#fff,var(--muted)); background-size:200% 100%; border-radius:8px; animation:shimmer 1.2s linear infinite; }
+.skeleton-title { height:32px; width:min(320px,70%); }
+.skeleton-card { height:120px; }
+.skeleton-table { height:260px; margin-top:16px; }
+@keyframes shimmer { to { background-position:-200% 0; } }
