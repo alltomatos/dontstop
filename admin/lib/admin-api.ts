@@ -194,3 +194,41 @@ export async function getMcpStatus(): Promise<MCPStatus | null> {
     return null;
   }
 }
+
+
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  requests: number;
+  hit_rate: number;
+  avg_latency_ms: number;
+}
+
+export interface CacheEvent {
+  time: string;
+  status: string;
+  model: string;
+  latency_ms: number;
+  tokens: number;
+}
+
+export async function getCacheStats(days = 1): Promise<CacheStats | null> {
+  const response = await adminRequest(`/admin/v1/cache/stats?days=${days}`);
+  if (!response?.ok) return null;
+  try {
+    return await response.json() as CacheStats;
+  } catch {
+    return null;
+  }
+}
+
+export async function getCacheEvents(limit = 20): Promise<CacheEvent[]> {
+  const response = await adminRequest(`/admin/v1/cache/events?limit=${limit}`);
+  if (!response?.ok) return [];
+  try {
+    const body = await response.json() as { data?: CacheEvent[] };
+    return Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}

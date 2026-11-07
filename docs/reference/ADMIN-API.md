@@ -118,3 +118,15 @@ Retorna `enabled`, `transport` (`stdio`/`sse`/`streamable-http`) e as 6 ferramen
 ```
 
 Persist?ncia em `mcp_settings` e `mcp_tool_settings`. Desligado por padr?o; toda altera??o exige `manage`.
+
+## Cache
+
+### `GET /admin/v1/cache/stats?days=1`
+
+Retorna hits, misses, requests, hit rate e lat?ncia m?dia a partir de `requests.cache_status`.
+
+### `GET /admin/v1/cache/events?limit=50`
+
+Retorna eventos recentes sem payload: hor?rio, status, modelo, lat?ncia e tokens.
+
+O console usa os endpoints quando configurado e mant?m o mock como fallback.
