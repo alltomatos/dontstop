@@ -389,5 +389,16 @@
   "providers.origin.allcode": "AllCode",
   "providers.origin.label": "Herkunft",
   "providers.guideLink": "So verbinden",
-  "providers.signupLink": "Konto erstellen / anmelden"
+  "providers.signupLink": "Konto erstellen / anmelden",
+  "common.comingSoon": "Demnächst",
+  "common.comingSoonBody": "Dieser Bereich wird an das Gateway angebunden.",
+  "nav.primary": "Hauptnavigation",
+  "common.breadcrumb": "Brotkrümelnavigation",
+  "dashboard.kpiRps": "RPS",
+  "dashboard.kpiStreams": "Aktive Streams",
+  "dashboard.kpiP95": "P95",
+  "dashboard.kpiErrors": "Fehler",
+  "dashboard.kpiCache": "Cache-Treffer",
+  "dashboard.kpiCostToday": "Kosten heute",
+  "dashboard.vsYesterday": "vs. gestern"
 }

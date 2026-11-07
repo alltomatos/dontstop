@@ -389,5 +389,16 @@
   "providers.origin.allcode": "AllCode",
   "providers.origin.label": "Origine",
   "providers.guideLink": "Comment connecter",
-  "providers.signupLink": "Créer un compte / se connecter"
+  "providers.signupLink": "Créer un compte / se connecter",
+  "common.comingSoon": "Bientôt disponible",
+  "common.comingSoonBody": "Cette section est en cours de connexion à la passerelle.",
+  "nav.primary": "Navigation principale",
+  "common.breadcrumb": "Fil d’Ariane",
+  "dashboard.kpiRps": "RPS",
+  "dashboard.kpiStreams": "Streams actifs",
+  "dashboard.kpiP95": "P95",
+  "dashboard.kpiErrors": "Erreurs",
+  "dashboard.kpiCache": "Cache hit",
+  "dashboard.kpiCostToday": "Coût aujourd’hui",
+  "dashboard.vsYesterday": "vs hier"
 }

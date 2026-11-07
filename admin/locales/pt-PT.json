@@ -389,5 +389,16 @@
   "providers.origin.allcode": "AllCode",
   "providers.origin.label": "Origem",
   "providers.guideLink": "Como ligar",
-  "providers.signupLink": "Criar conta / iniciar sessão"
+  "providers.signupLink": "Criar conta / iniciar sessão",
+  "common.comingSoon": "Brevemente",
+  "common.comingSoonBody": "Esta secção está a ser ligada ao gateway.",
+  "nav.primary": "Navegação principal",
+  "common.breadcrumb": "Navegação estrutural",
+  "dashboard.kpiRps": "RPS",
+  "dashboard.kpiStreams": "Streams ativos",
+  "dashboard.kpiP95": "P95",
+  "dashboard.kpiErrors": "Erros",
+  "dashboard.kpiCache": "Cache hit",
+  "dashboard.kpiCostToday": "Custo hoje",
+  "dashboard.vsYesterday": "vs. ontem"
 }
