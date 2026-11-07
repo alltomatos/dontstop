@@ -98,3 +98,23 @@ Retorna `summary` (custo, requests, tokens), `by_provider`, `by_day` e `by_model
 Retorna requests, erros, taxa de erro, p50/p95/p99, custo e tokens a partir de `requests`.
 
 O console usa esses endpoints quando a Admin API est? configurada e mant?m os mocks como fallback.
+
+## MCP
+
+### `GET /admin/v1/mcp/status`
+
+Retorna `enabled`, `transport` (`stdio`/`sse`/`streamable-http`) e as 6 ferramentas com escopo e estado.
+
+### `PATCH /admin/v1/mcp/settings`
+
+```json
+{"enabled":true,"transport":"streamable-http"}
+```
+
+### `PATCH /admin/v1/mcp/tools/{id}`
+
+```json
+{"enabled":false}
+```
+
+Persist?ncia em `mcp_settings` e `mcp_tool_settings`. Desligado por padr?o; toda altera??o exige `manage`.
