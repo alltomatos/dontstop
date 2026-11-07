@@ -121,6 +121,7 @@ func run(logger *slog.Logger) error {
 		deps.AdminKeys = admin.NewAPIKeyService(pool)
 		deps.AdminUsage = admin.NewUsageService(pool)
 		deps.AdminMCP = admin.NewMCPService(pool)
+		deps.AdminCache = admin.NewCacheService(pool)
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)

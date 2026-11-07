@@ -37,7 +37,7 @@ func TestUsageServiceAggregatesCostAndObservability(t *testing.T) {
 	if _, err := pool.Exec(ctx, `INSERT INTO usage_daily (tenant_id, day, provider_id, model, requests, tokens_in, tokens_out, cost_usd, errors) VALUES ($1, current_date, $2::uuid, 'gpt-4.1', 2, 100, 50, 1.25, 0)`, tenantID, providerID); err != nil {
 		t.Fatalf("insert usage: %v", err)
 	}
-	if _, err := pool.Exec(ctx, `INSERT INTO requests (tenant_id, provider_id, model, status, latency_ms, tokens_in, tokens_out, cost_usd) VALUES ($1, $2::uuid, 'gpt-4.1', 'success', 20, 50, 25, 0.5)`, tenantID, providerID); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO requests (tenant_id, provider_id, model, status, latency_ms, tokens_in, tokens_out, cost_usd, cache_status) VALUES ($1, $2::uuid, 'gpt-4.1', 'success', 20, 50, 25, 0.5, 'hit')`, tenantID, providerID); err != nil {
 		t.Fatalf("insert request: %v", err)
 	}
 	service := admin.NewUsageService(pool)
@@ -54,5 +54,12 @@ func TestUsageServiceAggregatesCostAndObservability(t *testing.T) {
 	}
 	if summary.Requests != 1 || summary.P95MS != 20 {
 		t.Fatalf("unexpected observability: %+v", summary)
+	}
+	cacheStats, err := admin.NewCacheService(pool).Stats(ctx, tenantID, 1)
+	if err != nil {
+		t.Fatalf("cache stats: %v", err)
+	}
+	if cacheStats.Hits != 1 || cacheStats.Requests != 1 {
+		t.Fatalf("unexpected cache stats: %+v", cacheStats)
 	}
 }
