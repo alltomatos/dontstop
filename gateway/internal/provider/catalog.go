@@ -18,6 +18,7 @@ type Model struct {
 	ID          string
 	DisplayName string
 	OwnedBy     string
+	Origin      string
 	Status      string
 	CreatedAt   int64
 }
@@ -35,7 +36,7 @@ func NewCatalog(pool *pgxpool.Pool) *Catalog {
 // ListModels returns active models from enabled providers with at least one account.
 func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, error) {
 	rows, err := c.pool.Query(ctx, `
-		SELECT pm.model_id, pm.display_name, p.name, extract(epoch from pm.created_at)::bigint AS created_at,
+		SELECT pm.model_id, pm.display_name, p.name, p.origin, extract(epoch from pm.created_at)::bigint AS created_at,
 			CASE WHEN EXISTS (
 				SELECT 1 FROM provider_accounts pa
 				WHERE pa.provider_id = p.id
@@ -58,7 +59,7 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 	models := make([]Model, 0)
 	for rows.Next() {
 		var model Model
-		if err := rows.Scan(&model.ID, &model.DisplayName, &model.OwnedBy, &model.CreatedAt, &model.Status); err != nil {
+		if err := rows.Scan(&model.ID, &model.DisplayName, &model.OwnedBy, &model.Origin, &model.CreatedAt, &model.Status); err != nil {
 			return nil, fmt.Errorf("scan model: %w", err)
 		}
 		models = append(models, model)

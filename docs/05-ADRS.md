@@ -351,6 +351,28 @@
 - (−) O P0-α não atende ainda o envelope corporativo completo; o roadmap deve manter os testes de 1.000 RPS/20.000 streams como gate de P1.
 - (−) O envelope exige disciplina de capacidade e observabilidade desde o primeiro deploy; sem isso, a meta de 99,9% não é verificável.
 
+## ADR-019 - Origem dos provedores e tradução fail-closed no AgentRouter
+
+**Status:** Aceito
+**Contexto:** o console precisa separar provedores configurados do catálogo e deixar explícita a origem (`9Router`, `OmniRoute`, `AllCode`). O AgentRouter rejeita texto não inglês no filtro de conteúdo e exige um transporte compatível com o WAF; o AllCode usa um relay Python síncrono e faz tradução best-effort.
+
+**Decisão:**
+- `providers.origin` é um campo obrigatório no modelo de dados, restrito a `9router`, `omniroute` e `allcode`; a API `/v1/models` expõe `x-dontstop-origin`.
+- A UI separa listagem de configurados, catálogo e detalhe; origem aparece em cards, detalhe e filtros.
+- O kind `agentrouter` fala Anthropic Messages (`/v1/messages`, `x-api-key`, `anthropic-version`) e aponta para um relay compatível via `base_url`.
+- Todo prompt é traduzido para inglês antes do envio. Se a tradução falhar, a chamada ao AgentRouter é bloqueada (`ErrTranslation`, HTTP 502 `translation_error`) e o motivo é logado sem o texto do prompt.
+- A resposta é traduzida de volta ao idioma detectado no último prompt de usuário; em streaming, a resposta é acumulada e traduzida antes do primeiro chunk.
+- O prompt original não é mutado; ele permanece na requisição do serviço para resposta, cache e rastreabilidade. Logs não guardam o texto bruto.
+
+**Alternativas:**
+- Fallback silencioso para o texto original (AllCode): viola o requisito de nunca enviar idioma não traduzido.
+- Traduzir chunk a chunk no streaming: pior qualidade e risco de vazamento de idioma.
+- Enviar direto sem relay: bloqueado pelo WAF do AgentRouter na prática.
+
+**Consequências:**
+- (+) Falha explícita, origem auditável e UI consistente; testes de sucesso, falha e streaming.
+- (�^') Dependência de um relay/WAF e de um serviço de tradução; streaming do AgentRouter ganha latência de bufferização.
+
 ## Fontes consultadas
 
 - `[MAP-9R]` — fallback, cache, SQLite, multitenancy, mutex global e segredos em texto plano.

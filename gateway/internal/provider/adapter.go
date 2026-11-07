@@ -67,11 +67,19 @@ type Adapter interface {
 
 // NewAdapter creates an adapter for a supported provider kind.
 func NewAdapter(kind string) (Adapter, error) {
+	return NewAdapterWithTranslator(kind, NewHTTPTranslator(nil))
+}
+
+// NewAdapterWithTranslator creates an adapter with an injected translator.
+// The translator is only used by providers that require prompt localization.
+func NewAdapterWithTranslator(kind string, translator Translator) (Adapter, error) {
 	switch strings.ToLower(kind) {
 	case "openai":
 		return &openAIAdapter{client: defaultClient()}, nil
 	case "anthropic":
 		return &anthropicAdapter{client: defaultClient()}, nil
+	case "agentrouter":
+		return newAgentRouterAdapter(defaultClient(), translator), nil
 	default:
 		return nil, fmt.Errorf("unsupported provider kind %q", kind)
 	}

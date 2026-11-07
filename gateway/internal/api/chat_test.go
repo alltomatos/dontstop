@@ -89,6 +89,29 @@ func TestChatRejectsOversizedBody(t *testing.T) {
 		t.Fatalf("expected 400, got %d", response.Code)
 	}
 }
+func TestChatMapsTranslationError(t *testing.T) {
+	service := &fakeChatService{err: provider.ErrTranslation}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-4.1","messages":[{"role":"user","content":"Oi"}]}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d", response.Code)
+	}
+	var body struct {
+		Error struct {
+			Type string `json:"type"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Error.Type != "translation_error" {
+		t.Fatalf("unexpected error type: %+v", body)
+	}
+}
+
 func TestChatReturnsJSONResponse(t *testing.T) {
 	service := &fakeChatService{response: provider.ChatResponse{
 		ID: "chat-1", Model: "gpt-4.1", Content: "Olá", FinishReason: "stop",

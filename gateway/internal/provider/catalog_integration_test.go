@@ -33,10 +33,10 @@ func TestCatalogListsActiveModelsFromConnectedProviders(t *testing.T) {
 
 	const tenantID = "00000000-0000-0000-0000-000000000000"
 	_, err = pool.Exec(ctx, `
-		INSERT INTO providers (tenant_id, name, kind, enabled) VALUES
-			($1, 'openai', 'openai', true),
-			($1, 'anthropic', 'anthropic', true),
-			($1, 'disabled-provider', 'openai', false)
+		INSERT INTO providers (tenant_id, name, kind, enabled, origin) VALUES
+			($1, 'openai', 'openai', true, '9router'),
+			($1, 'anthropic', 'anthropic', true, 'omniroute'),
+			($1, 'disabled-provider', 'openai', false, 'allcode')
 	`, tenantID)
 	if err != nil {
 		t.Fatalf("insert providers: %v", err)
@@ -84,8 +84,11 @@ func TestCatalogListsActiveModelsFromConnectedProviders(t *testing.T) {
 	for _, model := range models {
 		byID[model.ID] = model
 	}
-	if byID["gpt-4.1"].Status != "active" || byID["gpt-4.1"].OwnedBy != "openai" {
+	if byID["gpt-4.1"].Status != "active" || byID["gpt-4.1"].OwnedBy != "openai" || byID["gpt-4.1"].Origin != "9router" {
 		t.Fatalf("unexpected gpt-4.1: %+v", byID["gpt-4.1"])
+	}
+	if byID["claude-sonnet-4"].Origin != "omniroute" {
+		t.Fatalf("unexpected claude origin: %+v", byID["claude-sonnet-4"])
 	}
 	if byID["claude-sonnet-4"].Status != "cooldown" {
 		t.Fatalf("expected cooldown model, got %+v", byID["claude-sonnet-4"])

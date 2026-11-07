@@ -240,6 +240,10 @@
     });
   }
 
+  function guideUrl(slug) {
+    return GUIDES.resolveGuideUrl(locale, slug, manifest);
+  }
+
   function updateContextHelp() {
     const link = document.getElementById('context-help');
     if (!link) return;
@@ -371,6 +375,7 @@
     applyTranslations,
     updateContextHelp,
     updateAllGuideLinks,
+    guideUrl,
     getLocale: () => locale,
     formatNumber
   };
