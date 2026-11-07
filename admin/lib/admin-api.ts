@@ -130,3 +130,43 @@ export async function getApiKeys(): Promise<AdminAPIKey[] | null> {
     return null;
   }
 }
+
+
+export interface CostReport {
+  summary: { days: number; cost_usd: number; requests: number; tokens_in: number; tokens_out: number };
+  by_provider: Array<{ provider_id: string; provider_name: string; cost_usd: number; requests: number }>;
+  by_day: Array<{ day: string; cost_usd: number; requests: number }>;
+  by_model: Array<{ model: string; cost_usd: number; requests: number; tokens: number }>;
+}
+
+export async function getCostReport(days = 30): Promise<CostReport | null> {
+  const response = await adminRequest(`/admin/v1/costs/summary?days=${days}`);
+  if (!response?.ok) return null;
+  try {
+    return await response.json() as CostReport;
+  } catch {
+    return null;
+  }
+}
+
+export interface ObservabilitySummary {
+  requests: number;
+  errors: number;
+  error_rate: number;
+  p50_ms: number;
+  p95_ms: number;
+  p99_ms: number;
+  cost_usd: number;
+  tokens_in: number;
+  tokens_out: number;
+}
+
+export async function getObservabilitySummary(days = 1): Promise<ObservabilitySummary | null> {
+  const response = await adminRequest(`/admin/v1/observability/summary?days=${days}`);
+  if (!response?.ok) return null;
+  try {
+    return await response.json() as ObservabilitySummary;
+  } catch {
+    return null;
+  }
+}

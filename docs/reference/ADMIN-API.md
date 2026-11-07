@@ -86,3 +86,15 @@ Resposta `201` inclui `key` completo **uma ?nica vez**. O gateway persiste apena
 Marca `revoked_at` e retorna a chave sem segredo.
 
 O console usa `admin/app/api/admin/api-keys/route.ts` e `.../[id]/revoke/route.ts` como BFF server-side. Sem Admin API configurada, a tela mant?m o cat?logo mock.
+
+## Custos e observabilidade
+
+### `GET /admin/v1/costs/summary?days=30`
+
+Retorna `summary` (custo, requests, tokens), `by_provider`, `by_day` e `by_model` a partir de `usage_daily`.
+
+### `GET /admin/v1/observability/summary?days=1`
+
+Retorna requests, erros, taxa de erro, p50/p95/p99, custo e tokens a partir de `requests`.
+
+O console usa esses endpoints quando a Admin API est? configurada e mant?m os mocks como fallback.
