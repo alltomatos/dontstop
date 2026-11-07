@@ -22,6 +22,7 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/platform/secret"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
+	"github.com/alltomatos/dontstop/gateway/internal/usage"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
@@ -48,6 +49,8 @@ func run(logger *slog.Logger) error {
 	readiness := health.NewRegistry(readinessTimeout)
 	deps := api.Dependencies{Readiness: readiness}
 	var pool *pgxpool.Pool
+	var usageRecorder *usage.Recorder
+	var outbox *usage.OutboxPublisher
 	if cfg.DatabaseURL != "" {
 		dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		var err error
@@ -60,6 +63,7 @@ func run(logger *slog.Logger) error {
 		readiness.Register("postgres", pool.Ping)
 		deps.Models = provider.NewCatalog(pool)
 		deps.Verifier = auth.NewVerifier(auth.NewPostgresRepository(pool))
+		usageRecorder = usage.NewRecorder(pool, provider.NewCatalog(pool))
 	}
 	var redisConn *redis.Client
 	if cfg.RedisURL != "" {
@@ -82,9 +86,17 @@ func run(logger *slog.Logger) error {
 		}
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
-		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1")
+		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)
 	} else if cfg.DatabaseURL != "" {
 		logger.Warn("chat completions disabled", "reason", "DATABASE_URL, REDIS_URL and MASTER_KEY are required")
+	}
+	if pool != nil && cfg.NATSURL != "" {
+		publisher, err := usage.NewNATSPublisher(cfg.NATSURL)
+		if err != nil {
+			return fmt.Errorf("open NATS publisher: %w", err)
+		}
+		defer publisher.Close()
+		outbox = usage.NewOutboxPublisher(pool, publisher)
 	}
 
 	server := &http.Server{
@@ -96,6 +108,12 @@ func run(logger *slog.Logger) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if outbox != nil {
+		go outbox.Run(ctx, time.Second, func(err error) {
+			logger.Warn("usage outbox publish failed", "error", err)
+		})
+	}
 
 	errCh := make(chan error, 1)
 	go func() {

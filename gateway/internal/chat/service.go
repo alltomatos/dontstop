@@ -13,11 +13,17 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/cache"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
+	"github.com/alltomatos/dontstop/gateway/internal/usage"
 )
 
 // AccountRouter selects an account and applies failover.
 type AccountRouter interface {
 	Route(ctx context.Context, tenantID, model string, attempt routing.Attempt) (routing.Candidate, error)
+}
+
+// UsageRecorder persists request usage and cost.
+type UsageRecorder interface {
+	Record(ctx context.Context, event usage.Event) error
 }
 
 // IdempotencyStore stores non-streaming responses by idempotency key.
@@ -34,10 +40,11 @@ type Service struct {
 	store         IdempotencyStore
 	cache         cache.ExactCache
 	promptVersion string
+	recorder      UsageRecorder
 }
 
 // NewService creates a chat service.
-func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func(string) (provider.Adapter, error), store IdempotencyStore, exactCache cache.ExactCache, promptVersion string) *Service {
+func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func(string) (provider.Adapter, error), store IdempotencyStore, exactCache cache.ExactCache, promptVersion string, recorder UsageRecorder) *Service {
 	return &Service{
 		router:        router,
 		decrypter:     decrypter,
@@ -45,11 +52,13 @@ func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func
 		store:         store,
 		cache:         exactCache,
 		promptVersion: promptVersion,
+		recorder:      recorder,
 	}
 }
 
 // Chat executes a non-streaming chat completion.
 func (s *Service) Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, string, error) {
+	started := time.Now()
 	if idempotencyKey != "" && s.store != nil {
 		if cached, found, err := s.store.Get(ctx, tenantID+":"+idempotencyKey); err == nil && found {
 			return cached, "bypass", nil
@@ -68,6 +77,7 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 			cacheKey = key
 			entry, found, err := s.cache.Get(ctx, key)
 			if err == nil && found && entry.ErrorCode == "" {
+				s.recordUsage(ctx, tenantID, "", "", request.Model, "success", "hit", entry.Response.Usage, time.Since(started))
 				return entry.Response, "hit", nil
 			}
 			if err == nil {
@@ -101,13 +111,15 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 			PromptVersion: s.promptVersion,
 		}, cache.Entry{Response: response}, time.Hour)
 	}
+	s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", cacheStatus, response.Usage, time.Since(started))
 	return response, cacheStatus, nil
 }
 
 // Stream executes a streaming chat completion and writes OpenAI-compatible SSE.
 func (s *Service) Stream(ctx context.Context, tenantID string, request provider.ChatRequest, writer http.ResponseWriter) error {
+	started := time.Now()
 	state := &streamState{writer: writer, id: newCompletionID(), model: request.Model, created: time.Now().Unix()}
-	_, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		adapter, account, err := s.resolve(candidate)
 		if err != nil {
 			return routing.AttemptResult{Failure: routing.FailureUnknown}, err
@@ -139,6 +151,9 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 			}
 		}
 	})
+	if err == nil {
+		s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", "bypass", state.usage, time.Since(started))
+	}
 	return err
 }
 
@@ -160,6 +175,7 @@ type streamState struct {
 	model   string
 	created int64
 	started bool
+	usage   provider.Usage
 }
 
 func (s *streamState) ensureHeaders() error {
@@ -198,6 +214,7 @@ func (s *streamState) chunk(chunk provider.StreamChunk) error {
 		payload["choices"].([]map[string]any)[0]["finish_reason"] = chunk.FinishReason
 	}
 	if chunk.Usage != nil {
+		s.usage = *chunk.Usage
 		payload["usage"] = map[string]int{
 			"prompt_tokens":     chunk.Usage.PromptTokens,
 			"completion_tokens": chunk.Usage.CompletionTokens,
@@ -235,6 +252,27 @@ func writeEvent(writer http.ResponseWriter, payload any) error {
 		flusher.Flush()
 	}
 	return nil
+}
+
+func (s *Service) recordUsage(ctx context.Context, tenantID, providerID, accountID, model, status, cacheStatus string, tokens provider.Usage, latency time.Duration) {
+	if s.recorder == nil {
+		return
+	}
+	_ = s.recorder.Record(ctx, usage.Event{
+		RequestID: newRequestID(), TenantID: tenantID,
+		ProviderID: providerID, AccountID: accountID, Model: model,
+		Status: status, CacheStatus: cacheStatus,
+		TokensIn: tokens.PromptTokens, TokensOut: tokens.CompletionTokens,
+		LatencyMS: int(latency.Milliseconds()), CreatedAt: time.Now().UTC(),
+	})
+}
+
+func newRequestID() string {
+	buffer := make([]byte, 12)
+	if _, err := rand.Read(buffer); err != nil {
+		return "req_fallback"
+	}
+	return "req_" + hex.EncodeToString(buffer)
 }
 
 func newCompletionID() string {

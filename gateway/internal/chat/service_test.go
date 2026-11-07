@@ -12,6 +12,7 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/chat"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
+	"github.com/alltomatos/dontstop/gateway/internal/usage"
 )
 
 type fakeRouter struct{ candidate routing.Candidate }
@@ -94,6 +95,7 @@ func newService(adapter provider.Adapter, store chat.IdempotencyStore, exactCach
 		store,
 		exactCache,
 		"v1",
+		nil,
 	)
 }
 
@@ -124,6 +126,40 @@ func TestChatUsesIdempotencyStore(t *testing.T) {
 	}
 }
 
+type fakeRecorder struct{ events []usage.Event }
+
+func (r *fakeRecorder) Record(_ context.Context, event usage.Event) error {
+	r.events = append(r.events, event)
+	return nil
+}
+
+func TestChatRecordsUsage(t *testing.T) {
+	recorder := &fakeRecorder{}
+	service := newServiceWithRecorder(fakeAdapter{response: provider.ChatResponse{
+		ID: "chat-1", Model: "gpt-4.1", Content: "ok",
+		Usage: provider.Usage{PromptTokens: 10, CompletionTokens: 4, TotalTokens: 14},
+	}}, recorder)
+	_, _, err := service.Chat(context.Background(), "tenant-1", provider.ChatRequest{Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}}}, "")
+	if err != nil {
+		t.Fatalf("chat: %v", err)
+	}
+	if len(recorder.events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(recorder.events))
+	}
+	event := recorder.events[0]
+	if event.TokensIn != 10 || event.TokensOut != 4 || event.Model != "gpt-4.1" {
+		t.Fatalf("unexpected event: %+v", event)
+	}
+}
+
+func newServiceWithRecorder(adapter provider.Adapter, recorder chat.UsageRecorder) *chat.Service {
+	return chat.NewService(
+		fakeRouter{candidate: routing.Candidate{AccountID: "account-1", ProviderKind: "openai", BaseURL: "https://provider.example", CredentialCipher: []byte("cipher")}},
+		fakeDecrypter{},
+		func(string) (provider.Adapter, error) { return adapter, nil },
+		nil, nil, "v1", recorder,
+	)
+}
 func TestChatUsesExactCacheHit(t *testing.T) {
 	exact := &fakeExactCache{found: true, entry: cache.Entry{Response: provider.ChatResponse{ID: "cached", Content: "hit"}}}
 	service := newService(fakeAdapter{response: provider.ChatResponse{ID: "provider", Content: "miss"}}, nil, exact)
@@ -174,6 +210,20 @@ func TestChatBypassesCacheWhenRedisFails(t *testing.T) {
 	}
 	if response.ID != "provider" || status != "bypass" {
 		t.Fatalf("unexpected result: %+v status=%s", response, status)
+	}
+}
+func TestStreamRecordsUsage(t *testing.T) {
+	recorder := &fakeRecorder{}
+	service := newServiceWithRecorder(fakeAdapter{chunks: []provider.StreamChunk{
+		{Content: "x"},
+		{FinishReason: "stop", Usage: &provider.Usage{PromptTokens: 7, CompletionTokens: 3, TotalTokens: 10}},
+	}}, recorder)
+	recorderHTTP := httptest.NewRecorder()
+	if err := service.Stream(context.Background(), "tenant-1", provider.ChatRequest{Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}}}, recorderHTTP); err != nil {
+		t.Fatalf("stream: %v", err)
+	}
+	if len(recorder.events) != 1 || recorder.events[0].TokensIn != 7 || recorder.events[0].TokensOut != 3 {
+		t.Fatalf("unexpected events: %+v", recorder.events)
 	}
 }
 func TestStreamWritesSSEChunks(t *testing.T) {
