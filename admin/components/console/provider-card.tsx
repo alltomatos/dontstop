@@ -25,7 +25,7 @@ export function ProviderCard({ provider }: { provider: Provider }) {
         ))}
       </div>
       <div className="foot">
-        <span className="meta">{tp("providers.connected", provider.accounts.length)}</span>
+        <span className="meta">{tp("providers.connected", provider.accountsCount ?? provider.accounts.length)}</span>
         <span className="detail-link">
           {t("providers.viewDetails")}
           <ArrowRight aria-hidden="true" size={16} />

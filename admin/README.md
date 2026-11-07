@@ -24,6 +24,14 @@ admin/
 - `/settings`
 - Demais seções do console usam placeholder até a integração com o gateway.
 
+## Admin API
+
+O frontend l? provedores do gateway quando `DONTSTOP_GATEWAY_URL` e `DONTSTOP_ADMIN_API_KEY` est?o definidos no servidor Next. A chave precisa do escopo `manage`. Sem essas vari?veis, a UI usa o cat?logo mock de `lib/providers.ts`.
+
+```bash
+cp .env.example .env.local
+```
+
 ## Comandos
 
 ```bash

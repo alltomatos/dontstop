@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { PROVIDERS } from "@/lib/providers";
+import { getProvider } from "@/lib/admin-api";
 import { ProviderDetail } from "./provider-detail";
 
 export default async function ProviderDetailPage({
@@ -8,7 +8,7 @@ export default async function ProviderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const provider = PROVIDERS[id];
+  const provider = await getProvider(id);
   if (!provider) notFound();
   return <ProviderDetail provider={provider} />;
 }

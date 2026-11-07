@@ -21,6 +21,7 @@ type Dependencies struct {
 	Verifier  *auth.Verifier
 	Models    ModelLister
 	Chat      ChatService
+	Admin     AdminProviderService
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
@@ -37,6 +38,11 @@ func NewRouter(deps Dependencies) http.Handler {
 	}
 	if deps.Verifier != nil && deps.Chat != nil {
 		mux.Handle("POST /v1/chat/completions", deps.Verifier.Middleware(chatCompletions(deps.Chat)))
+	}
+	if deps.Verifier != nil && deps.Admin != nil {
+		mux.Handle("GET /admin/v1/providers", deps.Verifier.Middleware(adminProvidersList(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}", deps.Verifier.Middleware(adminProviderGet(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/accounts", deps.Verifier.Middleware(adminProviderAddAccount(deps.Admin)))
 	}
 	return mux
 }

@@ -21,22 +21,51 @@ export function ProviderDetail({ provider }: { provider: Provider }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [credential, setCredential] = useState("");
+  const [accountError, setAccountError] = useState("");
 
-  function addAccount(event: React.FormEvent<HTMLFormElement>) {
+  async function addAccount(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!name.trim() || !credential.trim()) return;
-    setAccounts(current => [
-      ...current,
-      {
-        name: name.trim(),
-        meta: maskCredential(credential),
-        status: "ok",
-        statusKey: "common.healthy"
+    setAccountError("");
+    const fallback = () => {
+      setAccounts(current => [
+        ...current,
+        { name: name.trim(), meta: maskCredential(credential), status: "ok", statusKey: "common.healthy" }
+      ]);
+      setName("");
+      setCredential("");
+      setOpen(false);
+    };
+    try {
+      const response = await fetch(`/api/admin/providers/${encodeURIComponent(provider.id)}/accounts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), credential })
+      });
+      if (response.status === 503) {
+        fallback();
+        return;
       }
-    ]);
-    setName("");
-    setCredential("");
-    setOpen(false);
+      if (!response.ok) {
+        setAccountError(t("common.error"));
+        return;
+      }
+      const account = await response.json() as { id: string; name: string; status: string; base_url?: string };
+      setAccounts(current => [
+        ...current,
+        {
+          name: account.name,
+          meta: account.base_url || account.id,
+          status: account.status === "cooldown" ? "warn" : "ok",
+          statusKey: account.status === "cooldown" ? "common.cooldown" : "common.healthy"
+        }
+      ]);
+      setName("");
+      setCredential("");
+      setOpen(false);
+    } catch {
+      fallback();
+    }
   }
 
   return (
@@ -146,6 +175,7 @@ export function ProviderDetail({ provider }: { provider: Provider }) {
                   <input className="input" required type="password" value={credential} onChange={event => setCredential(event.target.value)} placeholder={t("providers.accountCredentialPlaceholder")} />
                 </label>
               </div>
+              {accountError ? <p className="small" style={{ color: "var(--danger)" }}>{accountError}</p> : null}
               <div className="modal-foot">
                 <button className="btn" type="button" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
                 <button className="btn primary" type="submit">{t("providers.saveAccount")}</button>
