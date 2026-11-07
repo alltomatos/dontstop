@@ -22,6 +22,7 @@ type Dependencies struct {
 	Models    ModelLister
 	Chat      ChatService
 	Admin     AdminProviderService
+	AdminKeys AdminAPIKeyService
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
@@ -43,6 +44,11 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("GET /admin/v1/providers", deps.Verifier.Middleware(adminProvidersList(deps.Admin)))
 		mux.Handle("GET /admin/v1/providers/{id}", deps.Verifier.Middleware(adminProviderGet(deps.Admin)))
 		mux.Handle("POST /admin/v1/providers/{id}/accounts", deps.Verifier.Middleware(adminProviderAddAccount(deps.Admin)))
+	}
+	if deps.Verifier != nil && deps.AdminKeys != nil {
+		mux.Handle("GET /admin/v1/api-keys", deps.Verifier.Middleware(adminAPIKeysList(deps.AdminKeys)))
+		mux.Handle("POST /admin/v1/api-keys", deps.Verifier.Middleware(adminAPIKeysCreate(deps.AdminKeys)))
+		mux.Handle("POST /admin/v1/api-keys/{id}/revoke", deps.Verifier.Middleware(adminAPIKeysRevoke(deps.AdminKeys)))
 	}
 	return mux
 }

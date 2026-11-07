@@ -118,6 +118,7 @@ func run(logger *slog.Logger) error {
 			return fmt.Errorf("load master key: %w", err)
 		}
 		deps.Admin = admin.NewProviderService(pool, box)
+		deps.AdminKeys = admin.NewAPIKeyService(pool)
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)
