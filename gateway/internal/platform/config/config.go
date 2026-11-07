@@ -14,6 +14,7 @@ type Config struct {
 	DatabaseURL string
 	RedisURL    string
 	MasterKey   string
+	NATSURL     string
 }
 
 // Load reads and validates process configuration.
@@ -23,6 +24,7 @@ func Load() (Config, error) {
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		RedisURL:    os.Getenv("REDIS_URL"),
 		MasterKey:   os.Getenv("MASTER_KEY"),
+		NATSURL:     os.Getenv("NATS_URL"),
 	}
 	rawPort := os.Getenv("PORT")
 	if rawPort == "" {

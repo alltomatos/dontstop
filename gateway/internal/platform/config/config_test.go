@@ -54,6 +54,17 @@ func TestLoadReadsMasterKey(t *testing.T) {
 	}
 }
 
+func TestLoadReadsNATSURL(t *testing.T) {
+	t.Setenv("NATS_URL", "nats://localhost:4222")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.NATSURL != "nats://localhost:4222" {
+		t.Fatalf("unexpected NATS URL: %q", cfg.NATSURL)
+	}
+}
 func TestLoadRejectsInvalidPort(t *testing.T) {
 	t.Setenv("PORT", "not-a-port")
 

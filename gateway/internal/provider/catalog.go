@@ -7,6 +7,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Pricing contains per-million-token prices for a provider model.
+type Pricing struct {
+	InputPerMillion  float64
+	OutputPerMillion float64
+}
+
 // Model is a public model entry returned by /v1/models.
 type Model struct {
 	ID          string
@@ -61,4 +67,18 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 		return nil, fmt.Errorf("iterate models: %w", err)
 	}
 	return models, nil
+}
+
+// Pricing returns the per-million-token prices for a provider model.
+func (c *Catalog) Pricing(ctx context.Context, tenantID, providerID, model string) (Pricing, error) {
+	var pricing Pricing
+	err := c.pool.QueryRow(ctx, `
+		SELECT input_price_per_million::float8, output_price_per_million::float8
+		FROM provider_models
+		WHERE tenant_id = $1 AND provider_id = $2 AND model_id = $3
+	`, tenantID, providerID, model).Scan(&pricing.InputPerMillion, &pricing.OutputPerMillion)
+	if err != nil {
+		return Pricing{}, fmt.Errorf("query model pricing: %w", err)
+	}
+	return pricing, nil
 }

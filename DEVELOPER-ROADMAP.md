@@ -33,7 +33,7 @@
 | E1.4 | Registry de providers, adapters OpenAI/Anthropic e `/v1/models` | `todo` | [#5](https://github.com/alltomatos/dontstop/issues/5) | E1.2 |
 | E1.5 | `/v1/chat/completions` JSON + SSE | `done` | [#6](https://github.com/alltomatos/dontstop/issues/6) | E1.3, E1.4, E1.12 |
 | E1.6 | Roteamento multi-conta, failover e circuit breaker | `done` | [#7](https://github.com/alltomatos/dontstop/issues/7) | E1.4 |
-| E1.7 | Cache exato Redis e invalidação | `todo` | [#8](https://github.com/alltomatos/dontstop/issues/8) | E1.3, E1.5 |
+| E1.7 | Cache exato Redis e invalidação | `done` | [#8](https://github.com/alltomatos/dontstop/issues/8) | E1.3, E1.5 |
 | E1.8 | Usage/custo com outbox e NATS | `todo` | [#9](https://github.com/alltomatos/dontstop/issues/9) | E1.5 |
 | E1.9 | OTel, health/readiness e carga 2× | `todo` | [#10](https://github.com/alltomatos/dontstop/issues/10) | E1.5, E1.7, E1.8 |
 | E1.10 | OpenAPI lint, geração de tipos e contract tests | `todo` | [#11](https://github.com/alltomatos/dontstop/issues/11) | E1.5 |

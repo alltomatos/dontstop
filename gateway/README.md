@@ -58,6 +58,10 @@ Use `"stream": true` for SSE; non-streaming requests accept `Idempotency-Key`.
 
 Non-streaming responses are cached in Redis for 1 h. The response header `X-Donstop-Cache` reports `hit`, `miss` or `bypass`. Streaming requests bypass the exact cache. If Redis is unavailable, the gateway bypasses the cache without failing the request.
 
+## Usage and cost
+
+Non-streaming and streaming requests record usage in `requests`, `usage_daily` and `usage_outbox`. Cost uses `provider_models.input_price_per_million` and `output_price_per_million`. With `NATS_URL` set, a worker publishes outbox events to JetStream with the outbox `event_id` as `Msg-Id`; failed publishes are retried from Postgres.
+
 ## Validate
 
 ```bash
