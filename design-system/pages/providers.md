@@ -3,6 +3,10 @@
 > Override do [MASTER](../MASTER.md). Modelo visual inspirado no OmniRoute: catálogo em cards, filtros por tipo/capability e ações em lote.
 > O mockup usa o tema claro corporativo; os tokens suportam dark mode.
 
+## Categorias e origem
+
+Cada provedor declara uma origem (`9Router`, `OmniRoute` ou `AllCode`) no modelo de dados e na UI. A origem aparece nos cards, no resumo do detalhe e nos filtros da listagem principal e do catálogo. O detalhe também expõe **Como conectar** (guia do usuário) e **Criar conta / entrar** (site do provedor).
+
 ## Revisão do fluxo (mockup atual)
 
 A página principal lista **somente provedores configurados**. O catálogo de provedores preconfigurados fica em uma rota separada, aberta por **Adicionar provedor** (`#provider-catalog`). O detalhe (`#provider-detail?provider=<id>`) concentra contas, status, capabilities e **Adicionar conta**.

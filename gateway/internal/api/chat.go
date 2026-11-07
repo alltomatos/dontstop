@@ -109,6 +109,8 @@ func writeChatError(w http.ResponseWriter, err error) {
 			return
 		}
 		writeAPIError(w, http.StatusBadGateway, "api_error", "upstream provider failed")
+	case errors.Is(err, provider.ErrTranslation):
+		writeAPIError(w, http.StatusBadGateway, "translation_error", "prompt or response translation failed")
 	case errors.Is(err, context.DeadlineExceeded):
 		writeAPIError(w, http.StatusGatewayTimeout, "timeout_error", "upstream timeout")
 	default:

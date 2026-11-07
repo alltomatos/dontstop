@@ -42,6 +42,7 @@ func main() {
 		os.Exit(0)
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	slog.SetDefault(logger)
 	if err := run(logger); err != nil {
 		logger.Error("gateway stopped", "error", err)
 		os.Exit(1)

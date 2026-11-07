@@ -113,6 +113,8 @@
     .provider-card-link:focus-visible { outline:3px solid var(--ring); outline-offset:2px; }
     .provider-card-link .detail-link { display:inline-flex; align-items:center; gap:6px; color:var(--primary); font-size:13px; font-weight:600; }
     .provider-card-link .arrow { font-size:16px; line-height:1; }
+    .origin-tags { display:flex; flex-wrap:wrap; gap:4px; }
+    .chip.origin { font-size:11px; padding:2px 7px; background:#eef2ff; color:var(--primary); border-color:#c7d2fe; }
     .empty-state { background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius); padding:32px 20px; text-align:center; display:grid; justify-items:center; gap:6px; }
     .empty-state .empty-icon { width:44px; height:44px; border-radius:50%; background:var(--muted); color:var(--primary); display:grid; place-items:center; font-size:22px; font-weight:600; margin-bottom:4px; }
     .empty-state h2 { margin:0; }
@@ -357,6 +359,12 @@
             <span class="muted" id="configured-count"></span>
             <div class="actions"><button class="btn primary" data-view="grid" aria-pressed="true" data-i18n="providers.grid">Grade</button><button class="btn" data-view="list" aria-pressed="false" data-i18n="providers.list">Lista</button></div>
           </div>
+          <div class="filter-chips" style="margin-top:12px" data-origin-group="configured">
+            <button class="filter-chip active" data-origin-filter="configured" data-origin-value="all" data-i18n="providers.origin.all">Todas as origens</button>
+            <button class="filter-chip" data-origin-filter="configured" data-origin-value="9router">9Router</button>
+            <button class="filter-chip" data-origin-filter="configured" data-origin-value="omniroute">OmniRoute</button>
+            <button class="filter-chip" data-origin-filter="configured" data-origin-value="allcode">AllCode</button>
+          </div>
         </div>
 
         <div id="configured-empty" class="empty-state hidden">
@@ -433,6 +441,12 @@
             <button class="filter-chip" data-catalog-filter="compatible" data-i18n="providers.compatible">Compatível</button>
             <button class="filter-chip" data-catalog-filter="local" data-i18n="providers.local">Local</button>
           </div>
+          <div class="filter-chips" style="margin-top:8px" data-origin-group="catalog">
+            <button class="filter-chip active" data-origin-filter="catalog" data-origin-value="all" data-i18n="providers.origin.all">Todas as origens</button>
+            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="9router">9Router</button>
+            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="omniroute">OmniRoute</button>
+            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="allcode">AllCode</button>
+          </div>
         </div>
 
         <div class="provider-grid" id="catalog-grid" style="margin-top:16px">
@@ -491,7 +505,13 @@
             <div class="caps"><span class="chip">Chat</span></div>
             <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=lm-studio" data-i18n="providers.configure">Configurar</a></div>
           </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="api" data-provider-name="AgentRouter">
+            <div class="top"><span class="provider-icon">AR</span><div><div class="name">AgentRouter</div><div class="meta">Anthropic · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=agentrouter" data-i18n="providers.configure">Configurar</a></div>
+          </article>
         </div>
+
       </section>
 
       <!-- PROVIDER DETAIL -->
@@ -505,6 +525,8 @@
           </div>
           <div class="actions">
             <a class="btn" id="detail-back" href="#provider-catalog" data-i18n="providers.backToCatalog">Voltar ao catálogo</a>
+            <a class="btn" id="detail-guide" href="#" target="_blank" rel="noopener noreferrer" data-i18n="providers.guideLink">Como conectar</a>
+            <a class="btn" id="detail-signup" href="#" target="_blank" rel="noopener noreferrer" data-i18n="providers.signupLink">Criar conta / entrar</a>
             <button class="btn" data-i18n="common.test">Testar</button>
             <button class="btn primary" id="add-account-btn" data-i18n="providers.addAccount">Adicionar conta</button>
           </div>
@@ -523,12 +545,12 @@
             <h2 data-i18n="providers.providerSummary">Resumo</h2>
             <div class="list">
               <div class="list-item"><span data-i18n="common.status">Status</span><span id="detail-summary-status">Saudável</span></div>
+              <div class="list-item"><span data-i18n="providers.origin.label">Origem</span><span id="detail-origins" class="origin-tags"></span></div>
               <div class="list-item"><span data-i18n="providers.type">Tipo</span><span id="detail-type">API key · OpenAI</span></div>
               <div class="list-item"><span data-i18n="providers.capabilities">Capacidades</span><span id="detail-caps"></span></div>
             </div>
           </aside>
         </div>
-      </section>
 
       <!-- ENDPOINTS -->
       <section id="endpoints" class="panel hidden">
@@ -1082,10 +1104,83 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
     'lm-studio': { name: 'LM Studio', icon: 'LM', type: 'Local · sem auth', status: 'ok', statusKey: 'common.healthy', caps: ['Chat'], accounts: [] }
   };
   let currentProviderId = 'openai';
+  PROVIDERS.agentrouter = { name: 'AgentRouter', icon: 'AR', type: 'Anthropic · Chat', status: '', statusKey: 'providers.available', caps: ['Chat', 'Tools'], accounts: [] };
+  const PROVIDER_ORIGINS = {
+    openai: ['9router', 'allcode'],
+    anthropic: ['9router', 'allcode'],
+    gemini: ['9router', 'allcode'],
+    azure: ['9router', 'allcode'],
+    antigravity: ['9router', 'allcode'],
+    'claude-code': ['9router', 'allcode'],
+    ollama: ['9router', 'omniroute', 'allcode'],
+    'opencode-free': ['9router', 'allcode'],
+    naga: ['omniroute'],
+    tokenrouter: ['omniroute'],
+    'openai-compatible': ['9router', 'omniroute'],
+    'anthropic-compatible': ['9router', 'omniroute'],
+    'kilo-code': ['9router', 'omniroute'],
+    'kiro-ai': ['9router', 'omniroute'],
+    'openai-codex': ['9router', 'allcode'],
+    'gemini-cli': ['9router', 'allcode'],
+    bedrock: ['9router', 'omniroute', 'allcode'],
+    groq: ['9router', 'omniroute', 'allcode'],
+    'lm-studio': ['9router', 'omniroute', 'allcode'],
+    agentrouter: ['omniroute', 'allcode']
+  };
+  Object.entries(PROVIDER_ORIGINS).forEach(([id, origins]) => { if (PROVIDERS[id]) PROVIDERS[id].origins = origins; });
+  const PROVIDER_LINKS = {
+    openai: 'https://platform.openai.com/api-keys',
+    anthropic: 'https://console.anthropic.com/settings/keys',
+    gemini: 'https://aistudio.google.com/app/apikey',
+    azure: 'https://portal.azure.com/',
+    antigravity: 'https://antigravity.google/',
+    'claude-code': 'https://claude.ai/',
+    ollama: 'https://ollama.com/download',
+    'opencode-free': 'https://opencode.ai/',
+    naga: 'https://naga.ac/',
+    tokenrouter: 'https://tokenrouter.com/',
+    'openai-compatible': 'https://platform.openai.com/docs/api-reference',
+    'anthropic-compatible': 'https://docs.anthropic.com/',
+    'kilo-code': 'https://kilocode.ai/',
+    'kiro-ai': 'https://kiro.dev/',
+    'openai-codex': 'https://openai.com/codex/',
+    'gemini-cli': 'https://github.com/google-gemini/gemini-cli',
+    bedrock: 'https://aws.amazon.com/bedrock/',
+    groq: 'https://console.groq.com/keys',
+    'lm-studio': 'https://lmstudio.ai/',
+    agentrouter: 'https://agentrouter.org/'
+  };
+  Object.entries(PROVIDER_LINKS).forEach(([id, signupUrl]) => { if (PROVIDERS[id]) { PROVIDERS[id].signupUrl = signupUrl; PROVIDERS[id].guide = 'providers'; } });
+  const PROVIDER_ID_BY_NAME = Object.fromEntries(Object.entries(PROVIDERS).map(([id, provider]) => [provider.name, id]));
   ['openai', 'anthropic', 'gemini', 'azure', 'antigravity', 'claude-code', 'ollama', 'opencode-free'].forEach(id => { PROVIDERS[id].configured = true; });
   ['naga', 'tokenrouter', 'openai-compatible', 'anthropic-compatible', 'kilo-code', 'kiro-ai', 'openai-codex', 'gemini-cli', 'bedrock', 'groq', 'lm-studio'].forEach(id => { PROVIDERS[id].status = ''; PROVIDERS[id].statusKey = 'providers.available'; });
 
   function tr(key) { return window.DontstopConsoleI18n?.t(key) || key; }
+  function activeOrigin(group) {
+    return document.querySelector(`[data-origin-filter="${group}"].active`)?.dataset.originValue || 'all';
+  }
+  function providerOrigins(card) {
+    const id = card.dataset.providerId || PROVIDER_ID_BY_NAME[card.dataset.providerName] || '';
+    return PROVIDERS[id]?.origins || [];
+  }
+  function decorateProviderCards() {
+    document.querySelectorAll('[data-provider-id], [data-catalog-item]').forEach(card => {
+      const origins = providerOrigins(card);
+      card.dataset.origin = origins.join(' ');
+      card.querySelector('.origin-tags')?.remove();
+      if (!origins.length) return;
+      const tags = document.createElement('div');
+      tags.className = 'origin-tags';
+      origins.forEach(origin => {
+        const chip = document.createElement('span');
+        chip.className = 'chip origin';
+        chip.dataset.i18n = 'providers.origin.' + origin;
+        chip.textContent = tr(chip.dataset.i18n);
+        tags.append(chip);
+      });
+      card.querySelector('.top')?.after(tags);
+    });
+  }
   function trPlural(key, count) { return window.DontstopConsoleI18n?.plural(key, count) || String(count); }
 
   function setStatusChip(element, status, statusKey) {
@@ -1111,12 +1206,15 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
     const emptyBody = document.getElementById('configured-empty-body');
     const count = document.getElementById('configured-count');
     if (!grid || !empty) return;
+    decorateProviderCards();
     const query = (document.getElementById('configured-search')?.value || '').trim().toLowerCase();
     const forcedEmpty = new URLSearchParams(location.search).get('empty') === '1';
+    const origin = activeOrigin('configured');
     let visible = 0;
     grid.querySelectorAll('[data-provider-id]').forEach(card => {
       const match = !query || (card.dataset.providerName || '').toLowerCase().includes(query);
-      const showCard = match && !forcedEmpty;
+      const matchOrigin = origin === 'all' || (card.dataset.origin || '').split(' ').includes(origin);
+      const showCard = match && matchOrigin && !forcedEmpty;
       card.classList.toggle('hidden', !showCard);
       if (showCard) visible += 1;
     });
@@ -1138,13 +1236,16 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
     const grid = document.getElementById('catalog-grid');
     const count = document.getElementById('catalog-count');
     if (!grid) return;
+    decorateProviderCards();
     const query = (document.getElementById('catalog-search')?.value || '').trim().toLowerCase();
     const active = document.querySelector('[data-catalog-filter].active')?.dataset.catalogFilter || 'all';
+    const origin = activeOrigin('catalog');
     let visible = 0;
     grid.querySelectorAll('[data-catalog-item]').forEach(card => {
       const matchesQuery = !query || (card.dataset.providerName || '').toLowerCase().includes(query);
       const matchesType = active === 'all' || card.dataset.catalogType === active;
-      const showCard = matchesQuery && matchesType;
+      const matchesOrigin = origin === 'all' || (card.dataset.origin || '').split(' ').includes(origin);
+      const showCard = matchesQuery && matchesType && matchesOrigin;
       card.classList.toggle('hidden', !showCard);
       if (showCard) visible += 1;
     });
@@ -1203,6 +1304,9 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
     const type = document.getElementById('detail-type');
     const summaryStatus = document.getElementById('detail-summary-status');
     const caps = document.getElementById('detail-caps');
+    const origins = document.getElementById('detail-origins');
+    const guideLink = document.getElementById('detail-guide');
+    const signupLink = document.getElementById('detail-signup');
     const count = document.getElementById('detail-account-count');
     if (name) name.textContent = provider.name;
     if (crumb) crumb.textContent = provider.name;
@@ -1220,6 +1324,18 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
       });
     }
     if (count) count.textContent = provider.accounts.length === 0 ? tr('providers.accountsCount.zero') : trPlural('providers.accountsCount', provider.accounts.length);
+    if (origins) {
+      origins.textContent = '';
+      (provider.origins || []).forEach(origin => {
+        const chip = document.createElement('span');
+        chip.className = 'chip origin';
+        chip.dataset.i18n = 'providers.origin.' + origin;
+        chip.textContent = tr(chip.dataset.i18n);
+        origins.append(chip);
+      });
+    }
+    if (guideLink) guideLink.href = window.DontstopConsoleI18n?.guideUrl?.(provider.guide || 'providers') || '#';
+    if (signupLink) signupLink.href = provider.signupUrl || '#';
     renderAccounts(provider);
   }
 
@@ -1261,6 +1377,13 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
     button.addEventListener('click', () => {
       document.querySelectorAll('[data-catalog-filter]').forEach(item => item.classList.toggle('active', item === button));
       updateCatalog();
+    });
+  });
+  document.querySelectorAll('[data-origin-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = button.dataset.originFilter;
+      document.querySelectorAll(`[data-origin-filter="${group}"]`).forEach(item => item.classList.toggle('active', item === button));
+      if (group === 'configured') updateConfiguredProviders(); else updateCatalog();
     });
   });
 

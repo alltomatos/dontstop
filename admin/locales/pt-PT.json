@@ -382,5 +382,12 @@
   "providers.local": "Local",
   "providers.configuredCount.zero": "0 configurados",
   "providers.catalogCount.zero": "0 disponíveis",
-  "providers.accountsCount.zero": "0 contas"
+  "providers.accountsCount.zero": "0 contas",
+  "providers.origin.all": "Todas as origens",
+  "providers.origin.9router": "9Router",
+  "providers.origin.omniroute": "OmniRoute",
+  "providers.origin.allcode": "AllCode",
+  "providers.origin.label": "Origem",
+  "providers.guideLink": "Como ligar",
+  "providers.signupLink": "Criar conta / iniciar sessão"
 }

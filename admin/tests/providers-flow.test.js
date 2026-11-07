@@ -19,7 +19,14 @@ const requiredKeys = [
   'providers.addAccount',
   'providers.accountName',
   'providers.accountCredential',
-  'providers.saveAccount'
+  'providers.saveAccount',
+  'providers.origin.all',
+  'providers.origin.9router',
+  'providers.origin.omniroute',
+  'providers.origin.allcode',
+  'providers.origin.label',
+  'providers.guideLink',
+  'providers.signupLink'
 ];
 
 function section(id) {
@@ -36,12 +43,16 @@ test('main providers page lists only configured providers', () => {
   assert.ok(!main.includes('data-catalog-item'));
   assert.ok(main.includes('id="configured-empty"'));
   assert.ok(main.includes('href="#provider-catalog"'));
+  assert.ok(main.includes('data-origin-group="configured"'));
 });
 
 test('catalog is a separate page and links to provider detail', () => {
   const catalog = section('provider-catalog');
-  assert.equal((catalog.match(/data-catalog-item/g) || []).length, 11);
+  assert.equal((catalog.match(/<article[^>]*data-catalog-item/g) || []).length, 12);
   assert.ok(catalog.includes('href="#provider-detail?provider=naga"'));
+  assert.ok(catalog.includes('href="#provider-detail?provider=agentrouter"'));
+  assert.ok(catalog.includes('data-origin-group="catalog"'));
+  assert.ok(html.includes("agentrouter: ['omniroute', 'allcode']"));
   assert.ok(!catalog.includes('data-provider-id="openai"'));
 });
 
@@ -50,6 +61,8 @@ test('provider detail exposes accounts and the add-account flow', () => {
   assert.ok(detail.includes('id="detail-accounts"'));
   assert.ok(detail.includes('id="add-account-btn"'));
   assert.ok(detail.includes('href="#providers"'));
+  assert.ok(detail.includes('id="detail-guide"'));
+  assert.ok(detail.includes('id="detail-signup"'));
   assert.ok(html.includes('id="account-modal"'));
   assert.ok(html.includes('id="account-form"'));
 });

@@ -106,6 +106,7 @@ erDiagram
       text kind
       text base_url
       text protocol
+      text origin
       boolean enabled
       jsonb config
     }

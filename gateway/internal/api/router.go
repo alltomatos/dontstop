@@ -58,6 +58,7 @@ func listModels(w http.ResponseWriter, request *http.Request, lister ModelLister
 		Object         string `json:"object"`
 		Created        int64  `json:"created"`
 		OwnedBy        string `json:"owned_by"`
+		Origin         string `json:"x-dontstop-origin"`
 		XDonstopStatus string `json:"x-dontstop-status"`
 	}
 	data := make([]modelObject, 0, len(models))
@@ -67,6 +68,7 @@ func listModels(w http.ResponseWriter, request *http.Request, lister ModelLister
 			Object:         "model",
 			Created:        model.CreatedAt,
 			OwnedBy:        model.OwnedBy,
+			Origin:         model.Origin,
 			XDonstopStatus: model.Status,
 		})
 	}
