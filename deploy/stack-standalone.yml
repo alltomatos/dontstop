@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  gateway:
+    image: ${GATEWAY_IMAGE:-ghcr.io/alltomatos/dontstop-gateway:latest}
+    environment:
+      PORT: "8080"
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+      MASTER_KEY_FILE: /run/secrets/master_key
+      NATS_URL_FILE: /run/secrets/nats_url
+    secrets:
+      - database_url
+      - redis_url
+      - master_key
+      - nats_url
+    ports:
+      - "8080:8080"
+    networks:
+      - dontstop
+    stop_grace_period: 90s
+    healthcheck:
+      test: ["CMD", "/app/gateway", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 0s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        delay: 0s
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 0s
+        max_attempts: 0
+
+networks:
+  dontstop:
+    driver: overlay
+
+secrets:
+  database_url:
+    external: true
+  redis_url:
+    external: true
+  master_key:
+    external: true
+  nats_url:
+    external: true

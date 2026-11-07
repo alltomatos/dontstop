@@ -54,7 +54,22 @@ curl -fsS https://gateway.dontstop.corp/v1/models -H "Authorization: Bearer $DON
 
 Para SSE, use `curl -N` e confirme `data: ...` + `[DONE]` sem buffering.
 
-## 6. Observações
+## 6. Stack standalone (sem Traefik)
+
+Para um host unico ou laboratorio, use `deploy/stack-standalone.yml`. Ele nao sobe Traefik, nao tem labels de roteamento e mantem **1 replica** do gateway publicada diretamente em `:8080`.
+
+```bash
+export GATEWAY_IMAGE=registry.example/dontstop-gateway:<tag>
+docker stack config -c deploy/stack-standalone.yml
+docker stack deploy -c deploy/stack-standalone.yml dontstop-standalone
+curl -fsS http://127.0.0.1:8080/healthz
+```
+
+O `restart_policy` usa `condition: any`, `delay: 0s` e tentativas ilimitadas; se o container cair, o Swarm cria uma nova task imediatamente. O `update_config` usa `start-first` e rollback em falha.
+
+> Nao escale essa stack para mais de 1 replica: com `ports` publicadas, o Swarm passa a distribuir via routing mesh, o que caracteriza balanceamento. Para HA com mais replicas, use `deploy/stack.yml` com Traefik.
+
+## 7. Observações
 
 - Postgres/Redis/NATS/Qdrant devem rodar em nós `tier=data` ou como serviços gerenciados; não estão neste stack.
 - Traefik faz TLS no entrypoint `websecure`; em produção configure certificado/ACME conforme o ambiente.
