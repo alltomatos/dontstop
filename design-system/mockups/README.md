@@ -9,6 +9,16 @@
 2. Use as abas da sidebar; a URL reflete a seção (`#dashboard`, `#providers`, …).
 3. Teste navegação por teclado (Tab/Enter), zoom 200% e largura 375px.
 
+## Fluxo de Provedores
+
+A área de Provedores foi separada em três rotas:
+
+- `#providers` — lista apenas os provedores já configurados, com busca, grade/lista e estado vazio.
+- `#provider-catalog` — catálogo de provedores preconfigurados, acessível por **Adicionar provedor**; nunca aparece na listagem principal.
+- `#provider-detail?provider=<id>` — detalhe do provedor, contas vinculadas, resumo e ação **Adicionar conta**.
+
+O caminho de volta é feito por breadcrumb e pelos botões **Voltar para provedores** / **Voltar ao catálogo**. Para validar o estado vazio, use `?empty=1#providers`.
+
 ## Escopo do mockup
 
 | Tela | O que valida |

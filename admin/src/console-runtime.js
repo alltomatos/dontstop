@@ -6,6 +6,8 @@
   const PANEL_GUIDES = {
     dashboard: 'dashboard',
     providers: 'providers',
+    'provider-catalog': 'providers',
+    'provider-detail': 'providers',
     endpoints: 'endpoints',
     'api-manager': 'api-manager',
     mcp: 'mcp',
@@ -18,6 +20,8 @@
   const GUIDE_PAGE_KEYS = {
     dashboard: 'page.dashboard',
     providers: 'page.providers',
+    'provider-catalog': 'page.providers',
+    'provider-detail': 'page.providers',
     endpoints: 'page.endpoints',
     'api-manager': 'page.apiManager',
     mcp: 'page.mcp',
