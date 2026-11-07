@@ -267,3 +267,33 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+.tabs { display:flex; gap:8px; border-bottom:1px solid var(--border); margin:16px 0; overflow:auto; }
+.tab { border:0; background:transparent; padding:10px 12px; color:var(--muted-fg); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; }
+.tab[aria-selected="true"] { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+.switch { width:38px; height:20px; border:0; border-radius:999px; background:var(--success); position:relative; cursor:pointer; padding:0; flex:0 0 38px; }
+.switch span { position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#fff; }
+.switch.off { background:var(--border); }
+.switch.off span { right:auto; left:2px; }
+.chart-bars { height:180px; border-radius:8px; background:linear-gradient(180deg,var(--muted),transparent); display:flex; align-items:flex-end; gap:6px; padding:12px; }
+.bar { flex:1; background:var(--primary); opacity:.85; border-radius:4px 4px 0 0; min-height:8px; }
+.bar.alt { background:var(--accent); }
+.progress { display:block; height:8px; background:var(--muted); border-radius:999px; overflow:hidden; min-width:100px; }
+.progress-value { display:block; height:100%; background:var(--success); }
+.progress-value.warn { background:var(--warning); }
+.progress-value.bad { background:var(--danger); }
+.table { width:100%; border-collapse:collapse; font-size:14px; }
+.table th { text-align:left; color:var(--muted-fg); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em; padding:8px 10px; border-bottom:1px solid var(--border); }
+.table td { padding:10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.table tr:last-child td { border-bottom:0; }
+.table tbody tr:hover { background:var(--muted); }
+.table .right { text-align:right; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:16px; }
+.stack { display:flex; flex-direction:column; gap:12px; }
+.mono { font-family:"Fira Code",monospace; }
+.small { font-size:12px; }
+.codebox { background:#0f172a; color:#e2e8f0; border-radius:8px; padding:12px; font:13px/1.5 "Fira Code",monospace; overflow:auto; }
+@media (max-width:900px) { .grid-2, .grid-3 { grid-template-columns:1fr; } }
+
+.card.selected { border-color: var(--primary); background:#eef2ff; }
