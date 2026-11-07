@@ -75,7 +75,7 @@ services:
         max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.swarm.network=edge
+        - traefik.docker.network=dontstop_edge
         - traefik.http.routers.gateway.rule=Host(`${GATEWAY_HOST:-gateway.dontstop.corp}`)
         - traefik.http.routers.gateway.entrypoints=websecure
         - traefik.http.routers.gateway.tls=true
