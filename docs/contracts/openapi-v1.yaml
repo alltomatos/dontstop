@@ -12,6 +12,7 @@ info:
     url: https://github.com/alltomatos/dontstop
   license:
     name: Proprietary
+    url: https://github.com/alltomatos/dontstop
 servers:
   - url: https://gateway.dontstop.corp/v1
     description: Gateway corporativo

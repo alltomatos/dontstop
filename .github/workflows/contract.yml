@@ -1,0 +1,57 @@
+﻿name: contract
+
+on:
+  pull_request:
+    paths:
+      - "docs/contracts/**"
+      - "gateway/internal/api/**"
+      - "redocly.yaml"
+      - ".github/workflows/contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/contracts/**"
+      - "gateway/internal/api/**"
+      - "redocly.yaml"
+      - ".github/workflows/contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.10"
+          cache-dependency-path: gateway/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Lint OpenAPI
+        run: npx --yes @redocly/cli@latest lint docs/contracts/openapi-v1.yaml
+
+      - name: Breaking-change check
+        shell: bash
+        run: |
+          if git cat-file -e origin/main:docs/contracts/openapi-v1.yaml 2>/dev/null; then
+            git show origin/main:docs/contracts/openapi-v1.yaml > /tmp/openapi-base.yaml
+            go run github.com/oasdiff/oasdiff@latest breaking /tmp/openapi-base.yaml docs/contracts/openapi-v1.yaml
+          else
+            echo "No base contract on main; skipping breaking-change check."
+          fi
+
+      - name: Generate TypeScript types
+        shell: bash
+        run: |
+          npx --yes openapi-typescript@latest docs/contracts/openapi-v1.yaml -o /tmp/openapi.d.ts
+          test -s /tmp/openapi.d.ts
+
+      - name: Contract test
+        working-directory: gateway
+        run: go test ./internal/api -run TestOpenAPIContract -v
