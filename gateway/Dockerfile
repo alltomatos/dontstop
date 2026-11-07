@@ -12,4 +12,5 @@ WORKDIR /app
 COPY --from=build /out/gateway /app/gateway
 EXPOSE 8080
 USER nonroot:nonroot
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 CMD ["/app/gateway", "healthcheck"]
 ENTRYPOINT ["/app/gateway"]

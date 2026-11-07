@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
@@ -63,6 +64,36 @@ func TestLoadReadsNATSURL(t *testing.T) {
 	}
 	if cfg.NATSURL != "nats://localhost:4222" {
 		t.Fatalf("unexpected NATS URL: %q", cfg.NATSURL)
+	}
+}
+func TestLoadReadsDockerSecretFiles(t *testing.T) {
+	dir := t.TempDir()
+	databaseFile := dir + "/database_url"
+	redisFile := dir + "/redis_url"
+	masterFile := dir + "/master_key"
+	natsFile := dir + "/nats_url"
+	for path, value := range map[string]string{
+		databaseFile: "postgres://from-file/db",
+		redisFile:    "redis://from-file:6379/0",
+		masterFile:   "file-master-key",
+		natsFile:     "nats://from-file:4222",
+	} {
+		if err := os.WriteFile(path, []byte(value+"\n"), 0o600); err != nil {
+			t.Fatalf("write secret: %v", err)
+		}
+	}
+	t.Setenv("DATABASE_URL_FILE", databaseFile)
+	t.Setenv("REDIS_URL_FILE", redisFile)
+	t.Setenv("MASTER_KEY_FILE", masterFile)
+	t.Setenv("NATS_URL_FILE", natsFile)
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.DatabaseURL != "postgres://from-file/db" || cfg.RedisURL != "redis://from-file:6379/0" ||
+		cfg.MasterKey != "file-master-key" || cfg.NATSURL != "nats://from-file:4222" {
+		t.Fatalf("unexpected config: %+v", cfg)
 	}
 }
 func TestLoadRejectsInvalidPort(t *testing.T) {
