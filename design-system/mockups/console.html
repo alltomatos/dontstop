@@ -65,7 +65,7 @@
     .chip.warn { color:var(--warning); border-color:#fde68a; background:#fffbeb; }
     .chip.bad { color:var(--danger); border-color:#fecaca; background:#fef2f2; }
     .dot { width:8px; height:8px; border-radius:50%; display:inline-block; background:currentColor; }
-    .btn { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border); background:var(--surface); color:var(--fg); padding:8px 12px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; }
+    .btn { display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border); background:var(--surface); color:var(--fg); padding:8px 12px; border-radius:8px; font:inherit; font-size:14px; cursor:pointer; text-decoration:none; }
     .btn:hover { background:var(--muted); }
     .btn.primary { background:var(--primary); border-color:var(--primary); color:var(--on-primary); }
     .btn.primary:hover { filter:brightness(1.08); }
@@ -105,6 +105,29 @@
     .provider-card .meta { font-size:12px; color:var(--muted-fg); }
     .provider-card .caps { display:flex; flex-wrap:wrap; gap:6px; }
     .provider-card .foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto; }
+    .crumbs { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted-fg); margin-bottom:6px; }
+    .crumbs a { color:var(--primary); text-decoration:none; }
+    .crumbs a:hover { text-decoration:underline; }
+    .provider-card-link { color:inherit; text-decoration:none; cursor:pointer; transition:border-color .15s, box-shadow .15s, transform .15s; }
+    .provider-card-link:hover { border-color:var(--primary); box-shadow:0 8px 20px rgba(30,58,138,.10); transform:translateY(-1px); }
+    .provider-card-link:focus-visible { outline:3px solid var(--ring); outline-offset:2px; }
+    .provider-card-link .detail-link { display:inline-flex; align-items:center; gap:6px; color:var(--primary); font-size:13px; font-weight:600; }
+    .provider-card-link .arrow { font-size:16px; line-height:1; }
+    .empty-state { background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius); padding:32px 20px; text-align:center; display:grid; justify-items:center; gap:6px; }
+    .empty-state .empty-icon { width:44px; height:44px; border-radius:50%; background:var(--muted); color:var(--primary); display:grid; place-items:center; font-size:22px; font-weight:600; margin-bottom:4px; }
+    .empty-state h2 { margin:0; }
+    .empty-state p { margin:0 0 10px; color:var(--muted-fg); font-size:14px; max-width:460px; }
+    .detail-grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr); gap:16px; margin-top:16px; }
+    .provider-detail-title { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .provider-detail-title h1 { margin:0; }
+    .provider-detail-title .provider-icon { width:44px; height:44px; flex-basis:44px; font-size:14px; }
+    .account-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+    .account-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .account-row:last-child { border-bottom:0; }
+    .account-row .name { font-weight:600; }
+    .account-row .meta { font-size:12px; color:var(--muted-fg); }
+    .account-row .actions { display:flex; gap:8px; align-items:center; }
+    @media (max-width:900px) { .detail-grid { grid-template-columns:1fr; } }
     .switch { width:34px; height:18px; border-radius:999px; background:var(--success); position:relative; display:inline-block; flex:0 0 34px; }
     .switch::after { content:""; position:absolute; top:2px; right:2px; width:14px; height:14px; border-radius:50%; background:#fff; }
     .switch.off { background:var(--border); }
@@ -315,73 +338,195 @@
 
       <!-- PROVIDERS -->
       <section id="providers" class="panel hidden view-grid">
-        <div class="row"><div><h1>Provedores</h1><p class="sub">Gerencie suas conexões de provedores de IA.</p></div><div class="actions"><button class="btn">Testar todos</button><button class="btn">Importar</button><button class="btn primary">+ Adicionar provider</button></div></div>
+        <div class="row">
+          <div>
+            <nav class="crumbs"><a href="#providers" data-i18n="nav.providers">Provedores</a><span aria-hidden="true">/</span><span data-i18n="providers.configuredTitle">Provedores configurados</span></nav>
+            <h1 data-i18n="providers.configuredTitle">Provedores configurados</h1>
+            <p class="sub" data-i18n="providers.configuredSubtitle">Gerencie os provedores que você já conectou.</p>
+          </div>
+          <div class="actions">
+            <button class="btn" data-i18n="common.testAll">Testar todos</button>
+            <button class="btn" data-i18n="common.import">Importar</button>
+            <a class="btn primary" href="#provider-catalog" data-i18n="common.addProvider">+ Adicionar provedor</a>
+          </div>
+        </div>
 
         <div class="card" style="margin-bottom:16px">
           <div class="toolbar">
-            <input class="input" placeholder="Buscar provedores..." aria-label="Buscar provedores" />
-            <input class="input" placeholder="Buscar por modelo..." aria-label="Buscar por modelo" />
-            <div class="actions"><button class="btn primary" data-view="grid" aria-pressed="true">Grade</button><button class="btn" data-view="list" aria-pressed="false">Lista</button></div>
+            <input class="input" id="configured-search" placeholder="Buscar provedores configurados..." aria-label="Buscar provedores configurados" data-i18n-placeholder="providers.searchConfigured" data-i18n-aria-label="providers.searchConfigured" />
+            <span class="muted" id="configured-count"></span>
+            <div class="actions"><button class="btn primary" data-view="grid" aria-pressed="true" data-i18n="providers.grid">Grade</button><button class="btn" data-view="list" aria-pressed="false" data-i18n="providers.list">Lista</button></div>
+          </div>
+        </div>
+
+        <div id="configured-empty" class="empty-state hidden">
+          <div class="empty-icon" aria-hidden="true">+</div>
+          <h2 id="configured-empty-title" data-i18n="providers.emptyTitle">Nenhum provedor configurado</h2>
+          <p id="configured-empty-body" data-i18n="providers.emptyBody">Adicione um provedor para começar a rotear requisições.</p>
+          <a class="btn primary" href="#provider-catalog" data-i18n="common.addProvider">+ Adicionar provedor</a>
+        </div>
+
+        <div class="provider-grid" id="configured-grid">
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=openai" data-provider-id="openai" data-provider-name="OpenAI">
+            <div class="top"><span class="provider-icon">OA</span><div><div class="name">OpenAI</div><div class="meta">API key · OpenAI</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta">3 conectadas</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=anthropic" data-provider-id="anthropic" data-provider-name="Anthropic">
+            <div class="top"><span class="provider-icon">AN</span><div><div class="name">Anthropic</div><div class="meta">API key · Anthropic</div></div><span class="chip warn" title="Cooldown"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span><span class="chip">Vision</span></div>
+            <div class="foot"><span class="meta">2/3 conectadas</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=gemini" data-provider-id="gemini" data-provider-name="Gemini">
+            <div class="top"><span class="provider-icon">GE</span><div><div class="name">Gemini</div><div class="meta">API key · Gemini</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta">1 conectada</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=azure" data-provider-id="azure" data-provider-name="Azure OpenAI">
+            <div class="top"><span class="provider-icon">AZ</span><div><div class="name">Azure OpenAI</div><div class="meta">API key · Azure</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta">2 conectadas</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=antigravity" data-provider-id="antigravity" data-provider-name="Antigravity">
+            <div class="top"><span class="provider-icon">AG</span><div><div class="name">Antigravity</div><div class="meta">OAuth · IDE</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta">5 conectadas</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=claude-code" data-provider-id="claude-code" data-provider-name="Claude Code">
+            <div class="top"><span class="provider-icon">CC</span><div><div class="name">Claude Code</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span><span class="chip">Vision</span></div>
+            <div class="foot"><span class="meta">1 conectada</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=ollama" data-provider-id="ollama" data-provider-name="Ollama Local">
+            <div class="top"><span class="provider-icon">OL</span><div><div class="name">Ollama Local</div><div class="meta">Local · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Embed</span></div>
+            <div class="foot"><span class="meta">1 conectada</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+          <a class="provider-card provider-card-link" href="#provider-detail?provider=opencode-free" data-provider-id="opencode-free" data-provider-name="OpenCode Free">
+            <div class="top"><span class="provider-icon">OC</span><div><div class="name">OpenCode Free</div><div class="meta">Público · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div>
+            <div class="caps"><span class="chip">Chat</span></div>
+            <div class="foot"><span class="meta">1 conectada</span><span class="detail-link"><span data-i18n="providers.viewDetails">Ver detalhes</span><span class="arrow" aria-hidden="true">→</span></span></div>
+          </a>
+        </div>
+      </section>
+
+      <!-- PROVIDER CATALOG -->
+      <section id="provider-catalog" class="panel hidden">
+        <div class="row">
+          <div>
+            <nav class="crumbs"><a href="#providers" data-i18n="nav.providers">Provedores</a><span aria-hidden="true">/</span><span data-i18n="providers.catalogTitle">Adicionar provedor</span></nav>
+            <h1 data-i18n="providers.catalogTitle">Adicionar provedor</h1>
+            <p class="sub" data-i18n="providers.catalogSubtitle">Escolha um provedor preconfigurado para começar.</p>
+          </div>
+          <div class="actions"><a class="btn" href="#providers" data-i18n="providers.backToProviders">Voltar para provedores</a></div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar">
+            <input class="input" id="catalog-search" placeholder="Buscar provedores preconfigurados..." aria-label="Buscar provedores preconfigurados" data-i18n-placeholder="providers.catalogSearch" data-i18n-aria-label="providers.catalogSearch" />
+            <span class="muted" id="catalog-count"></span>
           </div>
           <div class="filter-chips" style="margin-top:12px">
-            <button class="filter-chip active">Total <span class="count">42</span></button>
-            <button class="filter-chip">OAuth <span class="count">12/18</span></button>
-            <button class="filter-chip">Chave de API <span class="count">22/50</span></button>
-            <button class="filter-chip">Compatível <span class="count">6/6</span></button>
-            <button class="filter-chip">Sem auth <span class="count">2/8</span></button>
-            <button class="filter-chip">Local <span class="count">1/4</span></button>
-            <button class="filter-chip">Upstream proxy <span class="count">3/10</span></button>
-            <button class="filter-chip">Cookie web <span class="count">1/6</span></button>
-            <button class="filter-chip">Pesquisa <span class="count">0/4</span></button>
-            <button class="filter-chip">Web fetch <span class="count">0/3</span></button>
-            <button class="filter-chip">Áudio <span class="count">0/5</span></button>
-            <button class="filter-chip">Agente em nuvem <span class="count">0/3</span></button>
-          </div>
-          <div class="filter-chips" style="margin-top:8px">
-            <button class="filter-chip">Imagem <span class="count">2/8</span></button>
-            <button class="filter-chip">Vídeo <span class="count">1/4</span></button>
-            <button class="filter-chip">Música <span class="count">0/3</span></button>
-            <button class="filter-chip">Texto→Fala <span class="count">1/5</span></button>
-            <button class="filter-chip">Fala→Texto <span class="count">1/4</span></button>
-            <button class="filter-chip">Embedding <span class="count">3/9</span></button>
-            <button class="filter-chip">Visão <span class="count">5/12</span></button>
-            <button class="filter-chip">Tools <span class="count">8/20</span></button>
+            <button class="filter-chip active" data-catalog-filter="all" data-i18n="providers.catalogAll">Todos</button>
+            <button class="filter-chip" data-catalog-filter="oauth">OAuth</button>
+            <button class="filter-chip" data-catalog-filter="api" data-i18n="providers.apiKeyFilter">Chave de API</button>
+            <button class="filter-chip" data-catalog-filter="compatible" data-i18n="providers.compatible">Compatível</button>
+            <button class="filter-chip" data-catalog-filter="local" data-i18n="providers.local">Local</button>
           </div>
         </div>
 
-        <div class="row"><div><h2>Provedores compatíveis <span class="muted" style="font-size:13px">6/6</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Endpoints compatíveis com OpenAI ou Anthropic que você mesmo hospeda ou configura.</p></div><div class="actions"><button class="btn">Adicionar compatível</button></div></div>
-        <div class="provider-grid" style="margin-top:12px">
-          <div class="provider-card"><div class="top"><span class="provider-icon">NA</span><div><div class="name">Naga AI - EMB</div><div class="meta">Compatível · Embed</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Embed</span><span class="chip">Batch</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">TR</span><div><div class="name">TokenRouter</div><div class="meta">Compatível · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">OA</span><div><div class="name">OpenAI-compatible</div><div class="meta">Compatível · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">2 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">AN</span><div><div class="name">Anthropic-compatible</div><div class="meta">Compatível · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+        <div class="provider-grid" id="catalog-grid" style="margin-top:16px">
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="compatible" data-provider-name="Naga AI - EMB">
+            <div class="top"><span class="provider-icon">NA</span><div><div class="name">Naga AI - EMB</div><div class="meta">Compatível · Embed</div></div></div>
+            <div class="caps"><span class="chip">Embed</span><span class="chip">Batch</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=naga" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="compatible" data-provider-name="TokenRouter">
+            <div class="top"><span class="provider-icon">TR</span><div><div class="name">TokenRouter</div><div class="meta">Compatível · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=tokenrouter" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="compatible" data-provider-name="OpenAI-compatible">
+            <div class="top"><span class="provider-icon">OA</span><div><div class="name">OpenAI-compatible</div><div class="meta">Compatível · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=openai-compatible" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="compatible" data-provider-name="Anthropic-compatible">
+            <div class="top"><span class="provider-icon">AN</span><div><div class="name">Anthropic-compatible</div><div class="meta">Compatível · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=anthropic-compatible" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="oauth" data-provider-name="Kilo Code">
+            <div class="top"><span class="provider-icon">KC</span><div><div class="name">Kilo Code</div><div class="meta">OAuth · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=kilo-code" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="oauth" data-provider-name="Kiro AI">
+            <div class="top"><span class="provider-icon">KI</span><div><div class="name">Kiro AI</div><div class="meta">OAuth · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=kiro-ai" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="oauth" data-provider-name="OpenAI Codex">
+            <div class="top"><span class="provider-icon">CX</span><div><div class="name">OpenAI Codex</div><div class="meta">OAuth · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=openai-codex" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="oauth" data-provider-name="Gemini CLI">
+            <div class="top"><span class="provider-icon">GC</span><div><div class="name">Gemini CLI</div><div class="meta">OAuth · Chat</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=gemini-cli" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="api" data-provider-name="Amazon Bedrock">
+            <div class="top"><span class="provider-icon">BR</span><div><div class="name">Amazon Bedrock</div><div class="meta">API key · Bedrock</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=bedrock" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="api" data-provider-name="Groq">
+            <div class="top"><span class="provider-icon">GR</span><div><div class="name">Groq</div><div class="meta">API key · Groq</div></div></div>
+            <div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=groq" data-i18n="providers.configure">Configurar</a></div>
+          </article>
+          <article class="provider-card catalog-card" data-catalog-item data-catalog-type="local" data-provider-name="LM Studio">
+            <div class="top"><span class="provider-icon">LM</span><div><div class="name">LM Studio</div><div class="meta">Local · sem auth</div></div></div>
+            <div class="caps"><span class="chip">Chat</span></div>
+            <div class="foot"><span class="meta" data-i18n="providers.available">Disponível</span><a class="btn" href="#provider-detail?provider=lm-studio" data-i18n="providers.configure">Configurar</a></div>
+          </article>
         </div>
+      </section>
 
-        <div class="row" style="margin-top:24px"><div><h2>Provedores OAuth <span class="muted" style="font-size:13px">12/18</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Login uma vez; o gateway cuida da renovação automática dos tokens.</p></div><div class="actions"><button class="btn">Reparar env</button><button class="btn">Testar todos</button></div></div>
-        <div class="provider-grid" style="margin-top:12px">
-          <div class="provider-card"><div class="top"><span class="provider-icon">AG</span><div><div class="name">Antigravity</div><div class="meta">OAuth · IDE</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">5 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">CC</span><div><div class="name">Claude Code</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span><span class="chip">Vision</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">KC</span><div><div class="name">Kilo Code</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">KI</span><div><div class="name">Kiro AI</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">2 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">CX</span><div><div class="name">OpenAI Codex</div><div class="meta">OAuth · Chat</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">GC</span><div><div class="name">Gemini CLI</div><div class="meta">OAuth · Chat</div></div><span class="chip warn" title="Cooldown"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+      <!-- PROVIDER DETAIL -->
+      <section id="provider-detail" class="panel hidden">
+        <nav class="crumbs"><a href="#providers" data-i18n="nav.providers">Provedores</a><span aria-hidden="true">/</span><a id="detail-catalog-crumb" href="#provider-catalog" data-i18n="providers.catalog">Catálogo</a><span id="detail-catalog-sep" aria-hidden="true">/</span><span id="detail-crumb-name">OpenAI</span></nav>
+        <div class="row">
+          <div class="provider-detail-title">
+            <span class="provider-icon" id="detail-icon">OA</span>
+            <div><h1 id="detail-name">OpenAI</h1><p class="sub" data-i18n="providers.detailSubtitle">Contas, status e configurações deste provedor.</p></div>
+            <span class="chip ok" id="detail-status"><span class="dot"></span>Saudável</span>
+          </div>
+          <div class="actions">
+            <a class="btn" id="detail-back" href="#provider-catalog" data-i18n="providers.backToCatalog">Voltar ao catálogo</a>
+            <button class="btn" data-i18n="common.test">Testar</button>
+            <button class="btn primary" id="add-account-btn" data-i18n="providers.addAccount">Adicionar conta</button>
+          </div>
         </div>
-
-        <div class="row" style="margin-top:24px"><div><h2>Provedores por chave de API <span class="muted" style="font-size:13px">22/50</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Conexões com API key, com múltiplas contas e prioridade.</p></div><div class="actions"><button class="btn">Testar todos</button></div></div>
-        <div class="provider-grid" style="margin-top:12px">
-          <div class="provider-card"><div class="top"><span class="provider-icon">OA</span><div><div class="name">OpenAI</div><div class="meta">API key · OpenAI</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">3 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">AN</span><div><div class="name">Anthropic</div><div class="meta">API key · Anthropic</div></div><span class="chip warn" title="Cooldown"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span><span class="chip">Vision</span></div><div class="foot"><span class="meta">2/3 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">GE</span><div><div class="name">Gemini</div><div class="meta">API key · Gemini</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Vision</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">AZ</span><div><div class="name">Azure OpenAI</div><div class="meta">API key · Azure</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">2 conectadas</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">BR</span><div><div class="name">Amazon Bedrock</div><div class="meta">API key · Bedrock</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">GR</span><div><div class="name">Groq</div><div class="meta">API key · Groq</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Tools</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-        </div>
-
-        <div class="row" style="margin-top:24px"><div><h2>Locais e sem autenticação <span class="muted" style="font-size:13px">3/12</span></h2><p class="muted" style="margin:2px 0 0;font-size:13px">Servidores locais e provedores públicos sem chave.</p></div></div>
-        <div class="provider-grid" style="margin-top:12px">
-          <div class="provider-card"><div class="top"><span class="provider-icon">OL</span><div><div class="name">Ollama Local</div><div class="meta">Local · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span><span class="chip">Embed</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">LM</span><div><div class="name">LM Studio</div><div class="meta">Local · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
-          <div class="provider-card"><div class="top"><span class="provider-icon">OC</span><div><div class="name">OpenCode Free</div><div class="meta">Público · sem auth</div></div><span class="chip ok" title="Saudável"><span class="dot"></span></span></div><div class="caps"><span class="chip">Chat</span></div><div class="foot"><span class="meta">1 conectada</span><div class="actions"><span class="switch" title="Ativo"></span><button class="btn" style="padding:4px 8px">Testar</button></div></div></div>
+        <div class="detail-grid">
+          <div class="card">
+            <div class="row"><h2 data-i18n="providers.linkedAccounts">Contas vinculadas</h2><span class="chip" id="detail-account-count">3 contas</span></div>
+            <div class="account-list" id="detail-accounts"></div>
+            <div id="detail-empty" class="empty-state hidden" style="margin-top:12px">
+              <div class="empty-icon" aria-hidden="true">+</div>
+              <h2 data-i18n="providers.noAccounts">Nenhuma conta vinculada ainda.</h2>
+              <p data-i18n="providers.noAccountsBody">Adicione uma conta para começar a usar este provedor.</p>
+            </div>
+          </div>
+          <aside class="card">
+            <h2 data-i18n="providers.providerSummary">Resumo</h2>
+            <div class="list">
+              <div class="list-item"><span data-i18n="common.status">Status</span><span id="detail-summary-status">Saudável</span></div>
+              <div class="list-item"><span data-i18n="providers.type">Tipo</span><span id="detail-type">API key · OpenAI</span></div>
+              <div class="list-item"><span data-i18n="providers.capabilities">Capacidades</span><span id="detail-caps"></span></div>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -804,27 +949,68 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
   </div>
 </div>
 
-<script src="../../admin/src/i18n.js?v=2"></script>
-<script src="../../admin/src/preferences.js?v=2"></script>
-<script src="../../admin/src/source-keys.js?v=2"></script>
-<script src="../../admin/src/guide-links.js?v=2"></script>
-<script src="../../admin/src/console-runtime.js?v=2"></script>
+<div id="account-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="account-modal-title" data-i18n="providers.addAccount">Adicionar conta</h2>
+        <p class="muted" data-i18n="providers.accountModalBody">A credencial é armazenada cifrada e nunca é exibida novamente.</p>
+      </div>
+      <button type="button" class="modal-close" id="account-modal-close" aria-label="Fechar" data-i18n-aria-label="common.close">×</button>
+    </div>
+    <form id="account-form">
+      <div class="form-grid">
+        <label class="field">
+          <span data-i18n="providers.accountName">Nome da conta</span>
+          <input class="input" id="account-name" required placeholder="Ex.: produção" data-i18n-placeholder="providers.accountNamePlaceholder" />
+        </label>
+        <label class="field">
+          <span data-i18n="providers.accountCredential">Chave de API ou credencial</span>
+          <input class="input" id="account-credential" type="password" required placeholder="sk-..." data-i18n-placeholder="providers.accountCredentialPlaceholder" />
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn" id="account-cancel" data-i18n="common.cancel">Cancelar</button>
+        <button type="submit" class="btn primary" data-i18n="providers.saveAccount">Salvar conta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../../admin/src/i18n.js?v=3"></script>
+<script src="../../admin/src/preferences.js?v=3"></script>
+<script src="../../admin/src/source-keys.js?v=3"></script>
+<script src="../../admin/src/guide-links.js?v=3"></script>
+<script src="../../admin/src/console-runtime.js?v=3"></script>
 <script>
   const tabs = document.querySelectorAll('[data-tab]');
   const panels = document.querySelectorAll('.panel');
-  function show(id) {
+  function parseRoute() {
+    const raw = location.hash.replace(/^#/, '') || 'dashboard';
+    const [id, query = ''] = raw.split('?');
+    return { id: id || 'dashboard', provider: new URLSearchParams(query).get('provider') || '' };
+  }
+  function show(id, options = {}) {
+    const provider = options.provider || (id === 'provider-detail' ? currentProviderId : '');
     panels.forEach(p => p.classList.toggle('hidden', p.id !== id));
-    tabs.forEach(t => t.setAttribute('aria-current', t.dataset.tab === id ? 'page' : 'false'));
-    const url = new URL(location.href);
-    url.hash = id;
-    history.replaceState(null, '', url);
+    const navId = id === 'provider-catalog' || id === 'provider-detail' ? 'providers' : id;
+    tabs.forEach(t => t.setAttribute('aria-current', t.dataset.tab === navId ? 'page' : 'false'));
+    if (options.updateHash !== false) {
+      const url = new URL(location.href);
+      url.hash = id + (provider ? '?provider=' + encodeURIComponent(provider) : '');
+      history.replaceState(null, '', url);
+    }
+    closeAccountModal();
+    if (id === 'providers') updateConfiguredProviders();
+    if (id === 'provider-catalog') updateCatalog();
+    if (id === 'provider-detail') renderProviderDetail(provider || 'openai');
     window.DontstopConsoleI18n?.updateContextHelp();
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
   tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.tab)));
   window.addEventListener('hashchange', () => {
-    const id = location.hash.replace('#', '') || 'dashboard';
-    if (document.getElementById(id)) show(id);
+    const route = parseRoute();
+    if (document.getElementById(route.id)) show(route.id, { provider: route.provider, updateHash: false });
   });
   const viewButtons = document.querySelectorAll('[data-view]');
   function setView(view, persist = true) {
@@ -849,8 +1035,243 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
   let storedView = null;
   try { storedView = localStorage.getItem('dontstop.providers.view'); } catch {}
   setView(viewParam === 'list' || (!viewParam && storedView === 'list') ? 'list' : 'grid', false);
-  const initial = location.hash.replace('#','') || 'dashboard';
-  if (document.getElementById(initial)) show(initial);
+
+  const PROVIDERS = {
+    openai: { name: 'OpenAI', icon: 'OA', type: 'API key · OpenAI', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Vision', 'Tools'], accounts: [
+      { name: 'produção', meta: 'sk-...9f2', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'staging', meta: 'sk-...1a4', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'sandbox', meta: 'sk-...7c1', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    anthropic: { name: 'Anthropic', icon: 'AN', type: 'API key · Anthropic', status: 'warn', statusKey: 'common.cooldown', caps: ['Chat', 'Tools', 'Vision'], accounts: [
+      { name: 'produção', meta: 'sk-ant-...8b2', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'staging', meta: 'sk-ant-...4d9', status: 'warn', statusKey: 'common.cooldown' }
+    ] },
+    gemini: { name: 'Gemini', icon: 'GE', type: 'API key · Gemini', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Vision', 'Tools'], accounts: [
+      { name: 'produção', meta: 'AIza...1f3', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    azure: { name: 'Azure OpenAI', icon: 'AZ', type: 'API key · Azure', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [
+      { name: 'eastus-prod', meta: 'az-...7a1', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'eastus-staging', meta: 'az-...2c8', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    antigravity: { name: 'Antigravity', icon: 'AG', type: 'OAuth · IDE', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [
+      { name: 'workspace-a', meta: 'oauth · ...91', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'workspace-b', meta: 'oauth · ...42', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'workspace-c', meta: 'oauth · ...17', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'workspace-d', meta: 'oauth · ...33', status: 'ok', statusKey: 'common.healthy' },
+      { name: 'workspace-e', meta: 'oauth · ...08', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    'claude-code': { name: 'Claude Code', icon: 'CC', type: 'OAuth · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools', 'Vision'], accounts: [
+      { name: 'pessoal', meta: 'oauth · ...5a', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    ollama: { name: 'Ollama Local', icon: 'OL', type: 'Local · sem auth', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Embed'], accounts: [
+      { name: 'localhost:11434', meta: 'local', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    'opencode-free': { name: 'OpenCode Free', icon: 'OC', type: 'Público · sem auth', status: 'ok', statusKey: 'common.healthy', caps: ['Chat'], accounts: [
+      { name: 'público', meta: 'sem credencial', status: 'ok', statusKey: 'common.healthy' }
+    ] },
+    naga: { name: 'Naga AI - EMB', icon: 'NA', type: 'Compatível · Embed', status: 'ok', statusKey: 'common.healthy', caps: ['Embed', 'Batch'], accounts: [] },
+    tokenrouter: { name: 'TokenRouter', icon: 'TR', type: 'Compatível · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [] },
+    'openai-compatible': { name: 'OpenAI-compatible', icon: 'OA', type: 'Compatível · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Vision', 'Tools'], accounts: [] },
+    'anthropic-compatible': { name: 'Anthropic-compatible', icon: 'AN', type: 'Compatível · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [] },
+    'kilo-code': { name: 'Kilo Code', icon: 'KC', type: 'OAuth · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat'], accounts: [] },
+    'kiro-ai': { name: 'Kiro AI', icon: 'KI', type: 'OAuth · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [] },
+    'openai-codex': { name: 'OpenAI Codex', icon: 'CX', type: 'OAuth · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [] },
+    'gemini-cli': { name: 'Gemini CLI', icon: 'GC', type: 'OAuth · Chat', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Vision'], accounts: [] },
+    bedrock: { name: 'Amazon Bedrock', icon: 'BR', type: 'API key · Bedrock', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [] },
+    groq: { name: 'Groq', icon: 'GR', type: 'API key · Groq', status: 'ok', statusKey: 'common.healthy', caps: ['Chat', 'Tools'], accounts: [] },
+    'lm-studio': { name: 'LM Studio', icon: 'LM', type: 'Local · sem auth', status: 'ok', statusKey: 'common.healthy', caps: ['Chat'], accounts: [] }
+  };
+  let currentProviderId = 'openai';
+  ['openai', 'anthropic', 'gemini', 'azure', 'antigravity', 'claude-code', 'ollama', 'opencode-free'].forEach(id => { PROVIDERS[id].configured = true; });
+  ['naga', 'tokenrouter', 'openai-compatible', 'anthropic-compatible', 'kilo-code', 'kiro-ai', 'openai-codex', 'gemini-cli', 'bedrock', 'groq', 'lm-studio'].forEach(id => { PROVIDERS[id].status = ''; PROVIDERS[id].statusKey = 'providers.available'; });
+
+  function tr(key) { return window.DontstopConsoleI18n?.t(key) || key; }
+  function trPlural(key, count) { return window.DontstopConsoleI18n?.plural(key, count) || String(count); }
+
+  function setStatusChip(element, status, statusKey) {
+    if (!element) return;
+    element.className = 'chip ' + (status || 'ok');
+    element.textContent = '';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    element.append(dot, document.createTextNode(tr(statusKey)));
+  }
+
+  function maskCredential(value) {
+    const clean = String(value || '').trim();
+    if (!clean) return '••••';
+    const suffix = clean.slice(-4);
+    return (clean.startsWith('sk-') ? 'sk-...' : '••••') + suffix;
+  }
+
+  function updateConfiguredProviders() {
+    const grid = document.getElementById('configured-grid');
+    const empty = document.getElementById('configured-empty');
+    const emptyTitle = document.getElementById('configured-empty-title');
+    const emptyBody = document.getElementById('configured-empty-body');
+    const count = document.getElementById('configured-count');
+    if (!grid || !empty) return;
+    const query = (document.getElementById('configured-search')?.value || '').trim().toLowerCase();
+    const forcedEmpty = new URLSearchParams(location.search).get('empty') === '1';
+    let visible = 0;
+    grid.querySelectorAll('[data-provider-id]').forEach(card => {
+      const match = !query || (card.dataset.providerName || '').toLowerCase().includes(query);
+      const showCard = match && !forcedEmpty;
+      card.classList.toggle('hidden', !showCard);
+      if (showCard) visible += 1;
+    });
+    const showEmpty = forcedEmpty || visible === 0;
+    empty.classList.toggle('hidden', !showEmpty);
+    grid.classList.toggle('hidden', showEmpty);
+    if (emptyTitle) {
+      emptyTitle.dataset.i18n = query ? 'providers.noResultsTitle' : 'providers.emptyTitle';
+      emptyTitle.textContent = tr(emptyTitle.dataset.i18n);
+    }
+    if (emptyBody) {
+      emptyBody.dataset.i18n = query ? 'providers.noResultsBody' : 'providers.emptyBody';
+      emptyBody.textContent = tr(emptyBody.dataset.i18n);
+    }
+    if (count) { const total = forcedEmpty ? 0 : visible; count.textContent = total === 0 ? tr('providers.configuredCount.zero') : trPlural('providers.configuredCount', total); }
+  }
+
+  function updateCatalog() {
+    const grid = document.getElementById('catalog-grid');
+    const count = document.getElementById('catalog-count');
+    if (!grid) return;
+    const query = (document.getElementById('catalog-search')?.value || '').trim().toLowerCase();
+    const active = document.querySelector('[data-catalog-filter].active')?.dataset.catalogFilter || 'all';
+    let visible = 0;
+    grid.querySelectorAll('[data-catalog-item]').forEach(card => {
+      const matchesQuery = !query || (card.dataset.providerName || '').toLowerCase().includes(query);
+      const matchesType = active === 'all' || card.dataset.catalogType === active;
+      const showCard = matchesQuery && matchesType;
+      card.classList.toggle('hidden', !showCard);
+      if (showCard) visible += 1;
+    });
+    if (count) count.textContent = visible === 0 ? tr('providers.catalogCount.zero') : trPlural('providers.catalogCount', visible);
+  }
+
+  function renderAccounts(provider) {
+    const list = document.getElementById('detail-accounts');
+    const empty = document.getElementById('detail-empty');
+    if (!list) return;
+    list.textContent = '';
+    const hasAccounts = provider.accounts.length > 0;
+    if (empty) empty.classList.toggle('hidden', hasAccounts);
+    if (!hasAccounts) return;
+    provider.accounts.forEach(account => {
+      const row = document.createElement('div');
+      row.className = 'account-row';
+      const info = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = account.name;
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = account.meta;
+      info.append(name, meta);
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const status = document.createElement('span');
+      setStatusChip(status, account.status, account.statusKey);
+      const test = document.createElement('button');
+      test.type = 'button';
+      test.className = 'btn';
+      test.textContent = tr('common.test');
+      actions.append(status, test);
+      row.append(info, actions);
+      list.append(row);
+    });
+  }
+
+  function renderProviderDetail(providerId) {
+    const provider = PROVIDERS[providerId] || PROVIDERS.openai;
+    currentProviderId = providerId in PROVIDERS ? providerId : 'openai';
+    const name = document.getElementById('detail-name');
+    const crumb = document.getElementById('detail-crumb-name');
+    const catalogCrumb = document.getElementById('detail-catalog-crumb');
+    const catalogSep = document.getElementById('detail-catalog-sep');
+    const back = document.getElementById('detail-back');
+    if (catalogCrumb) catalogCrumb.classList.toggle('hidden', !!provider.configured);
+    if (catalogSep) catalogSep.classList.toggle('hidden', !!provider.configured);
+    if (back) {
+      back.href = provider.configured ? '#providers' : '#provider-catalog';
+      back.dataset.i18n = provider.configured ? 'providers.backToProviders' : 'providers.backToCatalog';
+      back.textContent = tr(back.dataset.i18n);
+    }
+    const icon = document.getElementById('detail-icon');
+    const type = document.getElementById('detail-type');
+    const summaryStatus = document.getElementById('detail-summary-status');
+    const caps = document.getElementById('detail-caps');
+    const count = document.getElementById('detail-account-count');
+    if (name) name.textContent = provider.name;
+    if (crumb) crumb.textContent = provider.name;
+    if (icon) icon.textContent = provider.icon;
+    if (type) type.textContent = provider.type;
+    if (summaryStatus) summaryStatus.textContent = tr(provider.statusKey);
+    setStatusChip(document.getElementById('detail-status'), provider.status, provider.statusKey);
+    if (caps) {
+      caps.textContent = '';
+      provider.caps.forEach(cap => {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = cap;
+        caps.append(chip);
+      });
+    }
+    if (count) count.textContent = provider.accounts.length === 0 ? tr('providers.accountsCount.zero') : trPlural('providers.accountsCount', provider.accounts.length);
+    renderAccounts(provider);
+  }
+
+  const accountModal = document.getElementById('account-modal');
+  const accountForm = document.getElementById('account-form');
+  const accountName = document.getElementById('account-name');
+  const accountCredential = document.getElementById('account-credential');
+  function openAccountModal() {
+    if (!accountModal) return;
+    accountModal.classList.remove('hidden');
+    window.setTimeout(() => accountName?.focus(), 0);
+  }
+  function closeAccountModal() {
+    if (accountModal) accountModal.classList.add('hidden');
+  }
+  document.getElementById('add-account-btn')?.addEventListener('click', openAccountModal);
+  document.getElementById('account-modal-close')?.addEventListener('click', closeAccountModal);
+  document.getElementById('account-cancel')?.addEventListener('click', closeAccountModal);
+  accountModal?.addEventListener('click', event => { if (event.target === accountModal) closeAccountModal(); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && accountModal && !accountModal.classList.contains('hidden')) closeAccountModal();
+  });
+  accountForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    const name = (accountName?.value || '').trim();
+    const credential = (accountCredential?.value || '').trim();
+    if (!name || !credential) return;
+    const provider = PROVIDERS[currentProviderId];
+    if (!provider) return;
+    provider.accounts.push({ name, meta: maskCredential(credential), status: 'ok', statusKey: 'common.healthy' });
+    renderProviderDetail(currentProviderId);
+    closeAccountModal();
+    accountForm.reset();
+  });
+
+  document.getElementById('configured-search')?.addEventListener('input', updateConfiguredProviders);
+  document.getElementById('catalog-search')?.addEventListener('input', updateCatalog);
+  document.querySelectorAll('[data-catalog-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('[data-catalog-filter]').forEach(item => item.classList.toggle('active', item === button));
+      updateCatalog();
+    });
+  });
+
+  window.onLocaleChanged = function () {
+    updateConfiguredProviders();
+    updateCatalog();
+    renderProviderDetail(currentProviderId);
+  };
+
+  const initialRoute = parseRoute();
+  if (document.getElementById(initialRoute.id)) show(initialRoute.id, { provider: initialRoute.provider, updateHash: false });
 
   // Nova chave de API — modal de criação
   const newKeyModal = document.getElementById('new-key-modal');
@@ -1275,6 +1696,9 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
   setMcpEnabled(true);
 
   window.onLocaleChanged = function () {
+    updateConfiguredProviders();
+    updateCatalog();
+    renderProviderDetail(currentProviderId);
     renderSelectedModels();
     updateModelFooter();
     modelSource.textContent = window.tr('models.activeCount', { count: activeModelCount, providers: activeProviders.length });

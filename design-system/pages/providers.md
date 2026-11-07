@@ -3,6 +3,12 @@
 > Override do [MASTER](../MASTER.md). Modelo visual inspirado no OmniRoute: catálogo em cards, filtros por tipo/capability e ações em lote.
 > O mockup usa o tema claro corporativo; os tokens suportam dark mode.
 
+## Revisão do fluxo (mockup atual)
+
+A página principal lista **somente provedores configurados**. O catálogo de provedores preconfigurados fica em uma rota separada, aberta por **Adicionar provedor** (`#provider-catalog`). O detalhe (`#provider-detail?provider=<id>`) concentra contas, status, capabilities e **Adicionar conta**.
+
+O wireframe e o drawer abaixo são a referência histórica do catálogo original; o mockup atual implementa a separação em três rotas e mantém o caminho de volta por breadcrumb.
+
 ## Objetivo
 
 Gerenciar conexões de provedores de IA com visão rápida de saúde, contas, capabilities e status — sem perder o acesso ao detalhe de contas/modelos/políticas.
