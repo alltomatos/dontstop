@@ -106,3 +106,27 @@ export async function getProvider(id: string): Promise<Provider | null> {
   }
   return PROVIDERS[id] ?? null;
 }
+
+
+export interface AdminAPIKey {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  expires_at?: string;
+  revoked_at?: string;
+  created_at: string;
+  last_used_at?: string;
+  key?: string;
+}
+
+export async function getApiKeys(): Promise<AdminAPIKey[] | null> {
+  const response = await adminRequest("/admin/v1/api-keys");
+  if (!response?.ok) return null;
+  try {
+    const body = await response.json() as { data?: AdminAPIKey[] };
+    return Array.isArray(body.data) ? body.data : null;
+  } catch {
+    return null;
+  }
+}
