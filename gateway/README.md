@@ -62,6 +62,10 @@ Non-streaming responses are cached in Redis for 1 h. The response header `X-Dons
 
 Non-streaming and streaming requests record usage in `requests`, `usage_daily` and `usage_outbox`. Cost uses `provider_models.input_price_per_million` and `output_price_per_million`. With `NATS_URL` set, a worker publishes outbox events to JetStream with the outbox `event_id` as `Msg-Id`; failed publishes are retried from Postgres.
 
+## Observability
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export OTLP/HTTP traces and metrics. Without it, telemetry is noop. The gateway emits HTTP golden signals, runtime metrics, and spans for auth, cache, routing, provider and usage.
+
 ## Validate
 
 ```bash
