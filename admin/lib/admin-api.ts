@@ -170,3 +170,27 @@ export async function getObservabilitySummary(days = 1): Promise<ObservabilitySu
     return null;
   }
 }
+
+
+export interface MCPTool {
+  id: string;
+  name: string;
+  scope: string;
+  enabled: boolean;
+}
+
+export interface MCPStatus {
+  enabled: boolean;
+  transport: "stdio" | "sse" | "streamable-http";
+  tools: MCPTool[];
+}
+
+export async function getMcpStatus(): Promise<MCPStatus | null> {
+  const response = await adminRequest("/admin/v1/mcp/status");
+  if (!response?.ok) return null;
+  try {
+    return await response.json() as MCPStatus;
+  } catch {
+    return null;
+  }
+}
