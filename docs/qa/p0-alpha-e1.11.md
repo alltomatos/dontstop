@@ -30,6 +30,7 @@
 | QA-102 | Imagem Docker inicia e fica `healthy` | PASS |
 | QA-103 | Runbook de deploy/scale/rollback | PASS |
 | QA-104 | `go test`, lint, vet, build, govulncheck | PASS |
+| QA-105 | Swarm local: 3/3 replicas `Running` + Traefik `/healthz` e `/readyz` 200 | PASS (via rede do container Traefik; porta 443 do host ocupada pelo Tailscale) |
 
 ## Auditoria de segurança
 
