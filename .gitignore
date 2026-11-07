@@ -40,6 +40,7 @@ vendor/
 node_modules/
 admin/dist/
 .next/
+admin/AGENTS.md
 out/
 dist/
 .turbo/

@@ -389,5 +389,16 @@
   "providers.origin.allcode": "AllCode",
   "providers.origin.label": "Origin",
   "providers.guideLink": "How to connect",
-  "providers.signupLink": "Create account / sign in"
+  "providers.signupLink": "Create account / sign in",
+  "common.comingSoon": "Coming soon",
+  "common.comingSoonBody": "This section is being connected to the gateway.",
+  "nav.primary": "Primary navigation",
+  "common.breadcrumb": "Breadcrumb",
+  "dashboard.kpiRps": "RPS",
+  "dashboard.kpiStreams": "Active streams",
+  "dashboard.kpiP95": "P95",
+  "dashboard.kpiErrors": "Errors",
+  "dashboard.kpiCache": "Cache hit",
+  "dashboard.kpiCostToday": "Cost today",
+  "dashboard.vsYesterday": "vs. yesterday"
 }
