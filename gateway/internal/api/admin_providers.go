@@ -14,6 +14,7 @@ import (
 type AdminProviderService interface {
 	List(ctx context.Context, tenantID string) ([]admin.Provider, error)
 	Get(ctx context.Context, tenantID, providerID string) (admin.Provider, error)
+	Create(ctx context.Context, tenantID string, input admin.CreateProviderInput) (admin.Provider, error)
 	AddAccount(ctx context.Context, tenantID, providerID string, input admin.AccountInput) (admin.Account, error)
 }
 
@@ -49,6 +50,37 @@ func adminProviderGet(service AdminProviderService) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(provider)
+	}
+}
+
+func adminProviderCreate(service AdminProviderService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		request.Body = http.MaxBytesReader(w, request.Body, 1<<20)
+		var input admin.CreateProviderInput
+		if err := json.NewDecoder(request.Body).Decode(&input); err != nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid JSON body")
+			return
+		}
+		provider, err := service.Create(request.Context(), principal.TenantID, input)
+		if errors.Is(err, admin.ErrInvalidInput) {
+			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid provider input")
+			return
+		}
+		if errors.Is(err, admin.ErrConflict) {
+			writeAPIError(w, http.StatusConflict, "conflict_error", "provider already exists")
+			return
+		}
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to create provider")
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(provider)
 	}
 }

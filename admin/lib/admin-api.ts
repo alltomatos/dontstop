@@ -297,3 +297,19 @@ export async function getEndpoints(): Promise<EndpointInfo[]> {
     return [];
   }
 }
+
+export async function getSetupStatus(): Promise<boolean> {
+  const base = process.env.DONTSTOP_GATEWAY_URL;
+  if (!base) return false;
+  try {
+    const response = await fetch(`${base.replace(/\/$/, "")}/admin/v1/setup/status`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!response.ok) return false;
+    const body = await response.json() as { needs_setup?: boolean };
+    return body.needs_setup === true;
+  } catch {
+    return false;
+  }
+}

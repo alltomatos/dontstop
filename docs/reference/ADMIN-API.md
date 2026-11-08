@@ -2,13 +2,37 @@
 
 API usada pelo console Next.js para sair dos dados mockados.
 
-## Autenticação
+## Autentica??o
 
-- `Authorization: Bearer <api-key>`
-- A chave precisa do escopo `manage`.
-- O console nunca envia a chave ao navegador: o servidor Next lê `DONTSTOP_ADMIN_API_KEY` e chama o gateway.
+- `Authorization: Bearer <session-token>` para o console; a sess?o ? criada por `/admin/v1/auth/login` ou `/admin/v1/setup`.
+- `Authorization: Bearer <api-key>` continua v?lido para automa??o com escopo `manage`.
+- O cookie de sess?o do Next ? `httpOnly`, `SameSite=Strict`, com validade de 8 horas.
 
 ## Endpoints
+
+### `GET /admin/v1/setup/status`
+
+P?blico. Retorna `{"needs_setup": true}` quando ainda n?o existe usu?rio do console.
+
+### `POST /admin/v1/setup`
+
+P?blico e permitido apenas uma vez. Cria o propriet?rio com senha Argon2id e devolve a sess?o.
+
+### `POST /admin/v1/auth/login`
+
+P?blico. Autentica e-mail/senha e devolve a sess?o.
+
+### `GET /admin/v1/auth/me`
+
+Protegido. Confirma a sess?o e os escopos.
+
+### `POST /admin/v1/auth/logout`
+
+Protegido. Revoga a sess?o.
+
+### `POST /admin/v1/providers`
+
+Cria provedor, primeira conta e primeiro modelo em uma transa??o. O `origin` deve ser `native` ou `custom`.
 
 ### `GET /admin/v1/providers`
 

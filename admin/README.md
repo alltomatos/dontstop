@@ -22,7 +22,8 @@ admin/
 - `/providers/catalog` — provedores preconfigurados
 - `/providers/[id]` — detalhe, contas e links de conexão
 - `/settings`
-- `/login` ? entrada com chave de escopo `manage` quando `DONTSTOP_CONSOLE_AUTH=required`
+- `/login` ? login com e-mail e senha
+- `/onboarding` ? primeiro acesso: idioma, conta e primeiro provedor
 
 ## Admin API
 
@@ -34,7 +35,9 @@ cp .env.example .env.local
 
 ## Autentica??o do console
 
-O login valida a chave contra a Admin API e grava um cookie `httpOnly`, `SameSite=Strict`, por 8 horas. Com `DONTSTOP_CONSOLE_AUTH=required`, o `proxy.ts` redireciona rotas sem cookie para `/login`. Sem essa vari?vel, o console mant?m o modo local atual.
+No primeiro acesso, `/onboarding` cria o usuário proprietário com senha (Argon2id) e conecta o primeiro provedor. O login usa e-mail e senha; o gateway emite uma sessão opaca, guardada em cookie `httpOnly`, `SameSite=Strict`, por 8 horas.
+
+`DONTSTOP_CONSOLE_AUTH=off` desativa o gate apenas em desenvolvimento; sem essa vari?vel, o `proxy.ts` exige sessão. `DONTSTOP_ADMIN_API_KEY` continua aceito como fallback de automação.
 
 ## Comandos
 

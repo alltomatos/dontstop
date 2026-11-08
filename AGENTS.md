@@ -246,7 +246,7 @@ k6 run tests/load/chat.js
 - Redis: `t:{tenant}:`; Qdrant: payload `tenant_id` (P2: coleção por tenant).
 - Quotas/políticas/auditoria sempre escopadas.
 - Tenant padrão no P0: `00000000-0000-0000-0000-000000000000`.
-- P0: API keys + JWT + RBAC básico; P1: OIDC/SAML + MFA; P2: SCIM. Toda sessão/mudança de papel é auditada.
+- P0: proprietário do console com senha Argon2id + sessão opaca + API keys; JWT/RBAC básico; P1: OIDC/SAML + MFA; P2: SCIM. Toda sessão/mudança de papel é auditada.
 
 ## 12. Docker Swarm (não Kubernetes)
 

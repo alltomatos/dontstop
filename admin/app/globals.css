@@ -324,3 +324,30 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
 }
 
 .login-card h1 { margin: 0; font-size: 24px; }
+
+.wizard-card { width: min(520px, 100%); }
+
+.wizard-steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wizard-steps li {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wizard-steps li.active { background: var(--primary); color: #fff; }
+
+.wizard-options { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.wizard-option { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }

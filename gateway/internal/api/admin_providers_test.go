@@ -30,6 +30,13 @@ func (f fakeAdminProviders) Get(context.Context, string, string) (admin.Provider
 	return f.providers[0], nil
 }
 
+func (f fakeAdminProviders) Create(context.Context, string, admin.CreateProviderInput) (admin.Provider, error) {
+	if f.err != nil {
+		return admin.Provider{}, f.err
+	}
+	return f.providers[0], nil
+}
+
 func (f fakeAdminProviders) AddAccount(context.Context, string, string, admin.AccountInput) (admin.Account, error) {
 	return f.account, f.err
 }
