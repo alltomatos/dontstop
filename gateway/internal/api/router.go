@@ -26,6 +26,7 @@ type Dependencies struct {
 	AdminUsage AdminUsageService
 	AdminMCP   AdminMCPService
 	AdminCache AdminCacheService
+	AdminDLP   AdminDLPService
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
@@ -65,6 +66,12 @@ func NewRouter(deps Dependencies) http.Handler {
 	if deps.Verifier != nil && deps.AdminCache != nil {
 		mux.Handle("GET /admin/v1/cache/stats", deps.Verifier.Middleware(adminCacheStats(deps.AdminCache)))
 		mux.Handle("GET /admin/v1/cache/events", deps.Verifier.Middleware(adminCacheEvents(deps.AdminCache)))
+	}
+	if deps.Verifier != nil && deps.AdminDLP != nil {
+		mux.Handle("GET /admin/v1/dlp/rules", deps.Verifier.Middleware(adminDLPRules(deps.AdminDLP)))
+		mux.Handle("POST /admin/v1/dlp/rules", deps.Verifier.Middleware(adminDLPCreateRule(deps.AdminDLP)))
+		mux.Handle("PATCH /admin/v1/dlp/rules/{id}", deps.Verifier.Middleware(adminDLPSetRule(deps.AdminDLP)))
+		mux.Handle("GET /admin/v1/dlp/events", deps.Verifier.Middleware(adminDLPEvents(deps.AdminDLP)))
 	}
 	return mux
 }

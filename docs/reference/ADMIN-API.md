@@ -130,3 +130,27 @@ Retorna hits, misses, requests, hit rate e lat?ncia m?dia a partir de `requests.
 Retorna eventos recentes sem payload: hor?rio, status, modelo, lat?ncia e tokens.
 
 O console usa os endpoints quando configurado e mant?m o mock como fallback.
+
+## DLP
+
+### `GET /admin/v1/dlp/rules`
+
+Lista regras com detector, a??o, severidade e estado.
+
+### `POST /admin/v1/dlp/rules`
+
+```json
+{"name":"CPF","detector":"cpf","action":"redact","severity":"high"}
+```
+
+### `PATCH /admin/v1/dlp/rules/{id}`
+
+```json
+{"enabled":false}
+```
+
+### `GET /admin/v1/dlp/events?limit=50`
+
+Eventos sem PII bruta: detector, a??o, severidade, request id e hash.
+
+O console carrega regras/eventos da Admin API com fallback mock.
