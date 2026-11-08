@@ -400,5 +400,11 @@
   "dashboard.kpiErrors": "Erros",
   "dashboard.kpiCache": "Cache hit",
   "dashboard.kpiCostToday": "Custo hoje",
-  "dashboard.vsYesterday": "vs. ontem"
+  "dashboard.vsYesterday": "vs. ontem",
+  "auth.title": "Entrar na administra??o",
+  "auth.subtitle": "Use uma chave de API com escopo manage para abrir o console.",
+  "auth.apiKey": "Chave da Admin API",
+  "auth.signIn": "Entrar",
+  "auth.error": "Chave inv?lida ou gateway indispon?vel.",
+  "common.logout": "Sair"
 }

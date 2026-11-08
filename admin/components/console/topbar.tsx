@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Search } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut, Search } from "lucide-react";
 import { LOCALES, type Locale } from "@/lib/i18n";
 import { useI18n } from "./i18n-provider";
 
@@ -14,6 +14,7 @@ function guideSlug(pathname: string): string {
 
 export function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { locale, setLocale, t, guideUrl } = useI18n();
   return (
     <header className="topbar">
@@ -38,6 +39,9 @@ export function Topbar() {
         </Link>
         <span className="tenant">{t("common.tenantDefault")}</span>
         <span className="chip">{t("common.production")}</span>
+        <button className="btn" type="button" aria-label={t("common.logout")} title={t("common.logout")} onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); router.replace("/login"); }}>
+          <LogOut aria-hidden="true" size={16} />
+        </button>
         <span className="avatar">AD</span>
       </div>
     </header>

@@ -400,5 +400,11 @@
   "dashboard.kpiErrors": "Errores",
   "dashboard.kpiCache": "Cache hit",
   "dashboard.kpiCostToday": "Coste hoy",
-  "dashboard.vsYesterday": "vs. ayer"
+  "dashboard.vsYesterday": "vs. ayer",
+  "auth.title": "Acceso de administraci?n",
+  "auth.subtitle": "Use una clave de API con alcance manage para abrir la consola.",
+  "auth.apiKey": "Clave de Admin API",
+  "auth.signIn": "Entrar",
+  "auth.error": "Clave inv?lida o gateway no disponible.",
+  "common.logout": "Salir"
 }

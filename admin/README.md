@@ -22,7 +22,7 @@ admin/
 - `/providers/catalog` — provedores preconfigurados
 - `/providers/[id]` — detalhe, contas e links de conexão
 - `/settings`
-- Demais seções do console usam placeholder até a integração com o gateway.
+- `/login` ? entrada com chave de escopo `manage` quando `DONTSTOP_CONSOLE_AUTH=required`
 
 ## Admin API
 
@@ -31,6 +31,10 @@ O frontend l? provedores do gateway quando `DONTSTOP_GATEWAY_URL` e `DONTSTOP_AD
 ```bash
 cp .env.example .env.local
 ```
+
+## Autentica??o do console
+
+O login valida a chave contra a Admin API e grava um cookie `httpOnly`, `SameSite=Strict`, por 8 horas. Com `DONTSTOP_CONSOLE_AUTH=required`, o `proxy.ts` redireciona rotas sem cookie para `/login`. Sem essa vari?vel, o console mant?m o modo local atual.
 
 ## Comandos
 

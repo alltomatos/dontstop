@@ -308,3 +308,19 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
 .skeleton-card { height:120px; }
 .skeleton-table { height:260px; margin-top:16px; }
 @keyframes shimmer { to { background-position:-200% 0; } }
+
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(160deg, #f4f6fb, #e8edf7);
+}
+
+.login-card {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 14px;
+}
+
+.login-card h1 { margin: 0; font-size: 24px; }
