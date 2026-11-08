@@ -426,5 +426,8 @@
   "onboarding.baseUrl": "URL base",
   "onboarding.apiKey": "Chave de API",
   "onboarding.connectProvider": "Conectar provedor",
-  "onboarding.error": "Não foi possível concluir esta etapa. Verifique o gateway e tente novamente."
+  "onboarding.error": "Não foi possível concluir esta etapa. Verifique o gateway e tente novamente.",
+  "endpoints.source.configured": "Configurado",
+  "endpoints.source.proxy": "Proxy",
+  "endpoints.source.local": "Local"
 }

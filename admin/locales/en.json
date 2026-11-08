@@ -426,5 +426,8 @@
   "onboarding.baseUrl": "Base URL",
   "onboarding.apiKey": "API key",
   "onboarding.connectProvider": "Connect provider",
-  "onboarding.error": "Could not complete this step. Check the gateway and try again."
+  "onboarding.error": "Could not complete this step. Check the gateway and try again.",
+  "endpoints.source.configured": "Configured",
+  "endpoints.source.proxy": "Proxy",
+  "endpoints.source.local": "Local"
 }

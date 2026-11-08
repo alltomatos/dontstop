@@ -426,5 +426,8 @@
   "onboarding.baseUrl": "URL base",
   "onboarding.apiKey": "Clave de API",
   "onboarding.connectProvider": "Conectar proveedor",
-  "onboarding.error": "No se pudo completar este paso. Verifica el gateway e inténtalo de nuevo."
+  "onboarding.error": "No se pudo completar este paso. Verifica el gateway e inténtalo de nuevo.",
+  "endpoints.source.configured": "Configurado",
+  "endpoints.source.proxy": "Proxy",
+  "endpoints.source.local": "Local"
 }

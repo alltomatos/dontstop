@@ -426,5 +426,8 @@
   "onboarding.baseUrl": "URL de base",
   "onboarding.apiKey": "Clé API",
   "onboarding.connectProvider": "Connecter le fournisseur",
-  "onboarding.error": "Impossible de terminer cette étape. Vérifiez la passerelle et réessayez."
+  "onboarding.error": "Impossible de terminer cette étape. Vérifiez la passerelle et réessayez.",
+  "endpoints.source.configured": "Configuré",
+  "endpoints.source.proxy": "Proxy",
+  "endpoints.source.local": "Local"
 }
