@@ -204,7 +204,7 @@ k6 run tests/load/chat.js
 - **API key:** hash Argon2id + prefixo, escopo mínimo por endpoint/modelo **ativo de provedor conectado**, quota, expiração **ou “sem expiração”** (`expires_at = null`, se a política permitir), IP allowlist, rotação, max sessions e access schedule.
 - **Limites por chave:** RPM/TPM/USD mensal + diário/semanal; contadores com janela deslizante; nunca só em memória em produção.
 - **Categorias:** `endpointCategories` agrupa `/v1/*` para UX e compatibilidade, mas o escopo efetivo é por endpoint no registry.
-- **Página Endpoint final:** URLs pública/local, servidor local, catálogo de endpoints por categoria, aliases para CLIs e system prompt opcional; **sem túneis**.
+- **Página Endpoint final:** URLs pública/local, servidor local, catálogo de endpoints por categoria, aliases para CLIs e system prompt opcional; **sem túneis**. A URL pública vem de `DONTSTOP_PUBLIC_BASE_URL` ou de headers `Forwarded`/`X-Forwarded-*` somente com `DONTSTOP_TRUST_PROXY=on`; `DONTSTOP_BASE_PATH` preserva o prefixo do proxy e o endpoint é normalizado para um único `/v1`. Nunca derivar o endpoint copiável de `window.location.origin`.
 - **Path canônico:** normalizar `/v1`, `/api/v1`, `/v1/v1` e aliases (`/codex`, `/responses`) antes de aplicar escopo.
 - **Grupos (P1):** allow/deny por padrão de modelo/provider; deny vence; chave sem grupo é irrestrita.
 - **Segredo:** exibido apenas na criação; se houver reveal, rota admin auditada e desabilitada por padrão.

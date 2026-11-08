@@ -31,14 +31,31 @@ const fallbackUtility: EndpointItem[] = [
   { name: "Models", path: "/v1/models" }
 ];
 
-export function EndpointsView({ endpoints }: { endpoints: EndpointInfo[] }) {
+export function EndpointsView({
+  endpoints,
+  endpointUrl,
+  localEndpointUrl,
+  endpointSource
+}: {
+  endpoints: EndpointInfo[];
+  endpointUrl: string;
+  localEndpointUrl: string;
+  endpointSource: "configured" | "proxy" | "local";
+}) {
   const { t, tp } = useI18n();
   const [tab, setTab] = useState("overview");
   const fromApi = (category: string): EndpointItem[] => endpoints.filter(item => item.category === category).map(item => ({ name: item.name, path: item.path }));
   const mainApis = fromApi("main").length ? fromApi("main") : fallbackMain;
   const mediaApis = fromApi("media").length ? fromApi("media") : fallbackMedia;
   const utilityApis = fromApi("utility").length ? fromApi("utility") : fallbackUtility;
-  const base = "https://gateway.dontstop.corp/v1";
+  const base = endpointUrl;
+  const localServer = (() => {
+    try {
+      return new URL(localEndpointUrl).host;
+    } catch {
+      return "localhost:8080";
+    }
+  })();
   return (
     <>
       <Breadcrumbs items={[{ label: t("nav.endpoints") }]} />
@@ -70,19 +87,19 @@ export function EndpointsView({ endpoints }: { endpoints: EndpointInfo[] }) {
             <h2>{t("endpoints.apiTitle")}</h2>
             <div className="stack">
               <div className="list-item">
-                <span><span className="chip ok"><span className="dot" />{t("endpoints.public")}</span> <span className="mono">{base}</span></span>
+                <span><span className="chip ok"><span className="dot" />{t("endpoints.public")}</span> <span className="chip">{t(`endpoints.source.${endpointSource}`)}</span> <span className="mono">{base}</span></span>
                 <CopyButton value={base} label={t("endpoints.public")} />
               </div>
               <div className="list-item">
-                <span><span className="chip ok"><span className="dot" />{t("endpoints.local")}</span> <span className="mono">http://localhost:20128/v1</span></span>
-                <CopyButton value="http://localhost:20128/v1" label={t("endpoints.local")} />
+                <span><span className="chip ok"><span className="dot" />{t("endpoints.local")}</span> <span className="mono">{localEndpointUrl}</span></span>
+                <CopyButton value={localEndpointUrl} label={t("endpoints.local")} />
               </div>
             </div>
             <h3>{t("endpoints.localServer")}</h3>
             <div className="actions">
-              <span className="chip mono">0.0.0.0:20128</span>
-              <span className="chip mono">127.0.0.1:20128</span>
-              <span className="chip mono">[::]:20128</span>
+              <span className="chip mono">0.0.0.0:{localServer.split(":").pop()}</span>
+              <span className="chip mono">{localServer}</span>
+              <span className="chip mono">[::]:{localServer.split(":").pop()}</span>
               <span className="chip ok"><span className="dot" />{t("common.running")}</span>
             </div>
           </section>

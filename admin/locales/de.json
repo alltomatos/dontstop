@@ -426,5 +426,8 @@
   "onboarding.baseUrl": "Basis-URL",
   "onboarding.apiKey": "API-Schlüssel",
   "onboarding.connectProvider": "Anbieter verbinden",
-  "onboarding.error": "Dieser Schritt konnte nicht abgeschlossen werden. Prüfen Sie das Gateway und versuchen Sie es erneut."
+  "onboarding.error": "Dieser Schritt konnte nicht abgeschlossen werden. Prüfen Sie das Gateway und versuchen Sie es erneut.",
+  "endpoints.source.configured": "Konfiguriert",
+  "endpoints.source.proxy": "Proxy",
+  "endpoints.source.local": "Lokal"
 }

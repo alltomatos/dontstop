@@ -39,6 +39,16 @@ No primeiro acesso, `/onboarding` cria o usuário proprietário com senha (Argon
 
 `DONTSTOP_CONSOLE_AUTH=off` desativa o gate apenas em desenvolvimento; sem essa vari?vel, o `proxy.ts` exige sessão. `DONTSTOP_ADMIN_API_KEY` continua aceito como fallback de automação.
 
+## Endpoint público
+
+A página `/endpoints` usa uma URL canônica derivada no servidor:
+
+1. `DONTSTOP_PUBLIC_BASE_URL`;
+2. `Forwarded`/`X-Forwarded-Proto`/`X-Forwarded-Host`, somente com `DONTSTOP_TRUST_PROXY=on`;
+3. `DONTSTOP_LOCAL_BASE_URL` como fallback local.
+
+`DONTSTOP_BASE_PATH` acrescenta o prefixo do proxy. A URL é normalizada para terminar exatamente em `/v1`, sem barras duplas ou `/v1/v1`. A linha local é exibida separadamente; o endpoint copiável não depende de `window.location.origin`.
+
 ## Comandos
 
 ```bash
