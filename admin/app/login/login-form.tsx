@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/console/i18n-provider";
 
 export function LoginForm({ next }: { next: string }) {
   const { t } = useI18n();
-  const [key, setKey] = useState("");
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,13 +20,14 @@ export function LoginForm({ next }: { next: string }) {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key })
+        body: JSON.stringify({ email, password })
       });
       if (!response.ok) {
         setError(t("auth.error"));
         return;
       }
-      window.location.href = next;
+      router.replace(next);
+      router.refresh();
     } catch {
       setError(t("auth.error"));
     } finally {
@@ -36,13 +40,24 @@ export function LoginForm({ next }: { next: string }) {
       <h1>{t("auth.title")}</h1>
       <p className="sub">{t("auth.subtitle")}</p>
       <label className="field">
-        <span>{t("auth.apiKey")}</span>
+        <span>{t("auth.email")}</span>
+        <input
+          className="input"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={event => setEmail(event.target.value)}
+          required
+        />
+      </label>
+      <label className="field">
+        <span>{t("auth.password")}</span>
         <input
           className="input"
           type="password"
-          autoComplete="off"
-          value={key}
-          onChange={event => setKey(event.target.value)}
+          autoComplete="current-password"
+          value={password}
+          onChange={event => setPassword(event.target.value)}
           required
         />
       </label>

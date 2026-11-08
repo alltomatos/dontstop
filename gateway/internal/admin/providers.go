@@ -16,6 +16,7 @@ import (
 var (
 	ErrNotFound     = errors.New("admin resource not found")
 	ErrInvalidInput = errors.New("invalid admin input")
+	ErrConflict     = errors.New("admin resource conflict")
 )
 
 // Provider is the admin representation of a configured provider.
@@ -40,6 +41,17 @@ type Account struct {
 	Priority      int        `json:"priority"`
 	Weight        int        `json:"weight"`
 	CooldownUntil *time.Time `json:"cooldown_until,omitempty"`
+}
+
+// CreateProviderInput creates a provider, its first account and one model.
+type CreateProviderInput struct {
+	Name       string `json:"name"`
+	Kind       string `json:"kind"`
+	Origin     string `json:"origin"`
+	ModelID    string `json:"model_id"`
+	ModelName  string `json:"model_name"`
+	Credential string `json:"credential"`
+	BaseURL    string `json:"base_url"`
 }
 
 // AccountInput creates a provider account.
@@ -182,4 +194,71 @@ func (s *ProviderService) AddAccount(ctx context.Context, tenantID, providerID s
 		return Account{}, fmt.Errorf("insert provider account: %w", err)
 	}
 	return account, nil
+}
+
+// Create inserts a provider, its first account and one model atomically.
+func (s *ProviderService) Create(ctx context.Context, tenantID string, input CreateProviderInput) (Provider, error) {
+	input.Name = strings.TrimSpace(input.Name)
+	input.Kind = strings.ToLower(strings.TrimSpace(input.Kind))
+	input.Origin = strings.ToLower(strings.TrimSpace(input.Origin))
+	input.ModelID = strings.TrimSpace(input.ModelID)
+	input.ModelName = strings.TrimSpace(input.ModelName)
+	input.Credential = strings.TrimSpace(input.Credential)
+	if input.Name == "" || input.ModelID == "" || input.Credential == "" {
+		return Provider{}, fmt.Errorf("%w: name, model_id and credential are required", ErrInvalidInput)
+	}
+	switch input.Kind {
+	case "openai", "anthropic", "agentrouter":
+	default:
+		return Provider{}, fmt.Errorf("%w: unsupported kind", ErrInvalidInput)
+	}
+	if input.Origin == "" {
+		input.Origin = "native"
+	}
+	if input.Origin != "native" && input.Origin != "custom" {
+		return Provider{}, fmt.Errorf("%w: origin must be native or custom", ErrInvalidInput)
+	}
+	if input.ModelName == "" {
+		input.ModelName = input.ModelID
+	}
+	if s.box == nil {
+		return Provider{}, fmt.Errorf("credential box is not configured")
+	}
+	ciphertext, err := s.box.Encrypt([]byte(input.Credential))
+	if err != nil {
+		return Provider{}, fmt.Errorf("encrypt credential: %w", err)
+	}
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return Provider{}, fmt.Errorf("begin provider create: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var providerID string
+	err = tx.QueryRow(ctx, `
+		INSERT INTO providers (tenant_id, name, kind, origin, enabled)
+		VALUES ($1, $2, $3, $4, true)
+		RETURNING id::text
+	`, tenantID, input.Name, input.Kind, input.Origin).Scan(&providerID)
+	if err != nil {
+		if strings.Contains(err.Error(), "providers_tenant_name_unique") {
+			return Provider{}, ErrConflict
+		}
+		return Provider{}, fmt.Errorf("insert provider: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO provider_accounts (tenant_id, provider_id, name, credential_cipher, base_url, priority, weight)
+		VALUES ($1, $2::uuid, $3, $4, $5, 100, 1)
+	`, tenantID, providerID, input.Name+"-default", ciphertext, input.BaseURL); err != nil {
+		return Provider{}, fmt.Errorf("insert provider account: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO provider_models (tenant_id, provider_id, model_id, display_name)
+		VALUES ($1, $2::uuid, $3, $4)
+	`, tenantID, providerID, input.ModelID, input.ModelName); err != nil {
+		return Provider{}, fmt.Errorf("insert provider model: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Provider{}, fmt.Errorf("commit provider create: %w", err)
+	}
+	return s.Get(ctx, tenantID, providerID)
 }

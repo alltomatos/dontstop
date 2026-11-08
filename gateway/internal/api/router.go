@@ -28,11 +28,13 @@ type Dependencies struct {
 	AdminCache     AdminCacheService
 	AdminDLP       AdminDLPService
 	AdminEndpoints AdminEndpointService
+	AdminAuth      AdminAuthService
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
 func NewRouter(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
+	adminMiddleware := adminAuthMiddleware(deps.Verifier, deps.AdminAuth)
 	if deps.Readiness != nil {
 		mux.Handle("GET /healthz", deps.Readiness.Liveness())
 		mux.Handle("GET /readyz", deps.Readiness.Readiness())
@@ -45,38 +47,46 @@ func NewRouter(deps Dependencies) http.Handler {
 	if deps.Verifier != nil && deps.Chat != nil {
 		mux.Handle("POST /v1/chat/completions", deps.Verifier.Middleware(chatCompletions(deps.Chat)))
 	}
+	if deps.AdminAuth != nil {
+		mux.Handle("GET /admin/v1/setup/status", adminAuthStatus(deps.AdminAuth))
+		mux.Handle("POST /admin/v1/setup", adminAuthSetup(deps.AdminAuth))
+		mux.Handle("POST /admin/v1/auth/login", adminAuthLogin(deps.AdminAuth))
+		mux.Handle("GET /admin/v1/auth/me", adminMiddleware(http.HandlerFunc(adminAuthMe)))
+		mux.Handle("POST /admin/v1/auth/logout", adminMiddleware(adminAuthLogout(deps.AdminAuth)))
+	}
 	if deps.Verifier != nil && deps.Admin != nil {
-		mux.Handle("GET /admin/v1/providers", deps.Verifier.Middleware(adminProvidersList(deps.Admin)))
-		mux.Handle("GET /admin/v1/providers/{id}", deps.Verifier.Middleware(adminProviderGet(deps.Admin)))
-		mux.Handle("POST /admin/v1/providers/{id}/accounts", deps.Verifier.Middleware(adminProviderAddAccount(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers", adminMiddleware(adminProviderCreate(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers", adminMiddleware(adminProvidersList(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}", adminMiddleware(adminProviderGet(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/accounts", adminMiddleware(adminProviderAddAccount(deps.Admin)))
 	}
 	if deps.Verifier != nil && deps.AdminKeys != nil {
-		mux.Handle("GET /admin/v1/api-keys", deps.Verifier.Middleware(adminAPIKeysList(deps.AdminKeys)))
-		mux.Handle("POST /admin/v1/api-keys", deps.Verifier.Middleware(adminAPIKeysCreate(deps.AdminKeys)))
-		mux.Handle("POST /admin/v1/api-keys/{id}/revoke", deps.Verifier.Middleware(adminAPIKeysRevoke(deps.AdminKeys)))
+		mux.Handle("GET /admin/v1/api-keys", adminMiddleware(adminAPIKeysList(deps.AdminKeys)))
+		mux.Handle("POST /admin/v1/api-keys", adminMiddleware(adminAPIKeysCreate(deps.AdminKeys)))
+		mux.Handle("POST /admin/v1/api-keys/{id}/revoke", adminMiddleware(adminAPIKeysRevoke(deps.AdminKeys)))
 	}
 	if deps.Verifier != nil && deps.AdminUsage != nil {
-		mux.Handle("GET /admin/v1/costs/summary", deps.Verifier.Middleware(adminCostReport(deps.AdminUsage)))
-		mux.Handle("GET /admin/v1/observability/summary", deps.Verifier.Middleware(adminObservabilitySummary(deps.AdminUsage)))
+		mux.Handle("GET /admin/v1/costs/summary", adminMiddleware(adminCostReport(deps.AdminUsage)))
+		mux.Handle("GET /admin/v1/observability/summary", adminMiddleware(adminObservabilitySummary(deps.AdminUsage)))
 	}
 	if deps.Verifier != nil && deps.AdminMCP != nil {
-		mux.Handle("GET /admin/v1/mcp/status", deps.Verifier.Middleware(adminMCPStatus(deps.AdminMCP)))
-		mux.Handle("PATCH /admin/v1/mcp/settings", deps.Verifier.Middleware(adminMCPUpdateSettings(deps.AdminMCP)))
-		mux.Handle("PATCH /admin/v1/mcp/tools/{id}", deps.Verifier.Middleware(adminMCPUpdateTool(deps.AdminMCP)))
+		mux.Handle("GET /admin/v1/mcp/status", adminMiddleware(adminMCPStatus(deps.AdminMCP)))
+		mux.Handle("PATCH /admin/v1/mcp/settings", adminMiddleware(adminMCPUpdateSettings(deps.AdminMCP)))
+		mux.Handle("PATCH /admin/v1/mcp/tools/{id}", adminMiddleware(adminMCPUpdateTool(deps.AdminMCP)))
 	}
 	if deps.Verifier != nil && deps.AdminCache != nil {
-		mux.Handle("GET /admin/v1/cache/stats", deps.Verifier.Middleware(adminCacheStats(deps.AdminCache)))
-		mux.Handle("GET /admin/v1/cache/events", deps.Verifier.Middleware(adminCacheEvents(deps.AdminCache)))
+		mux.Handle("GET /admin/v1/cache/stats", adminMiddleware(adminCacheStats(deps.AdminCache)))
+		mux.Handle("GET /admin/v1/cache/events", adminMiddleware(adminCacheEvents(deps.AdminCache)))
 	}
 	if deps.Verifier != nil && deps.AdminDLP != nil {
-		mux.Handle("GET /admin/v1/dlp/rules", deps.Verifier.Middleware(adminDLPRules(deps.AdminDLP)))
-		mux.Handle("POST /admin/v1/dlp/rules", deps.Verifier.Middleware(adminDLPCreateRule(deps.AdminDLP)))
-		mux.Handle("PATCH /admin/v1/dlp/rules/{id}", deps.Verifier.Middleware(adminDLPSetRule(deps.AdminDLP)))
-		mux.Handle("GET /admin/v1/dlp/events", deps.Verifier.Middleware(adminDLPEvents(deps.AdminDLP)))
+		mux.Handle("GET /admin/v1/dlp/rules", adminMiddleware(adminDLPRules(deps.AdminDLP)))
+		mux.Handle("POST /admin/v1/dlp/rules", adminMiddleware(adminDLPCreateRule(deps.AdminDLP)))
+		mux.Handle("PATCH /admin/v1/dlp/rules/{id}", adminMiddleware(adminDLPSetRule(deps.AdminDLP)))
+		mux.Handle("GET /admin/v1/dlp/events", adminMiddleware(adminDLPEvents(deps.AdminDLP)))
 	}
 	if deps.Verifier != nil && deps.AdminEndpoints != nil {
-		mux.Handle("GET /admin/v1/endpoints", deps.Verifier.Middleware(adminEndpointsList(deps.AdminEndpoints)))
-		mux.Handle("GET /admin/v1/endpoints/{id}/policy", deps.Verifier.Middleware(adminEndpointPolicy(deps.AdminEndpoints)))
+		mux.Handle("GET /admin/v1/endpoints", adminMiddleware(adminEndpointsList(deps.AdminEndpoints)))
+		mux.Handle("GET /admin/v1/endpoints/{id}/policy", adminMiddleware(adminEndpointPolicy(deps.AdminEndpoints)))
 	}
 	return mux
 }

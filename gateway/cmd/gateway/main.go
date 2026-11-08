@@ -96,6 +96,7 @@ func run(logger *slog.Logger) error {
 		readiness.Register("postgres", pool.Ping)
 		deps.Models = provider.NewCatalog(pool)
 		deps.Verifier = auth.NewVerifier(auth.NewPostgresRepository(pool))
+		deps.AdminAuth = admin.NewAuthService(pool)
 		usageRecorder = usage.NewRecorder(pool, provider.NewCatalog(pool))
 	}
 	var redisConn *redis.Client

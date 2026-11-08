@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const ADMIN_COOKIE = "dontstop_admin_key";
+const SESSION_COOKIE = "dontstop_session";
 
 export function proxy(request: NextRequest) {
-  if (process.env.DONTSTOP_CONSOLE_AUTH !== "required") {
+  if (process.env.DONTSTOP_CONSOLE_AUTH === "off") {
     return NextResponse.next();
   }
-  if (request.cookies.get(ADMIN_COOKIE)?.value) {
+  if (request.cookies.get(SESSION_COOKIE)?.value || request.cookies.get(ADMIN_COOKIE)?.value) {
     return NextResponse.next();
   }
   const url = request.nextUrl.clone();
@@ -16,5 +17,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"]
+  matcher: ["/((?!login|onboarding|api/auth|_next/static|_next/image|favicon.ico).*)"]
 };
