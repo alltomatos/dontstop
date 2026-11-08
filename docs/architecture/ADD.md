@@ -1,5 +1,7 @@
 # dontstop — Architecture Design Document (ADD)
 
+> **Refer?ncias conceituais:** 9Router, OmniRoute e AllCode s?o apenas inspira??o e estudo. O dontstop usa cat?logo, protocolos e adapters nativos; n?o delega a esses sistemas em runtime.
+
 > **Status:** planejamento aprovado para handoff. Nenhum código implementado.
 > **Data:** 2026-11-06
 > **Fontes:** `[REPO]`, `[MAP-9R]`, `[MAP-OMNI]`, `[MAP-ALLCODE]` (ver [../README.md](../README.md)).
@@ -16,6 +18,7 @@ O dontstop é um gateway corporativo de IA, single-tenant no P0, com endpoint Op
 | Tipo | Restrição/premissa |
 |---|---|
 | Deploy | **Docker Swarm** (3 managers + workers); sem Kubernetes |
+| Refer?ncias | 9Router, OmniRoute e AllCode s?o apenas estudo conceitual; nunca canal, relay, upstream ou depend?ncia de execu??o |
 | Tenancy | Single-tenant no P0, com `tenant_id` em todo o modelo |
 | Rede | Egress via **Webshare** quando a política exigir; fallback direto |
 | Dados | LGPD como baseline; payload off por padrão |

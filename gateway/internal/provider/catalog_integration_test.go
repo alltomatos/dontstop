@@ -34,9 +34,9 @@ func TestCatalogListsActiveModelsFromConnectedProviders(t *testing.T) {
 	const tenantID = "00000000-0000-0000-0000-000000000000"
 	_, err = pool.Exec(ctx, `
 		INSERT INTO providers (tenant_id, name, kind, enabled, origin) VALUES
-			($1, 'openai', 'openai', true, '9router'),
-			($1, 'anthropic', 'anthropic', true, 'omniroute'),
-			($1, 'disabled-provider', 'openai', false, 'allcode')
+			($1, 'openai', 'openai', true, 'native'),
+			($1, 'anthropic', 'anthropic', true, 'custom'),
+			($1, 'disabled-provider', 'openai', false, 'native')
 	`, tenantID)
 	if err != nil {
 		t.Fatalf("insert providers: %v", err)
@@ -84,10 +84,10 @@ func TestCatalogListsActiveModelsFromConnectedProviders(t *testing.T) {
 	for _, model := range models {
 		byID[model.ID] = model
 	}
-	if byID["gpt-4.1"].Status != "active" || byID["gpt-4.1"].OwnedBy != "openai" || byID["gpt-4.1"].Origin != "9router" {
+	if byID["gpt-4.1"].Status != "active" || byID["gpt-4.1"].OwnedBy != "openai" || byID["gpt-4.1"].Origin != "native" {
 		t.Fatalf("unexpected gpt-4.1: %+v", byID["gpt-4.1"])
 	}
-	if byID["claude-sonnet-4"].Origin != "omniroute" {
+	if byID["claude-sonnet-4"].Origin != "custom" {
 		t.Fatalf("unexpected claude origin: %+v", byID["claude-sonnet-4"])
 	}
 	if byID["claude-sonnet-4"].Status != "cooldown" {

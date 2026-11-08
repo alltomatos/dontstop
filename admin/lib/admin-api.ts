@@ -44,7 +44,7 @@ function mapAccount(account: AdminAccount): ProviderAccount {
 
 function mapProvider(record: AdminProvider): Provider {
   const base = staticProvider(record);
-  const origin = record.origin as ProviderOrigin;
+  const origin: ProviderOrigin = record.origin === "custom" ? "custom" : "native";
   return {
     ...(base ?? {
       id: record.id,

@@ -16,6 +16,10 @@ Gateway corporativo de IA auto-hospedado, single-tenant no P0, com:
 - quotas, custo e observabilidade;
 - `tenant_id` desde o início para evoluir a multi-tenancy.
 
+## 1.1 Refer?ncias conceituais
+
+**9Router, OmniRoute e AllCode s?o apenas refer?ncias de estudo** de arquitetura, padr?es e formatos. Eles **n?o s?o canais, relays, upstreams, cat?logos, SDKs ou depend?ncias de execu??o** do dontstop. Nenhum adapter, pol?tica ou fluxo de chat pode delegar a esses sistemas em runtime. O cat?logo, os protocolos e os adapters s?o nativos do dontstop.
+
 ## 2. Decisões inegociáveis
 
 | Área | Decisão |
@@ -53,8 +57,8 @@ Detalhes e alternativas: [`docs/05-ADRS.md`](docs/05-ADRS.md).
 | [`docs/architecture/ADD.md`](docs/architecture/ADD.md) | Documento consolidado de arquitetura |
 | [`docs/07-I18N-E-USER-GUIDE.md`](docs/07-I18N-E-USER-GUIDE.md) | Idiomas, preferência, fallback, guia e links contextuais |
 | [`docs/user-guide/README.md`](docs/user-guide/README.md) | Guia versionado por página/modal em seis idiomas |
-| [`docs/reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md`](docs/reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md) | Como 9Router/OmniRoute tratam endpoints e API manager |
-| [`docs/reference/MCP-REFERENCIAS.md`](docs/reference/MCP-REFERENCIAS.md) | Como 9Router/OmniRoute expõem MCP e decisões do dontstop |
+| [`docs/reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md`](docs/reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md) | Estudo conceitual de endpoints/API manager; n?o ? depend?ncia |
+| [`docs/reference/MCP-REFERENCIAS.md`](docs/reference/MCP-REFERENCIAS.md) | Estudo conceitual de MCP; não é dependência |
 | [`design-system/MASTER.md`](design-system/MASTER.md) | Tokens, componentes e regras visuais |
 | [`design-system/mockups/console.html`](design-system/mockups/console.html) | Mockup navegável do console |
 
@@ -181,6 +185,8 @@ k6 run tests/load/chat.js
 
 ## 8. Regras específicas de provedores
 
+- **Sem gateways de refer?ncia em runtime:** 9Router, OmniRoute e AllCode s?o apenas estudo. Proibido relay, upstream, import de SDK ou `base_url` apontando para esses sistemas.
+
 - **Catálogo é fonte de verdade:** provider, modelo, capabilities, preço e protocolo vêm do catálogo versionado; nada hardcoded em handler.
 - **Um adaptador por protocolo/provider:** OpenAI, Anthropic, Gemini, Azure, Bedrock e OpenAI-compatible. Protocolos proprietários exigem adaptador explícito e testes gravados.
 - **Sem instalação de SDK em runtime:** dependências são empacotadas e versionadas; proibido `npm install` dinâmico.
@@ -268,6 +274,8 @@ k6 run tests/load/chat.js
 - [ ] Lazy loading: nenhum chunk opcional no primeiro paint; teste de cold start do caminho quente.
 
 ## 14. O que NÃO fazer
+
+- N?o usar 9Router, OmniRoute ou AllCode como canal, relay, upstream, cat?logo ou depend?ncia de execu??o; s?o apenas refer?ncias conceituais.
 
 - Não criar Kubernetes, Helm, CRDs, operators ou manifests K8s.
 - Não adicionar Prometheus, Grafana, Loki, Tempo ou stack OSS de observabilidade; usar OTel + backend gerenciado.

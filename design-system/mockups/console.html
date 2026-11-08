@@ -361,9 +361,8 @@
           </div>
           <div class="filter-chips" style="margin-top:12px" data-origin-group="configured">
             <button class="filter-chip active" data-origin-filter="configured" data-origin-value="all" data-i18n="providers.origin.all">Todas as origens</button>
-            <button class="filter-chip" data-origin-filter="configured" data-origin-value="9router">9Router</button>
-            <button class="filter-chip" data-origin-filter="configured" data-origin-value="omniroute">OmniRoute</button>
-            <button class="filter-chip" data-origin-filter="configured" data-origin-value="allcode">AllCode</button>
+            <button class="filter-chip" data-origin-filter="configured" data-origin-value="native" data-i18n="providers.origin.native">Native</button>
+            <button class="filter-chip" data-origin-filter="configured" data-origin-value="custom" data-i18n="providers.origin.custom">Custom</button>
           </div>
         </div>
 
@@ -443,9 +442,8 @@
           </div>
           <div class="filter-chips" style="margin-top:8px" data-origin-group="catalog">
             <button class="filter-chip active" data-origin-filter="catalog" data-origin-value="all" data-i18n="providers.origin.all">Todas as origens</button>
-            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="9router">9Router</button>
-            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="omniroute">OmniRoute</button>
-            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="allcode">AllCode</button>
+            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="native" data-i18n="providers.origin.native">Native</button>
+            <button class="filter-chip" data-origin-filter="catalog" data-origin-value="custom" data-i18n="providers.origin.custom">Custom</button>
           </div>
         </div>
 
@@ -1105,28 +1103,7 @@ Prévia: "Meu CPF é ***.***.***-** e e-mail ***@***.com"</div><div class="actio
   };
   let currentProviderId = 'openai';
   PROVIDERS.agentrouter = { name: 'AgentRouter', icon: 'AR', type: 'Anthropic · Chat', status: '', statusKey: 'providers.available', caps: ['Chat', 'Tools'], accounts: [] };
-  const PROVIDER_ORIGINS = {
-    openai: ['9router', 'allcode'],
-    anthropic: ['9router', 'allcode'],
-    gemini: ['9router', 'allcode'],
-    azure: ['9router', 'allcode'],
-    antigravity: ['9router', 'allcode'],
-    'claude-code': ['9router', 'allcode'],
-    ollama: ['9router', 'omniroute', 'allcode'],
-    'opencode-free': ['9router', 'allcode'],
-    naga: ['omniroute'],
-    tokenrouter: ['omniroute'],
-    'openai-compatible': ['9router', 'omniroute'],
-    'anthropic-compatible': ['9router', 'omniroute'],
-    'kilo-code': ['9router', 'omniroute'],
-    'kiro-ai': ['9router', 'omniroute'],
-    'openai-codex': ['9router', 'allcode'],
-    'gemini-cli': ['9router', 'allcode'],
-    bedrock: ['9router', 'omniroute', 'allcode'],
-    groq: ['9router', 'omniroute', 'allcode'],
-    'lm-studio': ['9router', 'omniroute', 'allcode'],
-    agentrouter: ['omniroute', 'allcode']
-  };
+  const PROVIDER_ORIGINS = Object.fromEntries(Object.keys(PROVIDERS).map(id => [id, ['native']]));
   Object.entries(PROVIDER_ORIGINS).forEach(([id, origins]) => { if (PROVIDERS[id]) PROVIDERS[id].origins = origins; });
   const PROVIDER_LINKS = {
     openai: 'https://platform.openai.com/api-keys',

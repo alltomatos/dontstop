@@ -5,7 +5,7 @@
 
 ## Categorias e origem
 
-Cada provedor declara uma origem (`9Router`, `OmniRoute` ou `AllCode`) no modelo de dados e na UI. A origem aparece nos cards, no resumo do detalhe e nos filtros da listagem principal e do catálogo. O detalhe também expõe **Como conectar** (guia do usuário) e **Criar conta / entrar** (site do provedor).
+Cada provedor declara uma origem (`Native` ou `Custom`) no modelo de dados e na UI. 9Router, OmniRoute e AllCode s?o apenas refer?ncias conceituais de estudo, nunca origem de execu??o. A origem aparece nos cards, no resumo do detalhe e nos filtros da listagem principal e do catálogo. O detalhe também expõe **Como conectar** (guia do usuário) e **Criar conta / entrar** (site do provedor).
 
 ## Revisão do fluxo (mockup atual)
 

@@ -10,7 +10,7 @@ import (
 )
 
 // TestAgentRouterLive is opt-in. It requires a valid AgentRouter key and a
-// relay URL because AgentRouter rejects generic HTTP clients at the WAF.
+// provider base URL. The adapter is native; no external gateway or relay is used.
 func TestAgentRouterLive(t *testing.T) {
 	key := os.Getenv("AGENTROUTER_LIVE_KEY")
 	baseURL := os.Getenv("AGENTROUTER_LIVE_BASE_URL")

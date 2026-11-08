@@ -1,5 +1,7 @@
 # Planejamento do dontstop — índice
 
+> **Refer?ncias conceituais:** 9Router, OmniRoute e AllCode s?o apenas inspira??o e estudo de arquitetura, padr?es e formatos. N?o s?o canais, relays, upstreams, cat?logos, SDKs nem depend?ncias de execu??o do dontstop.
+
 > **Status:** documentação de arquitetura e produto. Nenhum código foi implementado nesta etapa.
 > **Data:** 2026-11-06
 > **Repositório:** `D:\dev\dontstop` (greenfield: 0 arquivos de código; apenas os mapeamentos e este planejamento).

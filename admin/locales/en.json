@@ -384,9 +384,6 @@
   "providers.catalogCount.zero": "0 available",
   "providers.accountsCount.zero": "0 accounts",
   "providers.origin.all": "All origins",
-  "providers.origin.9router": "9Router",
-  "providers.origin.omniroute": "OmniRoute",
-  "providers.origin.allcode": "AllCode",
   "providers.origin.label": "Origin",
   "providers.guideLink": "How to connect",
   "providers.signupLink": "Create account / sign in",
@@ -406,5 +403,7 @@
   "auth.apiKey": "Admin API key",
   "auth.signIn": "Sign in",
   "auth.error": "Invalid key or gateway unavailable.",
-  "common.logout": "Sign out"
+  "common.logout": "Sign out",
+  "providers.origin.native": "Native",
+  "providers.origin.custom": "Custom"
 }

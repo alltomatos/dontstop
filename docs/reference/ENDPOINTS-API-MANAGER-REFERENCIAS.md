@@ -1,5 +1,7 @@
 # Referências — Endpoints e API Manager no 9Router e OmniRoute
 
+> **Escopo:** estudo conceitual. 9Router e OmniRoute n?o s?o depend?ncias de execu??o do dontstop.
+
 > **Objetivo:** entender como os dois gateways auditados tratam a superfície de endpoints e o gerenciamento de API keys, para calibrar o desenho do dontstop.
 > **Fontes:** `D:\dev\9router` (v0.5.112) e `D:\dev\OmniRoute` (v3.8.53), código real; mapeamentos em [`../MAPEAMENTO-ARQUITETURAL-9ROUTER.md`](../../MAPEAMENTO-ARQUITETURAL-9ROUTER.md) e [`../MAPEAMENTO-ARQUITETURAL-OMNIROUTE.md`](../../MAPEAMENTO-ARQUITETURAL-OMNIROUTE.md).
 > **Conclusão antecipada:** nenhum dos dois tem um **Endpoint Registry** em banco com políticas por endpoint. O 9Router não tem política por endpoint; o OmniRoute tem classificação/authz por rota em código + permissões por chave em categorias de endpoint. O dontstop proposto vai além com `api_endpoints` + `endpoint_policies` + escopos por endpoint/modelo.
