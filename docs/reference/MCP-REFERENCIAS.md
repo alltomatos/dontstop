@@ -1,5 +1,7 @@
 # Referência — MCP no 9Router e OmniRoute
 
+> **Escopo:** estudo conceitual. 9Router e OmniRoute n?o s?o depend?ncias de execu??o do dontstop.
+
 > Insumo para o Épico E12 do [PRD](../01-PRD.md) e para a página [MCP](../../design-system/pages/mcp.md).
 > **Decisão do dontstop:** MCP desligado por padrão, local-only/autenticado, sem túneis.
 

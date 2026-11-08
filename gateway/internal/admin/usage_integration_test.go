@@ -31,7 +31,7 @@ func TestUsageServiceAggregatesCostAndObservability(t *testing.T) {
 	}
 	const tenantID = "00000000-0000-0000-0000-000000000000"
 	var providerID string
-	if err := pool.QueryRow(ctx, `INSERT INTO providers (tenant_id, name, kind, origin, enabled) VALUES ($1, 'openai', 'openai', '9router', true) RETURNING id::text`, tenantID).Scan(&providerID); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO providers (tenant_id, name, kind, origin, enabled) VALUES ($1, 'openai', 'openai', 'native', true) RETURNING id::text`, tenantID).Scan(&providerID); err != nil {
 		t.Fatalf("insert provider: %v", err)
 	}
 	if _, err := pool.Exec(ctx, `INSERT INTO usage_daily (tenant_id, day, provider_id, model, requests, tokens_in, tokens_out, cost_usd, errors) VALUES ($1, current_date, $2::uuid, 'gpt-4.1', 2, 100, 50, 1.25, 0)`, tenantID, providerID); err != nil {

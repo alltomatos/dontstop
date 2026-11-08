@@ -1,5 +1,7 @@
 # dontstop — Architecture Decision Records (ADRs)
 
+> **Refer?ncias conceituais:** 9Router, OmniRoute e AllCode s?o apenas estudo; n?o s?o canais, relays, upstreams, cat?logos, SDKs nem depend?ncias de execu??o.
+
 > Fontes: `[REPO]`, `[MAP-9R]`, `[MAP-OMNI]`, `[MAP-ALLCODE]` (ver [README](README.md)).
 > Formato: contexto → decisão → alternativas → consequências. Status inicial: **Proposto**.
 
@@ -351,27 +353,28 @@
 - (−) O P0-α não atende ainda o envelope corporativo completo; o roadmap deve manter os testes de 1.000 RPS/20.000 streams como gate de P1.
 - (−) O envelope exige disciplina de capacidade e observabilidade desde o primeiro deploy; sem isso, a meta de 99,9% não é verificável.
 
-## ADR-019 - Origem dos provedores e tradução fail-closed no AgentRouter
+## ADR-019 - Origem nativa dos provedores e adapta??o AgentRouter
 
 **Status:** Aceito
-**Contexto:** o console precisa separar provedores configurados do catálogo e deixar explícita a origem (`9Router`, `OmniRoute`, `AllCode`). O AgentRouter rejeita texto não inglês no filtro de conteúdo e exige um transporte compatível com o WAF; o AllCode usa um relay Python síncrono e faz tradução best-effort.
+**Contexto:** o console precisa separar provedores configurados do cat?logo e deixar expl?cita a origem do provedor. 9Router, OmniRoute e AllCode s?o apenas refer?ncias conceituais de arquitetura, padr?es e formatos; n?o s?o canais, relays, upstreams nem depend?ncias de execu??o do dontstop. O AgentRouter rejeita texto n?o ingl?s no filtro de conte?do e pode aplicar WAF ao transporte.
 
-**Decisão:**
-- `providers.origin` é um campo obrigatório no modelo de dados, restrito a `9router`, `omniroute` e `allcode`; a API `/v1/models` expõe `x-dontstop-origin`.
-- A UI separa listagem de configurados, catálogo e detalhe; origem aparece em cards, detalhe e filtros.
-- O kind `agentrouter` fala Anthropic Messages (`/v1/messages`, `x-api-key`, `anthropic-version`) e aponta para um relay compatível via `base_url`.
-- Todo prompt é traduzido para inglês antes do envio. Se a tradução falhar, a chamada ao AgentRouter é bloqueada (`ErrTranslation`, HTTP 502 `translation_error`) e o motivo é logado sem o texto do prompt.
-- A resposta é traduzida de volta ao idioma detectado no último prompt de usuário; em streaming, a resposta é acumulada e traduzida antes do primeiro chunk.
-- O prompt original não é mutado; ele permanece na requisição do serviço para resposta, cache e rastreabilidade. Logs não guardam o texto bruto.
+**Decis?o:**
+- `providers.origin` ? obrigat?rio e restrito a `native` (cat?logo embutido do dontstop) ou `custom` (provedor cadastrado pelo operador); a API `/v1/models` exp?e `x-dontstop-origin`.
+- Nenhum adapter, cat?logo, pol?tica ou fluxo de chat pode delegar a 9Router, OmniRoute, AllCode, relay de outro gateway ou SDK de gateway externo. Toda integra??o usa `net/http` e implementa??o nativa do dontstop.
+- `kind` identifica o protocolo/adaptador nativo (`openai`, `anthropic`, `agentrouter`); `provider_accounts.base_url` aponta exclusivamente para o endpoint real do provedor.
+- O kind `agentrouter` fala Anthropic Messages (`/v1/messages`, `x-api-key`, `anthropic-version`) diretamente com o provedor. Se o WAF impedir o transporte nativo, o provedor fica indispon?vel at? existir transporte nativo validado; n?o se usa relay de terceiros como contorno.
+- Todo prompt ? traduzido para ingl?s antes do envio. Se a tradu??o falhar, a chamada ao AgentRouter ? bloqueada (`ErrTranslation`, HTTP 502 `translation_error`) e o motivo ? logado sem o texto do prompt.
+- A resposta ? traduzida de volta ao idioma detectado no ?ltimo prompt de usu?rio; em streaming, a resposta ? acumulada e traduzida antes do primeiro chunk.
+- O prompt original n?o ? mutado; ele permanece na requisi??o do servi?o para resposta, cache e rastreabilidade. Logs n?o guardam o texto bruto.
 
 **Alternativas:**
-- Fallback silencioso para o texto original (AllCode): viola o requisito de nunca enviar idioma não traduzido.
+- Fallback silencioso para o texto original: viola o requisito de nunca enviar idioma n?o traduzido.
 - Traduzir chunk a chunk no streaming: pior qualidade e risco de vazamento de idioma.
-- Enviar direto sem relay: bloqueado pelo WAF do AgentRouter na prática.
+- Usar relay ou gateway de refer?ncia para contornar WAF: rejeitado; cria depend?ncia de execu??o externa e viola o cat?logo/adapters nativos.
 
-**Consequências:**
-- (+) Falha explícita, origem auditável e UI consistente; testes de sucesso, falha e streaming.
-- (�^') Dependência de um relay/WAF e de um serviço de tradução; streaming do AgentRouter ganha latência de bufferização.
+**Consequ?ncias:**
+- (+) Falha expl?cita, origem audit?vel e UI consistente; nenhuma depend?ncia de gateway externo em runtime.
+- (?) O AgentRouter pode ficar indispon?vel enquanto o transporte nativo n?o passar no WAF; streaming ganha lat?ncia de bufferiza??o.
 
 ## Fontes consultadas
 

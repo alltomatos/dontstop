@@ -658,6 +658,8 @@ erDiagram
 - **Pendente:** se `provider_credentials` terá envelope por tenant ou por instância no P0.
 - **Pendente:** se o cache exato terá cópia em Postgres para auditoria ou apenas metadados (proposta: metadados).
 
+**Origem de provedor:** `providers.origin` distingue apenas `native` (cat?logo embutido do dontstop) de `custom` (cadastro do operador). 9Router, OmniRoute e AllCode s?o refer?ncias conceituais e n?o aparecem como origem, canal ou depend?ncia de execu??o.
+
 ## 9. Fontes consultadas
 
 - `[REPO]` — ausência de código e de esquema existente; modelo é proposta greenfield.

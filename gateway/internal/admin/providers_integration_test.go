@@ -35,7 +35,7 @@ func TestProviderServiceListsAndAddsAccounts(t *testing.T) {
 	var providerID string
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO providers (tenant_id, name, kind, origin, enabled)
-		VALUES ($1, 'openai', 'openai', '9router', true)
+		VALUES ($1, 'openai', 'openai', 'native', true)
 		RETURNING id::text
 	`, tenantID).Scan(&providerID); err != nil {
 		t.Fatalf("insert provider: %v", err)
@@ -56,7 +56,7 @@ func TestProviderServiceListsAndAddsAccounts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(providers) != 1 || providers[0].Origin != "9router" || providers[0].ModelsCount != 1 {
+	if len(providers) != 1 || providers[0].Origin != "native" || providers[0].ModelsCount != 1 {
 		t.Fatalf("unexpected providers: %+v", providers)
 	}
 
@@ -75,5 +75,33 @@ func TestProviderServiceListsAndAddsAccounts(t *testing.T) {
 	}
 	if len(provider.Accounts) != 1 || provider.Accounts[0].Name != "prod" {
 		t.Fatalf("unexpected provider detail: %+v", provider)
+	}
+}
+
+func TestProviderOriginRejectsReferenceGateways(t *testing.T) {
+	url := os.Getenv("TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("TEST_DATABASE_URL is not set")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	pool, err := database.Open(ctx, url)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	defer pool.Close()
+	if _, err := pool.Exec(ctx, "DROP SCHEMA public CASCADE; CREATE SCHEMA public"); err != nil {
+		t.Fatalf("reset schema: %v", err)
+	}
+	if err := database.Migrate(ctx, pool, migrations.FS); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	for _, origin := range []string{"9router", "omniroute", "allcode"} {
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO providers (tenant_id, name, kind, origin, enabled)
+			VALUES ('00000000-0000-0000-0000-000000000000', $1, 'openai', $2, true)
+		`, "invalid-"+origin, origin); err == nil {
+			t.Fatalf("origin %q must be rejected", origin)
+		}
 	}
 }

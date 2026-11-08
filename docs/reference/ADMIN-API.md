@@ -22,7 +22,7 @@ Lista provedores configurados do tenant autenticado.
       "id": "uuid",
       "name": "OpenAI",
       "kind": "openai",
-      "origin": "9router",
+      "origin": "native",
       "enabled": true,
       "accounts_count": 3,
       "models_count": 12
@@ -30,6 +30,8 @@ Lista provedores configurados do tenant autenticado.
   ]
 }
 ```
+
+`origin` é sempre `native` (catálogo embutido do dontstop) ou `custom` (cadastro do operador). Valores de gateways de referência não são aceitos.
 
 ### `GET /admin/v1/providers/{id}`
 

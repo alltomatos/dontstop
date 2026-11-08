@@ -384,9 +384,6 @@
   "providers.catalogCount.zero": "0 disponibles",
   "providers.accountsCount.zero": "0 cuentas",
   "providers.origin.all": "Todos los orígenes",
-  "providers.origin.9router": "9Router",
-  "providers.origin.omniroute": "OmniRoute",
-  "providers.origin.allcode": "AllCode",
   "providers.origin.label": "Origen",
   "providers.guideLink": "Cómo conectar",
   "providers.signupLink": "Crear cuenta / iniciar sesión",
@@ -406,5 +403,7 @@
   "auth.apiKey": "Clave de Admin API",
   "auth.signIn": "Entrar",
   "auth.error": "Clave inv?lida o gateway no disponible.",
-  "common.logout": "Salir"
+  "common.logout": "Salir",
+  "providers.origin.native": "Nativo",
+  "providers.origin.custom": "Personalizado"
 }

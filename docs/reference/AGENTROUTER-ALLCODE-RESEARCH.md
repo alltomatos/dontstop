@@ -1,5 +1,7 @@
 # AgentRouter — investigação no AllCode
 
+> **Escopo:** pesquisa hist?rica. O relay/AllCode descrito aqui n?o ? componente, canal nem depend?ncia de execu??o do dontstop; o adapter AgentRouter ? nativo.
+
 > Fonte de verdade consultada: `D:\dev\allcode`, em 2026-11-07.
 > Objetivo: registrar o comportamento real do AgentRouter antes da integração no dontstop.
 > Nada neste documento foi inferido de documentação pública; os pontos abaixo vêm do código do AllCode.
@@ -23,7 +25,7 @@
 - Upstream padrão: `https://agentrouter.org`.
 - O AgentRouter aplica um **WAF de fingerprint de conexão**. O AllCode registra que clientes genéricos (Node `fetch`/undici, `curl`, `httpx` assíncrono) recebem `unauthorized client detected` mesmo com chave válida.
 - Solução do AllCode: relay local em Python usando o SDK **síncrono** `anthropic`. Porta padrão `7187`; health em `GET /health` retorna `{"ok":true,"version":2}`. O relay reemite as requisições e esconde o WAF do processo principal.
-- Consequência para o dontstop: o adaptador fala Anthropic Messages e deve apontar `base_url` para um relay compatível. Não é seguro assumir que `net/http` direto passará no WAF.
+- Consequência para o dontstop: o adaptador fala Anthropic Messages e é nativo. O relay do AllCode é apenas evidência histórica de pesquisa; não é adotado como runtime. O `base_url` deve apontar para o endpoint real do provedor.
 
 ## Modelos e limites
 
@@ -70,7 +72,7 @@ Lista estática do AllCode (o `/v1/models` real também é bloqueado pelo WAF):
 
 - Novo kind de provider: `agentrouter`.
 - Protocolo: Anthropic Messages.
-- `Account.BaseURL`: deve apontar para o relay (ex.: `http://127.0.0.1:7187`) ou para um endpoint compatível que passe no WAF.
+- `Account.BaseURL`: deve apontar para o endpoint real do provedor. Relay de outro gateway não é permitido.
 - Tradução: `Translator` injetável; Google primário, MyMemory fallback; `ErrTranslation` é falha fechada.
 - Prompt original: nunca é mutado; permanece na requisição do serviço e é usado para auditoria/traço. Logs registram apenas estágio, idioma de origem e motivo, sem o texto.
 - Resposta: traduzida de volta ao idioma detectado no último prompt de usuário; se o idioma for inglês, não há tradução reversa.
@@ -78,7 +80,7 @@ Lista estática do AllCode (o `/v1/models` real também é bloqueado pelo WAF):
 
 ## Riscos e pendências
 
-- O relay Python é uma dependência operacional do AllCode; o dontstop deve preferir um relay versionado ou um transporte que passe no WAF, nunca instalar SDK em runtime no container do gateway.
+- O relay Python é apenas um artefato de pesquisa do AllCode; o dontstop não o empacota, não o inicia e não depende dele. Se o WAF bloquear o transporte nativo, o provedor fica indisponível até haver solução nativa.
 - A tradução adiciona latência e depende de serviço externo; falhas devem ser monitoradas e bloqueadas, não mascaradas.
 - O limite real de contexto/saída e o custo por modelo não são publicados; usar os placeholders do catálogo até termos medição própria.
 - Testes de contrato/adaptador usam `httptest`; o teste live é opt-in (`AGENTROUTER_LIVE_KEY`, `AGENTROUTER_LIVE_BASE_URL`).

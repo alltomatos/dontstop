@@ -19,7 +19,7 @@ A área de Provedores foi separada em três rotas:
 
 O caminho de volta é feito por breadcrumb e pelos botões **Voltar para provedores** / **Voltar ao catálogo**. Para validar o estado vazio, use `?empty=1#providers`.
 
-Cada provedor exibe a origem (`9Router`, `OmniRoute`, `AllCode`) em chips e nos filtros. O detalhe também oferece **Como conectar** (guia do usuário) e **Criar conta / entrar** (site do provedor). O catálogo inclui o AgentRouter com a mesma estrutura de detalhe/contas.
+Cada provedor exibe a origem (`Native` ou `Custom`) em chips e nos filtros. 9Router, OmniRoute e AllCode s?o apenas refer?ncias conceituais de estudo, nunca origem de execu??o. O detalhe também oferece **Como conectar** (guia do usuário) e **Criar conta / entrar** (site do provedor). O catálogo inclui o AgentRouter com a mesma estrutura de detalhe/contas.
 
 ## Escopo do mockup
 

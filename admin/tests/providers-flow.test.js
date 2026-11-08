@@ -21,9 +21,8 @@ const requiredKeys = [
   'providers.accountCredential',
   'providers.saveAccount',
   'providers.origin.all',
-  'providers.origin.9router',
-  'providers.origin.omniroute',
-  'providers.origin.allcode',
+  'providers.origin.native',
+  'providers.origin.custom',
   'providers.origin.label',
   'providers.guideLink',
   'providers.signupLink'
@@ -52,7 +51,7 @@ test('catalog is a separate page and links to provider detail', () => {
   assert.ok(catalog.includes('href="#provider-detail?provider=naga"'));
   assert.ok(catalog.includes('href="#provider-detail?provider=agentrouter"'));
   assert.ok(catalog.includes('data-origin-group="catalog"'));
-  assert.ok(html.includes("agentrouter: ['omniroute', 'allcode']"));
+  assert.ok(html.includes("PROVIDER_ORIGINS = Object.fromEntries"));
   assert.ok(!catalog.includes('data-provider-id="openai"'));
 });
 

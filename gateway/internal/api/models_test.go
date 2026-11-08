@@ -82,7 +82,7 @@ func TestModelsReturnsCatalog(t *testing.T) {
 		Readiness: health.NewRegistry(0),
 		Verifier:  verifier,
 		Models: fakeLister{models: []provider.Model{
-			{ID: "gpt-4.1", DisplayName: "GPT-4.1", OwnedBy: "openai", Origin: "9router", Status: "active"},
+			{ID: "gpt-4.1", DisplayName: "GPT-4.1", OwnedBy: "openai", Origin: "native", Status: "active"},
 			{ID: "claude-sonnet-4", DisplayName: "Claude Sonnet 4", OwnedBy: "anthropic", Status: "cooldown"},
 		}},
 	})
@@ -111,7 +111,7 @@ func TestModelsReturnsCatalog(t *testing.T) {
 	if body.Object != "list" || len(body.Data) != 2 {
 		t.Fatalf("unexpected response: %+v", body)
 	}
-	if body.Data[0].Origin != "9router" {
+	if body.Data[0].Origin != "native" {
 		t.Fatalf("unexpected model origin: %+v", body.Data[0])
 	}
 	if body.Data[1].ID != "claude-sonnet-4" || body.Data[1].XDonstopStatus != "cooldown" {

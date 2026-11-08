@@ -53,7 +53,7 @@ func TestAdminProvidersRequireManageScope(t *testing.T) {
 func TestAdminProvidersListAndAddAccount(t *testing.T) {
 	verifier, key := testVerifier(t, []string{"manage"})
 	service := fakeAdminProviders{
-		providers: []admin.Provider{{ID: "provider-1", Name: "OpenAI", Kind: "openai", Origin: "9router", Enabled: true, AccountsCount: 2}},
+		providers: []admin.Provider{{ID: "provider-1", Name: "OpenAI", Kind: "openai", Origin: "native", Enabled: true, AccountsCount: 2}},
 		account:   admin.Account{ID: "account-1", Name: "prod", Status: "active", Priority: 100, Weight: 1},
 	}
 	router := api.NewRouter(api.Dependencies{
@@ -75,7 +75,7 @@ func TestAdminProvidersListAndAddAccount(t *testing.T) {
 	if err := json.NewDecoder(listResponse.Body).Decode(&listBody); err != nil {
 		t.Fatalf("decode list: %v", err)
 	}
-	if len(listBody.Data) != 1 || listBody.Data[0].Origin != "9router" {
+	if len(listBody.Data) != 1 || listBody.Data[0].Origin != "native" {
 		t.Fatalf("unexpected list: %+v", listBody.Data)
 	}
 
