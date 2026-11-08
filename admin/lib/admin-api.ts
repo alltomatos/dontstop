@@ -1,3 +1,4 @@
+import { getAdminKey } from "./admin-auth";
 import {
   CONFIGURED_PROVIDERS,
   PROVIDERS,
@@ -70,7 +71,7 @@ function mapProvider(record: AdminProvider): Provider {
 
 async function adminRequest(path: string): Promise<Response | null> {
   const base = process.env.DONTSTOP_GATEWAY_URL;
-  const key = process.env.DONTSTOP_ADMIN_API_KEY;
+  const key = await getAdminKey();
   if (!base || !key) return null;
   try {
     return await fetch(`${base.replace(/\/$/, "")}${path}`, {

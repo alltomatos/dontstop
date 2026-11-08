@@ -400,5 +400,11 @@
   "dashboard.kpiErrors": "Erreurs",
   "dashboard.kpiCache": "Cache hit",
   "dashboard.kpiCostToday": "Coût aujourd’hui",
-  "dashboard.vsYesterday": "vs hier"
+  "dashboard.vsYesterday": "vs hier",
+  "auth.title": "Connexion administrateur",
+  "auth.subtitle": "Utilisez une cl? API avec le scope manage pour ouvrir la console.",
+  "auth.apiKey": "Cl? Admin API",
+  "auth.signIn": "Se connecter",
+  "auth.error": "Cl? invalide ou passerelle indisponible.",
+  "common.logout": "D?connexion"
 }

@@ -400,5 +400,11 @@
   "dashboard.kpiErrors": "Fehler",
   "dashboard.kpiCache": "Cache-Treffer",
   "dashboard.kpiCostToday": "Kosten heute",
-  "dashboard.vsYesterday": "vs. gestern"
+  "dashboard.vsYesterday": "vs. gestern",
+  "auth.title": "Administratoranmeldung",
+  "auth.subtitle": "Verwenden Sie einen API-Schl?ssel mit manage-Berechtigung.",
+  "auth.apiKey": "Admin-API-Schl?ssel",
+  "auth.signIn": "Anmelden",
+  "auth.error": "Ung?ltiger Schl?ssel oder Gateway nicht erreichbar.",
+  "common.logout": "Abmelden"
 }

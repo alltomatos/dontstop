@@ -400,5 +400,11 @@
   "dashboard.kpiErrors": "Errors",
   "dashboard.kpiCache": "Cache hit",
   "dashboard.kpiCostToday": "Cost today",
-  "dashboard.vsYesterday": "vs. yesterday"
+  "dashboard.vsYesterday": "vs. yesterday",
+  "auth.title": "Admin sign in",
+  "auth.subtitle": "Use an API key with manage scope to open the console.",
+  "auth.apiKey": "Admin API key",
+  "auth.signIn": "Sign in",
+  "auth.error": "Invalid key or gateway unavailable.",
+  "common.logout": "Sign out"
 }
