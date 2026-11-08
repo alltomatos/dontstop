@@ -232,3 +232,46 @@ export async function getCacheEvents(limit = 20): Promise<CacheEvent[]> {
     return [];
   }
 }
+
+
+export interface DLPRule {
+  id: string;
+  name: string;
+  detector: string;
+  action: "allow" | "redact" | "block" | "audit";
+  severity: "low" | "medium" | "high" | "critical";
+  enabled: boolean;
+  created_at: string;
+}
+
+export interface DLPEvent {
+  id: string;
+  request_id?: string;
+  detector: string;
+  action: string;
+  severity: string;
+  value_hash?: string;
+  created_at: string;
+}
+
+export async function getDlpRules(): Promise<DLPRule[]> {
+  const response = await adminRequest("/admin/v1/dlp/rules");
+  if (!response?.ok) return [];
+  try {
+    const body = await response.json() as { data?: DLPRule[] };
+    return Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getDlpEvents(limit = 20): Promise<DLPEvent[]> {
+  const response = await adminRequest(`/admin/v1/dlp/events?limit=${limit}`);
+  if (!response?.ok) return [];
+  try {
+    const body = await response.json() as { data?: DLPEvent[] };
+    return Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}
