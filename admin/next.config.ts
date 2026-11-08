@@ -11,6 +11,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   poweredByHeader: false,
   async headers() {
     const headers = process.env.NODE_ENV === "production"
