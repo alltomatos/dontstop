@@ -123,6 +123,7 @@ func run(logger *slog.Logger) error {
 		deps.AdminMCP = admin.NewMCPService(pool)
 		deps.AdminCache = admin.NewCacheService(pool)
 		deps.AdminDLP = admin.NewDLPService(pool)
+		deps.AdminEndpoints = admin.NewEndpointService()
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)

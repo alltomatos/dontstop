@@ -154,3 +154,15 @@ Lista regras com detector, a??o, severidade e estado.
 Eventos sem PII bruta: detector, a??o, severidade, request id e hash.
 
 O console carrega regras/eventos da Admin API com fallback mock.
+
+## Endpoints
+
+### `GET /admin/v1/endpoints`
+
+Cat?logo est?tico versionado de endpoints p?blicos, com categoria, path, modelos e estado.
+
+### `GET /admin/v1/endpoints/{id}/policy`
+
+Pol?tica padr?o: auth obrigat?ria, 120 RPM, cache e DLP habilitados, proxy desligado, body de 1 MiB e timeout de 60 s.
+
+O console usa o cat?logo da Admin API com fallback local.
