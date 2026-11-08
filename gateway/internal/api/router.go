@@ -17,16 +17,17 @@ type ModelLister interface {
 
 // Dependencies contains the gateway HTTP collaborators.
 type Dependencies struct {
-	Readiness  *health.Registry
-	Verifier   *auth.Verifier
-	Models     ModelLister
-	Chat       ChatService
-	Admin      AdminProviderService
-	AdminKeys  AdminAPIKeyService
-	AdminUsage AdminUsageService
-	AdminMCP   AdminMCPService
-	AdminCache AdminCacheService
-	AdminDLP   AdminDLPService
+	Readiness      *health.Registry
+	Verifier       *auth.Verifier
+	Models         ModelLister
+	Chat           ChatService
+	Admin          AdminProviderService
+	AdminKeys      AdminAPIKeyService
+	AdminUsage     AdminUsageService
+	AdminMCP       AdminMCPService
+	AdminCache     AdminCacheService
+	AdminDLP       AdminDLPService
+	AdminEndpoints AdminEndpointService
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
@@ -72,6 +73,10 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("POST /admin/v1/dlp/rules", deps.Verifier.Middleware(adminDLPCreateRule(deps.AdminDLP)))
 		mux.Handle("PATCH /admin/v1/dlp/rules/{id}", deps.Verifier.Middleware(adminDLPSetRule(deps.AdminDLP)))
 		mux.Handle("GET /admin/v1/dlp/events", deps.Verifier.Middleware(adminDLPEvents(deps.AdminDLP)))
+	}
+	if deps.Verifier != nil && deps.AdminEndpoints != nil {
+		mux.Handle("GET /admin/v1/endpoints", deps.Verifier.Middleware(adminEndpointsList(deps.AdminEndpoints)))
+		mux.Handle("GET /admin/v1/endpoints/{id}/policy", deps.Verifier.Middleware(adminEndpointPolicy(deps.AdminEndpoints)))
 	}
 	return mux
 }

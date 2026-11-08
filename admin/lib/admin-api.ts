@@ -275,3 +275,24 @@ export async function getDlpEvents(limit = 20): Promise<DLPEvent[]> {
     return [];
   }
 }
+
+
+export interface EndpointInfo {
+  id: string;
+  name: string;
+  path: string;
+  category: string;
+  models: number;
+  enabled: boolean;
+}
+
+export async function getEndpoints(): Promise<EndpointInfo[]> {
+  const response = await adminRequest("/admin/v1/endpoints");
+  if (!response?.ok) return [];
+  try {
+    const body = await response.json() as { data?: EndpointInfo[] };
+    return Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}
