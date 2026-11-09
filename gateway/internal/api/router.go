@@ -8,6 +8,7 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
+	"github.com/redis/go-redis/v9"
 )
 
 // ModelLister returns the models available to a tenant.
@@ -29,13 +30,14 @@ type Dependencies struct {
 	AdminDLP       AdminDLPService
 	AdminEndpoints AdminEndpointService
 	AdminAuth      AdminAuthService
+	Redis          *redis.Client
 }
 
 // NewRouter builds the public HTTP surface for the gateway.
 func NewRouter(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 	adminMiddleware := adminAuthMiddleware(deps.Verifier, deps.AdminAuth)
-	loginLimit := newLoginLimiter()
+	loginLimit := newLoginLimiter(deps.Redis)
 	if deps.Readiness != nil {
 		mux.Handle("GET /healthz", deps.Readiness.Liveness())
 		mux.Handle("GET /readyz", deps.Readiness.Readiness())
