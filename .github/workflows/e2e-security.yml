@@ -1,0 +1,144 @@
+name: e2e-security
+
+on:
+  pull_request:
+    paths:
+      - "admin/**"
+      - "gateway/**"
+      - "tests/e2e/**"
+      - "tests/security/**"
+      - ".github/workflows/e2e-security.yml"
+  push:
+    branches: [main]
+    paths:
+      - "admin/**"
+      - "gateway/**"
+      - "tests/e2e/**"
+      - "tests/security/**"
+      - ".github/workflows/e2e-security.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dontstop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dontstop_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/dontstop_test?sslmode=disable
+      REDIS_URL: redis://localhost:6379/0
+      MASTER_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      DONTSTOP_GATEWAY_URL: http://127.0.0.1:8080
+      DONTSTOP_PUBLIC_BASE_URL: http://127.0.0.1:3000
+      DONTSTOP_LOCAL_BASE_URL: http://127.0.0.1:8080
+      DONTSTOP_TRUST_PROXY: "off"
+      DONTSTOP_CONSOLE_AUTH: "on"
+      E2E_BASE_URL: http://127.0.0.1:3000
+      E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/dontstop_test?sslmode=disable
+      E2E_SETUP_EMAIL: qa-owner@example.com
+      E2E_SETUP_PASSWORD: qa-password-123
+      E2E_EMAIL: qa-owner@example.com
+      E2E_PASSWORD: qa-password-123
+      E2E_SETUP_COMPLETE: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.10"
+          cache: true
+      - name: Prepare database
+        working-directory: gateway
+        run: go run ./cmd/migrate
+      - name: Start gateway
+        working-directory: gateway
+        run: |
+          go build -o /tmp/dontstop-gateway ./cmd/gateway
+          nohup /tmp/dontstop-gateway > /tmp/gateway.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/readyz >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/gateway.log
+          exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            admin/package-lock.json
+            tests/e2e/package-lock.json
+            tests/security/package-lock.json
+      - name: Build admin
+        working-directory: admin
+        run: |
+          npm ci
+          npm run build
+          nohup npm run start -- -p 3000 > /tmp/admin.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:3000/onboarding >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/admin.log
+          exit 1
+      - name: Install E2E dependencies
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run fresh onboarding cases
+        working-directory: tests/e2e
+        run: |
+          set -e
+          for test in "TC-ONB-01" "TC-ONB-02" "TC-ONB-03" "TC-ONB-04"; do
+            node reset-db.js
+            E2E_FRESH_INSTANCE=true npx playwright test --grep "$test"
+          done
+      - name: Seed configured instance
+        run: |
+          node tests/e2e/reset-db.js
+          curl -fsS -X POST http://127.0.0.1:3000/api/auth/setup \
+            -H 'Content-Type: application/json' \
+            -d '{"name":"QA Owner","email":"qa-owner@example.com","password":"qa-password-123"}'
+      - name: Run configured onboarding cases
+        working-directory: tests/e2e
+        run: |
+          E2E_FRESH_INSTANCE=false npx playwright test --grep "TC-ONB-05|TC-ONB-06|TC-UI-01"
+      - name: Install security dependencies
+        working-directory: tests/security
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run security cases
+        working-directory: tests/security
+        run: npx playwright test --grep "@security"
+      - name: Upload Playwright reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports
+          path: |
+            tests/e2e/playwright-report
+            tests/security/playwright-report
+          if-no-files-found: ignore

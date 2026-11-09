@@ -109,6 +109,7 @@ func run(logger *slog.Logger) error {
 			return fmt.Errorf("open Redis: %w", err)
 		}
 		defer func() { _ = redisConn.Close() }()
+		deps.Redis = redisConn
 		readiness.Register("redis", func(ctx context.Context) error {
 			return redisConn.Ping(ctx).Err()
 		})
