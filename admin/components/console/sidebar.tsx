@@ -55,7 +55,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="sidebar-foot">{t("common.footer")}</div>
+      <div className="sidebar-foot">dontstop · v0.1</div>
     </aside>
   );
 }

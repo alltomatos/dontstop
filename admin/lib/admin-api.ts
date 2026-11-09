@@ -1,6 +1,5 @@
 import { getAdminKey } from "./admin-auth";
 import {
-  CONFIGURED_PROVIDERS,
   PROVIDERS,
   type Provider,
   type ProviderAccount,
@@ -84,16 +83,24 @@ async function adminRequest(path: string): Promise<Response | null> {
   }
 }
 
-export async function getConfiguredProviders(): Promise<Provider[]> {
+export async function getConfiguredProvidersResult(): Promise<{ providers: Provider[]; error: boolean }> {
   const response = await adminRequest("/admin/v1/providers");
-  if (!response?.ok) return CONFIGURED_PROVIDERS;
+  if (!response) return { providers: [], error: true };
+  if (!response.ok) {
+    console.warn("admin providers request failed", { status: response.status });
+    return { providers: [], error: true };
+  }
   try {
     const body = await response.json() as { data?: AdminProvider[] };
-    if (!Array.isArray(body.data) || body.data.length === 0) return CONFIGURED_PROVIDERS;
-    return body.data.map(mapProvider);
+    if (!Array.isArray(body.data)) return { providers: [], error: true };
+    return { providers: body.data.map(mapProvider), error: false };
   } catch {
-    return CONFIGURED_PROVIDERS;
+    return { providers: [], error: true };
   }
+}
+
+export async function getConfiguredProviders(): Promise<Provider[]> {
+  return (await getConfiguredProvidersResult()).providers;
 }
 
 export async function getProvider(id: string): Promise<Provider | null> {
@@ -102,10 +109,10 @@ export async function getProvider(id: string): Promise<Provider | null> {
     try {
       return mapProvider(await response.json() as AdminProvider);
     } catch {
-      // Fall back to the static catalog below.
+      return null;
     }
   }
-  return PROVIDERS[id] ?? null;
+  return null;
 }
 
 

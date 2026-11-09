@@ -46,6 +46,20 @@ export const PROVIDERS: Record<string, Provider> = {
       { name: "sandbox", meta: "sk-...7c1", status: "ok", statusKey: healthy }
     ]
   },
+  openrouter: {
+    id: "openrouter",
+    name: "OpenRouter",
+    icon: "OR",
+    type: "API key · OpenRouter",
+    status: "ok",
+    statusKey: healthy,
+    capabilities: ["Chat", "Vision", "Tools"],
+    origins: ["native"],
+    configured: false,
+    signupUrl: "https://openrouter.ai/keys",
+    guide: "providers",
+    accounts: []
+  },
   anthropic: {
     id: "anthropic",
     name: "Anthropic",
