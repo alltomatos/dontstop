@@ -1,0 +1,15 @@
+{
+  "name": "dontstop-security-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Suíte de testes de segurança (Playwright) do console dontstop.",
+  "scripts": {
+    "test:sec": "playwright test --grep \"@security\"",
+    "test:sec:report": "playwright test --grep \"@security\" --reporter=html",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^24.19.2"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "dontstop-e2e-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Testes funcionais E2E (Playwright) do console dontstop.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright test --reporter=html",
+    "install:browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^24.0.0"
+  }
+}
