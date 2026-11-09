@@ -20,7 +20,7 @@ func TestLoginLimiterSharesStateThroughRedis(t *testing.T) {
 		t.Fatalf("parse Redis URL: %v", err)
 	}
 	client := redis.NewClient(options)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := client.Ping(ctx).Err(); err != nil {
