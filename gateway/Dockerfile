@@ -6,10 +6,12 @@ COPY go.mod ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/gateway ./cmd/gateway
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=build /out/gateway /app/gateway
+COPY --from=build /out/migrate /app/migrate
 EXPOSE 8080
 USER nonroot:nonroot
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 CMD ["/app/gateway", "healthcheck"]

@@ -1,0 +1,33 @@
+{
+	email admin@alltomatos.dev.br
+	admin off
+}
+
+https://{$DONTSTOP_HOST:dontstop.alltomatos.dev.br} {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+	handle /v1/* {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+	handle /healthz {
+		reverse_proxy gateway:8080
+	}
+	handle /readyz {
+		reverse_proxy gateway:8080
+	}
+	handle {
+		reverse_proxy admin:3000
+	}
+}
+
+http://{$DONTSTOP_HOST:dontstop.alltomatos.dev.br} {
+	redir https://{host}{uri} permanent
+}
