@@ -59,7 +59,7 @@ func adminAuthSetup(service AdminAuthService) http.HandlerFunc {
 	}
 }
 
-func adminAuthLogin(service AdminAuthService) http.HandlerFunc {
+func adminAuthLogin(service AdminAuthService, limiter *loginLimiter) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		request.Body = http.MaxBytesReader(w, request.Body, 1<<20)
 		var input admin.LoginInput
@@ -67,14 +67,25 @@ func adminAuthLogin(service AdminAuthService) http.HandlerFunc {
 			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid JSON body")
 			return
 		}
+		email := strings.ToLower(strings.TrimSpace(input.Email))
+		if limiter != nil && !limiter.Allow(email) {
+			writeAPIError(w, http.StatusTooManyRequests, "rate_limit_error", "too many login attempts")
+			return
+		}
 		session, err := service.Login(request.Context(), input)
 		if errors.Is(err, admin.ErrInvalidCredentials) {
+			if limiter != nil {
+				limiter.Fail(email)
+			}
 			writeAPIError(w, http.StatusUnauthorized, "authentication_error", "invalid email or password")
 			return
 		}
 		if err != nil {
 			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to login")
 			return
+		}
+		if limiter != nil {
+			limiter.Reset(email)
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_ = json.NewEncoder(w).Encode(session)

@@ -35,6 +35,7 @@ type Dependencies struct {
 func NewRouter(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 	adminMiddleware := adminAuthMiddleware(deps.Verifier, deps.AdminAuth)
+	loginLimit := newLoginLimiter()
 	if deps.Readiness != nil {
 		mux.Handle("GET /healthz", deps.Readiness.Liveness())
 		mux.Handle("GET /readyz", deps.Readiness.Readiness())
@@ -50,7 +51,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	if deps.AdminAuth != nil {
 		mux.Handle("GET /admin/v1/setup/status", adminAuthStatus(deps.AdminAuth))
 		mux.Handle("POST /admin/v1/setup", adminAuthSetup(deps.AdminAuth))
-		mux.Handle("POST /admin/v1/auth/login", adminAuthLogin(deps.AdminAuth))
+		mux.Handle("POST /admin/v1/auth/login", adminAuthLogin(deps.AdminAuth, loginLimit))
 		mux.Handle("GET /admin/v1/auth/me", adminMiddleware(http.HandlerFunc(adminAuthMe)))
 		mux.Handle("POST /admin/v1/auth/logout", adminMiddleware(adminAuthLogout(deps.AdminAuth)))
 	}

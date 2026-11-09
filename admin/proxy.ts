@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { consoleAuthDisabled } from "./lib/console-auth";
 
 const ADMIN_COOKIE = "dontstop_admin_key";
 const SESSION_COOKIE = "dontstop_session";
 
 export function proxy(request: NextRequest) {
-  if (process.env.DONTSTOP_CONSOLE_AUTH === "off") {
+  if (consoleAuthDisabled()) {
     return NextResponse.next();
   }
   if (request.cookies.get(SESSION_COOKIE)?.value || request.cookies.get(ADMIN_COOKIE)?.value) {

@@ -1,8 +1,11 @@
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/console/sidebar";
 import { Topbar } from "@/components/console/topbar";
-import { Onboarding } from "@/components/console/onboarding";
+import { consoleSessionState } from "@/lib/admin-auth";
 
-export default function ConsoleLayout({ children }: { children: React.ReactNode }) {
+export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
+  const session = await consoleSessionState();
+  if (session === "unauthenticated") redirect("/login");
   return (
     <div className="app">
       <Sidebar />
@@ -10,7 +13,6 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
         <Topbar />
         <main className="content">{children}</main>
       </div>
-      <Onboarding />
     </div>
   );
 }

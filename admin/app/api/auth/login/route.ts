@@ -15,6 +15,12 @@ export async function POST(request: Request) {
     body: JSON.stringify({ email, password }),
     cache: "no-store"
   }).catch(() => null);
+  if (upstream?.status === 429) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": upstream.headers.get("Retry-After") ?? "300" } }
+    );
+  }
   if (!upstream?.ok) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

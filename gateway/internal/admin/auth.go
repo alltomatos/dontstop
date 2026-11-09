@@ -84,6 +84,10 @@ func (s *AuthService) Setup(ctx context.Context, input SetupInput) (Session, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('dontstop:setup'))`); err != nil {
+		return Session{}, fmt.Errorf("lock setup: %w", err)
+	}
+
 	var count int
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM admin_users`).Scan(&count); err != nil {
 		return Session{}, fmt.Errorf("count admin users: %w", err)
