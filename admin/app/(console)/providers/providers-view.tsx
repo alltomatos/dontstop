@@ -10,7 +10,7 @@ import { ORIGIN_ORDER, type Provider, type ProviderOrigin } from "@/lib/provider
 
 type OriginFilter = ProviderOrigin | "all";
 
-export function ProvidersView({ providers, empty = false }: { providers: Provider[]; empty?: boolean }) {
+export function ProvidersView({ providers, error = false, empty = false }: { providers: Provider[]; error?: boolean; empty?: boolean }) {
   const { t, tp } = useI18n();
   const [query, setQuery] = useState("");
   const [origin, setOrigin] = useState<OriginFilter>("all");
@@ -26,7 +26,8 @@ export function ProvidersView({ providers, empty = false }: { providers: Provide
     });
   }, [empty, origin, providers, query]);
 
-  const noResults = !empty && visible.length === 0;
+  const isEmpty = !empty && providers.length === 0;
+  const noResults = !empty && providers.length > 0 && visible.length === 0;
 
   return (
     <>
@@ -45,6 +46,12 @@ export function ProvidersView({ providers, empty = false }: { providers: Provide
           </>
         )}
       />
+
+      {error ? (
+        <p className="small" role="status" style={{ color: "var(--danger)", marginBottom: 12 }}>
+          {t("common.gatewayError")}
+        </p>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="toolbar">
@@ -77,7 +84,7 @@ export function ProvidersView({ providers, empty = false }: { providers: Provide
         </div>
       </div>
 
-      {empty || noResults ? (
+      {empty || isEmpty || noResults ? (
         <EmptyState
           title={noResults ? t("providers.noResultsTitle") : t("providers.emptyTitle")}
           body={noResults ? t("providers.noResultsBody") : t("providers.emptyBody")}

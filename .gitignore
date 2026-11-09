@@ -67,3 +67,12 @@ temp/
 Thumbs.db
 desktop.ini
 *.swp
+
+# Playwright (security suite)
+tests/security/playwright-report/
+tests/security/test-results/
+tests/security/.auth/
+
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+

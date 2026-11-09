@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { getAdminKey } from "@/lib/admin-auth";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const base = process.env.DONTSTOP_GATEWAY_URL;
-  const key = process.env.DONTSTOP_ADMIN_API_KEY;
+  const key = await getAdminKey();
   if (!base || !key) {
     return NextResponse.json({ error: "admin_api_not_configured" }, { status: 503 });
   }

@@ -92,6 +92,11 @@ Se as variáveis não existirem ou o gateway falhar, o console usa o catálogo m
 - Credenciais são cifradas com o `MASTER_KEY` do gateway e nunca aparecem na resposta.
 - O tenant vem do principal autenticado; o cliente não escolhe `tenant_id`.
 - Erros de validação retornam 400; recurso de outro tenant retorna 404.
+- As rotas `/api/admin/*` do Next repassam o token da sessão do console (cookie `dontstop_session`); o gateway valida sessão ou API key com escopo `manage`. Cookie forjado resulta em 401/403.
+- O layout `(console)` revalida a sessão em `/admin/v1/auth/me`; presença de cookie não é autenticação.
+- `POST /admin/v1/auth/login` aplica janela deslizante de 10 falhas por e-mail em 5 minutos e responde 429 com `Retry-After`.
+- `POST /admin/v1/setup` é serializado por advisory lock transacional; chamadas concorrentes resultam em um `201` e um `409` (apenas um owner por instância).
+- Os testes negativos ficam em `tests/security/*.spec.sec.ts` e rodam com `npm run test:sec` a partir de `tests/security`.
 
 ## API keys
 

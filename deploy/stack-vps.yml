@@ -1,0 +1,172 @@
+version: "3.9"
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    configs:
+      - source: caddyfile2
+        target: /etc/caddy/Caddyfile
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: dontstop
+      POSTGRES_USER: dontstop
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dontstop -d dontstop"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  migrate:
+    image: ronaldodavi/dontstop-gateway:onboarding-20261108
+    entrypoint: ["/app/migrate"]
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+    secrets:
+      - database_url
+    networks:
+      - data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 20
+
+  gateway:
+    image: ronaldodavi/dontstop-gateway:onboarding-20261108
+    environment:
+      PORT: "8080"
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+      MASTER_KEY_FILE: /run/secrets/master_key
+    secrets:
+      - database_url
+      - redis_url
+      - master_key
+    networks:
+      - edge
+      - app
+      - data
+    stop_grace_period: 90s
+    healthcheck:
+      test: ["CMD", "/app/gateway", "healthcheck"]
+      interval: 15s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+
+  admin:
+    image: ronaldodavi/dontstop-admin:onboarding-20261108
+    environment:
+      DONTSTOP_GATEWAY_URL: http://gateway:8080
+      DONTSTOP_PUBLIC_BASE_URL: https://dontstop.alltomatos.dev.br
+      DONTSTOP_LOCAL_BASE_URL: http://gateway:8080
+      DONTSTOP_BASE_PATH: ""
+      DONTSTOP_TRUST_PROXY: "on"
+      DONTSTOP_CONSOLE_AUTH: "on"
+    networks:
+      - edge
+      - app
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+
+networks:
+  edge:
+    driver: overlay
+  app:
+    driver: overlay
+  data:
+    driver: overlay
+    driver_opts:
+      encrypted: "true"
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  database_url:
+    external: true
+    name: dontstop_database_url
+  redis_url:
+    external: true
+    name: dontstop_redis_url
+  master_key:
+    external: true
+    name: dontstop_master_key
+  postgres_password:
+    external: true
+    name: dontstop_postgres_password
+
+configs:
+  caddyfile2:
+    file: ./Caddyfile
