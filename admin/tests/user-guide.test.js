@@ -12,7 +12,7 @@ const slugs = Object.keys(manifest.guides);
 test('manifest covers every locale and guide', () => {
   assert.equal(manifest.defaultLocale, 'en');
   assert.deepEqual(manifest.locales, locales);
-  assert.equal(slugs.length, 12);
+  assert.equal(slugs.length, 13);
   for (const slug of slugs) assert.deepEqual(manifest.guides[slug].locales, locales);
 });
 

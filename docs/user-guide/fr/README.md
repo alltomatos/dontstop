@@ -18,3 +18,4 @@ Un guide par page, fenêtre modale et fonctionnalité de la console. Les capture
 | `settings` | Paramètres | [Paramètres](settings.md) | [PNG](../assets/fr/settings.png) |
 | `new-api-key` | Nouvelle clé d'API | [Nouvelle clé d'API](new-api-key.md) | [PNG](../assets/fr/new-api-key.png) |
 | `onboarding` | Onboarding | [Onboarding](onboarding.md) | [PNG](../assets/fr/onboarding.png) |
+| `provider-setup` | Configuration des fournisseurs | [Configuration des fournisseurs](provider-setup.md) | [PNG](../assets/fr/provider-setup.png) |

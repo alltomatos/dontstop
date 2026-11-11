@@ -127,6 +127,8 @@ npm run build
 # Guia do usuário (raiz do repo)
 node scripts/generate-user-guide.js
 node scripts/capture-user-guide.js
+node scripts/capture-provider-guide.js   # capturas do fluxo de provedores (requer PROVIDER_ID)
+node scripts/build-guide-html.js         # gera admin/public/guide/*.html (links Ajuda do console)
 
 # Docker Swarm (produção/homologação)
 docker stack deploy -c deploy/stack.yml dontstop

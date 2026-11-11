@@ -18,3 +18,4 @@ Ein Leitfaden pro Seite, Modal und Funktion der Konsole. Screenshots werden in d
 | `settings` | Einstellungen | [Einstellungen](settings.md) | [PNG](../assets/de/settings.png) |
 | `new-api-key` | Neuer API-Schlüssel | [Neuer API-Schlüssel](new-api-key.md) | [PNG](../assets/de/new-api-key.png) |
 | `onboarding` | Onboarding | [Onboarding](onboarding.md) | [PNG](../assets/de/onboarding.png) |
+| `provider-setup` | Anbieter einrichten | [Anbieter einrichten](provider-setup.md) | [PNG](../assets/de/provider-setup.png) |

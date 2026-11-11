@@ -18,3 +18,4 @@ Um guia por página, modal e funcionalidade da consola. As capturas são feitas 
 | `settings` | Configurações | [Configurações](settings.md) | [PNG](../assets/pt-PT/settings.png) |
 | `new-api-key` | Nova chave de API | [Nova chave de API](new-api-key.md) | [PNG](../assets/pt-PT/new-api-key.png) |
 | `onboarding` | Onboarding | [Onboarding](onboarding.md) | [PNG](../assets/pt-PT/onboarding.png) |
+| `provider-setup` | Configuração de fornecedores | [Configuração de fornecedores](provider-setup.md) | [PNG](../assets/pt-PT/provider-setup.png) |

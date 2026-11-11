@@ -75,8 +75,11 @@ export function plural(
   );
 }
 
-export function guideUrl(locale: Locale, slug: string): string {
-  return `https://github.com/alltomatos/dontstop/blob/main/docs/user-guide/${locale}/${slug}.md`;
+export function guideUrl(locale: Locale, slug: string, anchor?: string): string {
+  // Guides are rendered to static HTML at build time (npm run guide:build) and
+  // served by the console, so links work offline and inside the container.
+  const base = `/guide/${locale}/${slug}.html`;
+  return anchor ? `${base}#${encodeURIComponent(anchor)}` : base;
 }
 
 export function formatNumber(locale: Locale, value: number, options?: Intl.NumberFormatOptions): string {

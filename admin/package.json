@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.js",
     "validate": "node scripts/validate.js",
-    "build:legacy": "node scripts/build.js"
+    "build:legacy": "node scripts/build.js",
+    "guide:build": "node ../scripts/build-guide-html.js"
   },
   "dependencies": {
     "lucide-react": "^1.70.0",

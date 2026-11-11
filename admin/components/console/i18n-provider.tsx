@@ -25,13 +25,20 @@ interface I18nValue {
   setLocale: (locale: Locale) => void;
   t: (key: string, values?: Record<string, string | number>) => string;
   tp: (key: string, count: number, values?: Record<string, string | number>) => string;
-  guideUrl: (slug: string) => string;
+  guideUrl: (slug: string, anchor?: string) => string;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
 const listeners = new Set<() => void>();
 
 function readLocale(): Locale {
+  let requested: string | null = null;
+  try {
+    requested = new URLSearchParams(window.location.search).get("lang");
+  } catch {
+    requested = null;
+  }
+  if (requested) return resolveLocale(requested);
   let stored: string | null = null;
   try {
     stored = window.localStorage.getItem(STORAGE_KEY);
@@ -80,7 +87,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLocale,
     t: (key, values) => translate(locale, key, values),
     tp: (key, count, values) => plural(locale, key, count, values),
-    guideUrl: slug => guideUrl(locale, slug)
+    guideUrl: (slug, anchor) => guideUrl(locale, slug, anchor)
   }), [locale, setLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

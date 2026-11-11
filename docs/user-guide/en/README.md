@@ -18,3 +18,4 @@ One guide per console page, modal and workflow. Screenshots are captured in the 
 | `settings` | Settings | [Settings](settings.md) | [PNG](../assets/en/settings.png) |
 | `new-api-key` | New API key | [New API key](new-api-key.md) | [PNG](../assets/en/new-api-key.png) |
 | `onboarding` | Onboarding | [Onboarding](onboarding.md) | [PNG](../assets/en/onboarding.png) |
+| `provider-setup` | Provider setup | [Provider setup](provider-setup.md) | [PNG](../assets/en/provider-setup.png) |

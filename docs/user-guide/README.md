@@ -2,6 +2,11 @@
 
 > Versioned user guide for every console page, modal and workflow. Six languages share the same slugs.
 > **Fallback:** if a localized guide is missing, the help link opens the English guide; if no guide exists, it opens this index.
+>
+> **Console links:** the admin serves these guides locally as static HTML. After editing a guide or
+> its screenshots, run `node scripts/build-guide-html.js` (or `npm run guide:build` in `admin/`) to
+> regenerate `admin/public/guide/`. The help links never point to an external repository, so they work
+> offline and inside the container.
 
 ## Languages
 
@@ -43,10 +48,13 @@
 Each page, modal and onboarding screen exposes a contextual **Help** link. Its URL is built from the repository configuration (`repoUrl`, `branch`, `basePath`) plus the active locale and guide slug:
 
 ```text
-https://github.com/alltomatos/dontstop/blob/main/docs/user-guide/<locale>/<slug>.md
+/guide/<locale>/<slug>.html
 ```
 
-Configure the base URL and branch in `admin/src/guide-links.js` (`GUIDE_CONFIG`). The link opens in a new tab with `rel="noopener noreferrer"` and translated `aria-label`/`title`.
+The admin serves the rendered HTML from `admin/public/guide/` (built by `scripts/build-guide-html.js`),
+so help links open locally with images and anchors. The static design-system mockup still uses
+`admin/src/guide-links.js` (`GUIDE_CONFIG`) and may point to the repository. Links open in a new tab
+with `rel="noopener noreferrer"` and translated `aria-label`/`title`.
 
 ## Conventions
 
