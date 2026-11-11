@@ -76,9 +76,8 @@ export function plural(
 }
 
 export function guideUrl(locale: Locale, slug: string, anchor?: string): string {
-  // Guides are rendered to static HTML at build time (npm run guide:build) and
-  // served by the console, so links work offline and inside the container.
-  const base = `/guide/${locale}/${slug}.html`;
+  // Served by /guide/[locale]/[slug]: local HTML by default, GitHub in production.
+  const base = `/guide/${locale}/${slug}`;
   return anchor ? `${base}#${encodeURIComponent(anchor)}` : base;
 }
 

@@ -382,3 +382,30 @@
 - `[MAP-OMNI]` — 380 provedores, circuit breaker/cooldown, policies, route guard, Redis opcional e dívidas de escala.
 - `[MAP-ALLCODE]` — catálogo/plugins, protocolos, adaptadores, rotação sem feedback e instalação em runtime.
 - `[REPO]` — confirmação de greenfield; decisões são propostas a validar.
+
+## ADR-020 - Origem configurável do guia do usuário (local × GitHub)
+
+**Contexto:** o guia era renderizado para `admin/public/guide/**` e embutido na imagem do admin; qualquer correção de texto exigia rebuild e redeploy do container.
+
+**Decisão:** servir o guia por uma rota server-side (`GET /guide/{locale}/{slug}`) que escolhe a origem em runtime via `DONTSTOP_GUIDE_SOURCE`:
+- `local` (padrão): HTML embutido em `admin/public/guide`, mantendo o fluxo de desenvolvimento atual;
+- `github`: Markdown buscado em `raw.githubusercontent.com` (`DONTSTOP_GUIDE_REPO`/`DONTSTOP_GUIDE_REF`), renderizado no servidor.
+
+A URL pública, as âncoras, as imagens e a abertura em nova aba não mudam. Em produção (`deploy/stack-vps.yml`) a fonte é `github`; `docker-compose.yml`/`.env.example` mantêm `local` como padrão. O navegador nunca acessa o GitHub diretamente e nenhum token é usado.
+
+**Fallback:** locale solicitado → `en`; falha do GitHub → cache expirado → HTML local embutido (locale → `en`) → página amigável. A rota sempre responde `200`.
+
+**Cache:** em memória por processo, TTL curto (`DONTSTOP_GUIDE_CACHE_TTL_SECONDS`, padrão 60 s), requisições condicionais (`If-None-Match`) e `?refresh=1` com cooldown de 10 s. O cache é por réplica; o atraso máximo é o TTL.
+
+**Alternativas rejeitadas:**
+- Fetch direto no cliente: expõe CORS, dificulta cache/fallback e permite vazar configuração.
+- Rewrite via middleware: `public` tem precedência e o ambiente de runtime não é confiável no edge.
+- Embutir o conteúdo a cada mudança: exige rebuild, que é exatamente o problema.
+
+**Consequências:**
+- (+) Mudanças commitadas no guia passam a valer sem novo container; conteúdo local permanece como fallback offline.
+- (+) Nenhum segredo no cliente; tráfego limitado por cache/TTL.
+- (?) Cada réplica pode servir conteúdo com atraso de até um TTL; o GitHub precisa estar acessível para atualizações.
+- (?) O `guide:build` continua necessário para atualizar a cópia embutida (modo local e fallback).
+
+**Documento correspondente:** `docs/reference/GUIDE-SOURCE.md`.

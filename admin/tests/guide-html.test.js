@@ -80,5 +80,5 @@ test("provider setup guide embeds the step screenshots", () => {
 
 test("console links point to the local guide bundle", () => {
   const source = fs.readFileSync(path.join(root, "admin", "lib", "i18n.ts"), "utf8");
-  assert.ok(source.includes("/guide/${locale}/${slug}.html"), "guideUrl must use the local bundle");
+  assert.ok(source.includes("/guide/${locale}/${slug}"), "guideUrl must use the guide route");
 });
