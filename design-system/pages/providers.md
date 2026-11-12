@@ -117,6 +117,50 @@ Provedor            Status   Capabilities      Contas      Ações
 - **Saúde**: p95, erros, cache hit, circuit breaker, últimos eventos.
 - **Políticas**: modelos permitidos, rate limit, proxy, DLP (link para a política do endpoint quando aplicável).
 
+## Contas e testes segmentados
+
+O detalhe do provedor mantém o **Resumo** consolidado e adiciona um card **Resumo por conta**
+(data-dense, uma linha por conta) com: nome, indicador Ativa/Inativa, estado de saúde
+(Saudável, Cooldown, Quarentena, Indisponível, Desabilitada), modelos disponíveis, modelos
+utilizáveis e chips de capacidades. Contas em cooldown/quarentena mostram `0 utilizáveis` e não
+entram em `usable_accounts`.
+
+Acima da lista de modelos há o seletor **Conta para teste**, persistido em
+`localStorage:dontstop.modelTestAccount.v1` por provedor. Somente contas ativas com modelos
+utilizáveis aparecem; o padrão é a última conta válida ou a primeira ativa. O botão Testar de
+cada modelo envia `account_id`, exibe spinner local e o resultado nomeia a conta usada. O botão
+Testar da conta usa o endpoint individual e mostra o resultado sob a própria conta, com
+`role="status"`; falhas são isoladas.
+
+## Proxy por conta (detalhe da conta)
+
+Mock: [`provider-account-proxy.svg`](../mockups/provider-account-proxy.svg) (bloco dentro da conta) e
+[`proxy-webshare-config.svg`](../mockups/proxy-webshare-config.svg) (configuração do pool).
+
+Cada conta em `/providers/{id}` exibe:
+
+1. **Modo de proxy** (`off` | `preferred` | `required`), padrão `off`, com helper:
+   - `off`: ignora o proxy e conecta direto;
+   - `preferred`: usa o proxy e cai para direto em falha/quarentena;
+   - `required`: exige proxy saudável; sem ele a chamada falha antes do upstream.
+2. **Proxy atribuído**: `endpoint:porta`, região (cidade/país) e chip de saúde
+   (`Saudável`, `Em quarentena`, `Indisponível`). Sem atribuição mostra “Sem proxy atribuído”.
+3. **Ações**: `Atribuir proxy` / `Reatribuir` (modal com o pool e seleção única) e
+   `Remover atribuição`. O modal permite cadastrar um proxy manual (endereço, porta, região,
+   rótulo, usuário e senha) quando o pool está vazio.
+
+Estados do bloco/modal: carregando (skeleton no modo e spinner na lista), vazio
+(“Nenhum proxy cadastrado”), erro de carregamento/salvamento com `Tentar novamente`, limite de
+**3 contas por proxy** (item desabilitado com contagem), e sucesso reflete via `router.refresh`.
+
+APIs: `PATCH /admin/v1/providers/{id}/accounts/{accountId}` (`proxy_mode`),
+`GET|POST /admin/v1/proxies`, `PUT|DELETE /admin/v1/providers/{id}/accounts/{accountId}/proxy`.
+Credenciais do proxy nunca voltam ao cliente (somente `id`, `label`, `address`, `port`, região e saúde).
+
+i18n: `providers.proxy*` (título, modos, helpers, saúde, ações, modal, cadastro, erros e limite) nos
+seis locales. Acessibilidade: `select` com `aria-label` por conta, modal com foco preso,
+`aria-labelledby`, itens de rádio navegáveis e mensagens `role="alert"`.
+
 ## Dados e APIs
 
 - `GET /admin/v1/providers?status=&auth=&capability=&q=&model=`

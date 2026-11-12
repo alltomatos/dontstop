@@ -45,7 +45,20 @@ function readLocale(): Locale {
   } catch {
     stored = null;
   }
-  return stored ? resolveLocale(stored) : detectLocale(navigator.languages);
+  if (stored) return resolveLocale(stored);
+  const cookie = readLocaleCookie();
+  if (cookie) return resolveLocale(cookie);
+  return detectLocale(navigator.languages);
+}
+
+function readLocaleCookie(): string | null {
+  try {
+    const prefix = `${STORAGE_KEY}=`;
+    const entry = document.cookie.split("; ").find(part => part.startsWith(prefix));
+    return entry ? decodeURIComponent(entry.slice(prefix.length)) : null;
+  } catch {
+    return null;
+  }
 }
 
 function subscribe(listener: () => void): () => void {
@@ -64,17 +77,25 @@ function notify(): void {
   listeners.forEach(listener => listener());
 }
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const locale = useSyncExternalStore(subscribe, readLocale, () => "en" as Locale);
+export function I18nProvider({ children, initialLocale = "en" }: { children: ReactNode; initialLocale?: Locale }) {
+  const locale = useSyncExternalStore(subscribe, readLocale, () => initialLocale);
 
   useEffect(() => {
     document.documentElement.lang = locale;
+    // Persist the resolved locale so the next server render starts in the same
+    // language (avoids an English flash before hydration).
+    try {
+      document.cookie = `${STORAGE_KEY}=${encodeURIComponent(locale)}; path=/; max-age=31536000; samesite=lax`;
+    } catch {
+      // Cookies can be disabled; the client still renders the stored locale.
+    }
   }, [locale]);
 
   const setLocale = useCallback((next: Locale) => {
     const resolved = LOCALE_CODES.includes(next) ? next : "en";
     try {
       window.localStorage.setItem(STORAGE_KEY, resolved);
+      document.cookie = `${STORAGE_KEY}=${encodeURIComponent(resolved)}; path=/; max-age=31536000; samesite=lax`;
     } catch {
       // Storage can be disabled; the current session still updates.
     }

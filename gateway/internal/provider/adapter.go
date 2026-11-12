@@ -13,10 +13,13 @@ import (
 )
 
 var (
-	ErrProviderAuth        = errors.New("provider authentication failed")
-	ErrProviderRateLimited = errors.New("provider rate limited")
-	ErrProviderUnavailable = errors.New("provider unavailable")
-	ErrProviderResponse    = errors.New("invalid provider response")
+	ErrProviderAuth           = errors.New("provider authentication failed")
+	ErrProviderRateLimited    = errors.New("provider rate limited")
+	ErrProviderQuota          = errors.New("provider quota exhausted")
+	ErrProviderUnavailable    = errors.New("provider unavailable")
+	ErrProviderResponse       = errors.New("invalid provider response")
+	ErrProviderInvalidRequest = errors.New("invalid provider request")
+	ErrProxyFailure           = errors.New("proxy transport failure")
 )
 
 const maxProviderResponseBytes = 4 << 20
@@ -54,9 +57,10 @@ type ChatResponse struct {
 
 // Account is the runtime credential/endpoint selected for a provider.
 type Account struct {
-	ID      string
-	BaseURL string
-	APIKey  string
+	ID       string
+	BaseURL  string
+	APIKey   string
+	ProxyURL string
 }
 
 // Adapter translates the gateway contract to one provider protocol.
@@ -89,8 +93,8 @@ func defaultClient() *http.Client {
 	return &http.Client{Timeout: 60 * time.Second}
 }
 
-func postJSON(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, target any) error {
-	response, err := doProviderRequest(ctx, client, url, headers, payload, "application/json")
+func postJSON(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, target any, proxyEnabled bool) error {
+	response, err := doProviderRequest(ctx, client, url, headers, payload, "application/json", proxyEnabled)
 	if err != nil {
 		return err
 	}
@@ -102,15 +106,15 @@ func postJSON(ctx context.Context, client *http.Client, url string, headers map[
 	return nil
 }
 
-func postSSE(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any) (io.ReadCloser, error) {
-	response, err := doProviderRequest(ctx, client, url, headers, payload, "text/event-stream")
+func postSSE(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, proxyEnabled bool) (io.ReadCloser, error) {
+	response, err := doProviderRequest(ctx, client, url, headers, payload, "text/event-stream", proxyEnabled)
 	if err != nil {
 		return nil, err
 	}
 	return response.Body, nil
 }
 
-func doProviderRequest(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, accept string) (*http.Response, error) {
+func doProviderRequest(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, accept string, proxyEnabled bool) (*http.Response, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("encode provider request: %w", err)
@@ -121,6 +125,9 @@ func doProviderRequest(ctx context.Context, client *http.Client, url string, hea
 	}
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", accept)
+	if strings.Contains(url, "opencode.ai/") {
+		request.Header.Set("x-opencode-session", newOpenCodeSessionID())
+	}
 	for name, value := range headers {
 		request.Header.Set(name, value)
 	}
@@ -133,8 +140,12 @@ func doProviderRequest(ctx context.Context, client *http.Client, url string, hea
 		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, maxProviderResponseBytes))
 		_ = response.Body.Close()
 		switch {
+		case response.StatusCode == http.StatusBadRequest || response.StatusCode == http.StatusRequestEntityTooLarge || response.StatusCode == http.StatusUnprocessableEntity:
+			return nil, fmt.Errorf("%w: status %d", ErrProviderInvalidRequest, response.StatusCode)
 		case response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden:
 			return nil, ErrProviderAuth
+		case response.StatusCode == http.StatusPaymentRequired:
+			return nil, ErrProviderQuota
 		case response.StatusCode == http.StatusTooManyRequests:
 			return nil, ErrProviderRateLimited
 		case response.StatusCode >= 500:

@@ -376,12 +376,6 @@
 - (+) Falha expl?cita, origem audit?vel e UI consistente; nenhuma depend?ncia de gateway externo em runtime.
 - (?) O AgentRouter pode ficar indispon?vel enquanto o transporte nativo n?o passar no WAF; streaming ganha lat?ncia de bufferiza??o.
 
-## Fontes consultadas
-
-- `[MAP-9R]` — fallback, cache, SQLite, multitenancy, mutex global e segredos em texto plano.
-- `[MAP-OMNI]` — 380 provedores, circuit breaker/cooldown, policies, route guard, Redis opcional e dívidas de escala.
-- `[MAP-ALLCODE]` — catálogo/plugins, protocolos, adaptadores, rotação sem feedback e instalação em runtime.
-- `[REPO]` — confirmação de greenfield; decisões são propostas a validar.
 
 ## ADR-020 - Origem configurável do guia do usuário (local × GitHub)
 
@@ -409,3 +403,61 @@ A URL pública, as âncoras, as imagens e a abertura em nova aba não mudam. Em 
 - (?) O `guide:build` continua necessário para atualizar a cópia embutida (modo local e fallback).
 
 **Documento correspondente:** `docs/reference/GUIDE-SOURCE.md`.
+
+## ADR-021 - Proxy Webshare dedicado e sticky por conta de provedor
+
+**Contexto:** contas de provedor compartilham o IP de saída do gateway, o que aumenta risco de bloqueio, mistura de reputação e dificulta diagnosticar falhas de rede. O Webshare oferece lista de proxies direct (IP:porta + credenciais) e um endpoint backbone com sessão sticky/rotação via username. O dontstop precisa de IP dedicado por conta, com fallback direto e sem acoplar o data plane a gateways de referência.
+
+**Decisão:**
+- Usar a **API v2/v3 do Webshare** como fonte de proxies, com API key configurada pelo console, cifrada em `webshare_settings` (AES-256-GCM, `key_version`) e nunca retornada/logada.
+- Preferir **proxies direct**, persistidos em `proxy_endpoints` com credenciais cifradas (AES-256-GCM) e vínculo por conta em `proxy_assignments` (sticky de 30 min, renovável). Cada conta tem um único IP por vez; um mesmo IP pode atender **N contas do mesmo tenant** (limite configurável, padrão 3), sempre exposto na UI.
+- Expor `proxy_mode` por conta: `off`, `preferred` (fallback direto) e `required` (falha fechada).
+- Selecionar por **score** persistido (sucesso e falha) e **quarentena** de 5 min, com estado em Redis sob `t:{tenant}:proxy:*`; nunca apenas em memória.
+- Rotacionar em falha de transporte, `407`, `429` e `5xx`; `401/403` do provedor **não** rotacionam proxy (são credencial), salvo `407` do proxy.
+- Sincronizar a lista por worker periódico e sob demanda (`WEBSHARE_SYNC_INTERVAL`, padrão 1 h), com advisory lock no Postgres para não sobrepor réplicas, diff idempotente e erros sanitizados em `last_sync_*`.
+- Manter isolamento por tenant em todas as tabelas e chaves Redis. Compartilhar um IP entre contas do mesmo tenant é permitido e visível; **nunca** entre tenants diferentes.
+
+**Alternativas rejeitadas:**
+- **Backbone com `-rotate` por request:** o IP muda no meio da conversa, quebra sticky e piora reputação/limites; fica apenas como opção futura por conta.
+- **Rotação/score em memória (padrão 9Router):** não sobrevive a restart nem funciona com múltiplas réplicas.
+- **Interceptar `globalThis.fetch` (padrão OmniRoute):** acopla transporte global, dificulta testes e vaza decisão para fora do adapter.
+- **Relay types que reescrevem `base_url` (vercel/cloudflare/deno):** viola o catálogo/adapters nativos e a regra de não usar gateways de referência em runtime.
+- **Proxy URL livre por tenant:** risco de SSRF e de credenciais em texto; só endpoints vindos do Webshare.
+
+**Consequências:**
+- (+) IP dedicado e estável por conta; fallback direto controlado; credenciais cifradas; observabilidade por tentativa.
+- (+) Rotação e quarentena consistentes entre réplicas via Redis/DB.
+- (?) Dependência operacional do Webshare (token, plano, limites de 60/min na lista e 30/min em download); indisponibilidade cai para direto em `preferred`.
+- (?) Mais uma tabela e um worker no data plane; exige migração, testes de integração e caos.
+- (?) Custo e limites de banda/concorrência do plano precisam ser monitorados.
+
+**Documento correspondente:** `docs/reference/WEBSHARE-PROXY-PLAN.md`.
+## ADR-022 - Failover padrão entre contas do mesmo provedor
+
+**Status:** Aceito
+**Contexto:** uma conta pode esgotar rate limit, quota ou crédito mesmo com o provedor saudável. Deixar a requisição falhar, ou trocar de provedor antes de tentar as demais contas, desperdiça capacidade já contratada e piora a latência percebida.
+
+**Decisão:**
+- O roteamento é **conta → modelo → provedor** para o modelo solicitado: todas as contas elegíveis do provedor primário são tentadas antes de outro provedor.
+- Gatilhos de failover: 429, 5xx, 401/403 de credencial, quota/crédito esgotado (402/429 com `insufficient_quota`, `billing_hard_limit_reached`) e timeout/erro de transporte.
+- Erros do payload do cliente (400/413/422) são **terminais**: retornam sem consumir outra conta e sem abrir circuit breaker.
+- Cada falha grava cooldown no Redis em `t:{tenant}:cb:{account}:open`, com TTL específico do motivo e backoff exponencial; sucesso limpa o estado. O lockout é por conta (o modelo continua elegível em outra conta).
+- Em streaming, o failover só ocorre antes do primeiro chunk; depois dele o stream é encerrado com erro sanitizado, sem reinício silencioso.
+- Cada tentativa abre evento OTel no span `routing.failover` com conta, provedor, motivo, tentativa e latência; o span final registra conta original, conta selecionada, tentativas e failovers. Credenciais e PII nunca entram em atributos.
+
+**Alternativas rejeitadas:**
+- Trocar direto para outro provedor: ignora contas saudáveis do mesmo provedor e contraria a ordem de failover.
+- Fazer failover em 400 do cliente: multiplica custo/latência e mascara erro de payload.
+- Retry ilimitado: permite tempestade entre contas; o limite de tentativas e o breaker controlam o blast radius.
+
+**Consequências:**
+- (+) Melhor disponibilidade e uso do pool de contas; comportamento padrão sem flag.
+- (+) Cooldown e tracing consistentes entre réplicas.
+- (?) O limite de tentativas por requisição precisa equilibrar latência e diversidade de contas.
+
+## Fontes consultadas
+
+- `[MAP-9R]` — fallback, cache, SQLite, multitenancy, mutex global e segredos em texto plano.
+- `[MAP-OMNI]` — 380 provedores, circuit breaker/cooldown, policies, route guard, Redis opcional e dívidas de escala.
+- `[MAP-ALLCODE]` — catálogo/plugins, protocolos, adaptadores, rotação sem feedback e instalação em runtime.
+- `[REPO]` — confirmação de greenfield; decisões são propostas a validar.

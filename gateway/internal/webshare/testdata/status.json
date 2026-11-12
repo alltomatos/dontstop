@@ -1,0 +1,12 @@
+{
+  "state": "completed",
+  "countries": {
+    "BR": 100
+  },
+  "unallocated_countries": {
+    "DE": 0
+  },
+  "username": "plan-user",
+  "password": "plan-pass",
+  "is_proxy_used": true
+}

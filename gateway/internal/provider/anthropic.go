@@ -61,10 +61,10 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 		Temperature: request.Temperature,
 	}
 	var response anthropicResponse
-	err := postJSON(ctx, a.client, baseURL+"/v1/messages", map[string]string{
+	err := postJSON(ctx, clientFor(a.client, account), baseURL+"/v1/messages", map[string]string{
 		"x-api-key":         account.APIKey,
 		"anthropic-version": "2023-06-01",
-	}, payload, &response)
+	}, payload, &response, account.ProxyURL != "")
 	if err != nil {
 		return ChatResponse{}, err
 	}
@@ -113,10 +113,10 @@ func (a *anthropicAdapter) ChatStream(ctx context.Context, account Account, requ
 		Temperature: request.Temperature,
 		Stream:      true,
 	}
-	body, err := postSSE(ctx, a.client, baseURL+"/v1/messages", map[string]string{
+	body, err := postSSE(ctx, clientFor(a.client, account), baseURL+"/v1/messages", map[string]string{
 		"x-api-key":         account.APIKey,
 		"anthropic-version": "2023-06-01",
-	}, payload)
+	}, payload, account.ProxyURL != "")
 	if err != nil {
 		return nil, err
 	}

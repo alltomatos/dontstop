@@ -1,0 +1,7 @@
+{
+  "id": "plan-1",
+  "proxy_list_download_token": "download-token",
+  "on_demand_refreshes_available": 3,
+  "auto_replace_in_progress": false,
+  "ip_authorization_required": false
+}

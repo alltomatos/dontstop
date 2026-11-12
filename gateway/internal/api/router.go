@@ -23,6 +23,9 @@ type Dependencies struct {
 	Models         ModelLister
 	Chat           ChatService
 	Admin          AdminProviderService
+	AdminProxy     AdminProxyService
+	AdminWebshare  AdminWebshareService
+	AdminCatalog   AdminCatalogService
 	AdminKeys      AdminAPIKeyService
 	AdminUsage     AdminUsageService
 	AdminMCP       AdminMCPService
@@ -62,6 +65,38 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("GET /admin/v1/providers", adminMiddleware(adminProvidersList(deps.Admin)))
 		mux.Handle("GET /admin/v1/providers/{id}", adminMiddleware(adminProviderGet(deps.Admin)))
 		mux.Handle("POST /admin/v1/providers/{id}/accounts", adminMiddleware(adminProviderAddAccount(deps.Admin)))
+		mux.Handle("DELETE /admin/v1/providers/{id}/accounts/{accountId}", adminMiddleware(adminProviderDeleteAccount(deps.Admin)))
+		mux.Handle("PATCH /admin/v1/providers/{id}/accounts/{accountId}", adminMiddleware(adminProviderSetProxyMode(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/accounts/{accountId}/test", adminMiddleware(adminProviderTestAccount(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}/accounts/{accountId}/summary", adminMiddleware(adminProviderAccountSummary(deps.Admin)))
+
+		mux.Handle("POST /admin/v1/providers/{id}/test", adminMiddleware(adminProviderTest(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}/models", adminMiddleware(adminProviderModels(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/models/import", adminMiddleware(adminProviderImportModels(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}/models/configured", adminMiddleware(adminProviderConfiguredModels(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/models/sync", adminMiddleware(adminProviderSyncModels(deps.Admin)))
+		mux.Handle("PATCH /admin/v1/providers/{id}/models", adminMiddleware(adminProviderSetModelActive(deps.Admin)))
+		mux.Handle("PATCH /admin/v1/providers/{id}/models/bulk", adminMiddleware(adminProviderBulkSetModelActive(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/models/test", adminMiddleware(adminProviderTestModel(deps.Admin)))
+		mux.Handle("POST /admin/v1/providers/{id}/models/test-all", adminMiddleware(adminProviderStartModelTestRun(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}/models/test-runs/latest", adminMiddleware(adminProviderLatestModelTestRun(deps.Admin)))
+		mux.Handle("GET /admin/v1/providers/{id}/models/test-runs/{runId}", adminMiddleware(adminProviderModelTestRun(deps.Admin)))
+	}
+	if deps.Verifier != nil && deps.AdminWebshare != nil {
+		mux.Handle("GET /admin/v1/proxies/webshare", adminMiddleware(adminWebshareStatus(deps.AdminWebshare)))
+		mux.Handle("POST /admin/v1/proxies/webshare/test", adminMiddleware(adminWebshareTest(deps.AdminWebshare)))
+		mux.Handle("PUT /admin/v1/proxies/webshare", adminMiddleware(adminWebshareSave(deps.AdminWebshare)))
+		mux.Handle("POST /admin/v1/proxies/webshare/sync", adminMiddleware(adminWebshareSync(deps.AdminWebshare)))
+	}
+	if deps.Verifier != nil && deps.AdminProxy != nil {
+		mux.Handle("PUT /admin/v1/providers/{id}/accounts/{accountId}/proxy", adminMiddleware(adminProviderAssignProxy(deps.AdminProxy)))
+		mux.Handle("DELETE /admin/v1/providers/{id}/accounts/{accountId}/proxy", adminMiddleware(adminProviderUnassignProxy(deps.AdminProxy)))
+		mux.Handle("GET /admin/v1/proxies", adminMiddleware(adminProxiesList(deps.AdminProxy)))
+		mux.Handle("POST /admin/v1/proxies", adminMiddleware(adminProxyCreate(deps.AdminProxy)))
+	}
+	if deps.Verifier != nil && deps.AdminCatalog != nil {
+		mux.Handle("GET /admin/v1/provider-catalog", adminMiddleware(adminCatalogList(deps.AdminCatalog)))
+		mux.Handle("POST /admin/v1/provider-catalog/{slug}/connect", adminMiddleware(adminCatalogConnect(deps.AdminCatalog)))
 	}
 	if deps.Verifier != nil && deps.AdminKeys != nil {
 		mux.Handle("GET /admin/v1/api-keys", adminMiddleware(adminAPIKeysList(deps.AdminKeys)))

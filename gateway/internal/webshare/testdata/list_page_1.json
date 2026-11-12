@@ -1,0 +1,31 @@
+{
+  "count": 3,
+  "next": "https://proxy.webshare.io/api/v2/proxy/list/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id": "p-1",
+      "username": "user1",
+      "password": "pass1",
+      "proxy_address": "203.0.113.10",
+      "port": 8080,
+      "valid": true,
+      "last_verification": "2026-11-10T12:00:00Z",
+      "country_code": "BR",
+      "city_name": "Sao Paulo",
+      "created_at": "2026-10-01T10:00:00Z"
+    },
+    {
+      "id": "p-2",
+      "username": "user2",
+      "password": "pass2",
+      "proxy_address": "203.0.113.11",
+      "port": 8081,
+      "valid": true,
+      "last_verification": "2026-11-10T12:05:00Z",
+      "country_code": "US",
+      "city_name": "New York",
+      "created_at": "2026-10-01T10:01:00Z"
+    }
+  ]
+}

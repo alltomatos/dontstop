@@ -103,9 +103,17 @@ func writeChatError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, routing.ErrNoCandidate):
 		writeAPIError(w, http.StatusServiceUnavailable, "model_unavailable", "no account available for the requested model")
+	case errors.Is(err, provider.ErrProviderInvalidRequest):
+		writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "upstream rejected the request payload")
+	case errors.Is(err, provider.ErrProxyRequired):
+		writeAPIError(w, http.StatusServiceUnavailable, "proxy_unavailable", "proxy required but no healthy proxy is assigned")
 	case errors.Is(err, routing.ErrAllCandidatesFailed):
 		if errors.Is(err, provider.ErrProviderRateLimited) {
 			writeAPIError(w, http.StatusTooManyRequests, "rate_limit_error", "upstream rate limit")
+			return
+		}
+		if errors.Is(err, provider.ErrProviderQuota) {
+			writeAPIError(w, http.StatusPaymentRequired, "billing_error", "upstream provider has insufficient quota")
 			return
 		}
 		writeAPIError(w, http.StatusBadGateway, "api_error", "upstream provider failed")

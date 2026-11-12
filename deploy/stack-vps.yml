@@ -59,7 +59,7 @@ services:
         condition: on-failure
 
   migrate:
-    image: ronaldodavi/dontstop-gateway:onboarding-20261108
+    image: ronaldodavi/dontstop-gateway:deploy-20261112
     entrypoint: ["/app/migrate"]
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
@@ -75,7 +75,7 @@ services:
         max_attempts: 20
 
   gateway:
-    image: ronaldodavi/dontstop-gateway:onboarding-20261108
+    image: ronaldodavi/dontstop-gateway:deploy-20261112
     environment:
       PORT: "8080"
       DATABASE_URL_FILE: /run/secrets/database_url
@@ -114,7 +114,7 @@ services:
         max_attempts: 5
 
   admin:
-    image: ronaldodavi/dontstop-admin:onboarding-20261108
+    image: ronaldodavi/dontstop-admin:deploy-20261112
     environment:
       DONTSTOP_GATEWAY_URL: http://gateway:8080
       DONTSTOP_PUBLIC_BASE_URL: https://dontstop.alltomatos.dev.br

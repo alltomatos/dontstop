@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/alltomatos/dontstop/gateway/internal/cache"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
+	"github.com/alltomatos/dontstop/gateway/internal/proxy"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
 	"github.com/alltomatos/dontstop/gateway/internal/usage"
 	"go.opentelemetry.io/otel"
@@ -46,6 +48,7 @@ type Service struct {
 	cache         cache.ExactCache
 	promptVersion string
 	recorder      UsageRecorder
+	proxies       ProxyResolver
 }
 
 // NewService creates a chat service.
@@ -104,26 +107,11 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 	var response provider.ChatResponse
 	routeCtx, routeSpan := tracer.Start(ctx, "routing.select")
 	selected, err := s.router.Route(routeCtx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
-		adapter, account, err := s.resolve(candidate)
-		if err != nil {
-			return routing.AttemptResult{Failure: routing.FailureUnknown}, err
+		result, outcome, err := s.attemptChat(ctx, candidate, request)
+		if err == nil {
+			response = result
 		}
-		providerCtx, providerSpan := tracer.Start(ctx, "provider.chat")
-		providerSpan.SetAttributes(
-			attribute.String("gen_ai.provider.name", candidate.ProviderName),
-			attribute.String("gen_ai.request.model", request.Model),
-		)
-		result, err := adapter.Chat(providerCtx, account, request)
-		if err != nil {
-			providerSpan.RecordError(err)
-			providerSpan.SetStatus(codes.Error, "provider request failed")
-		}
-		providerSpan.End()
-		if err != nil {
-			return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
-		}
-		response = result
-		return routing.AttemptResult{}, nil
+		return outcome, err
 	})
 	routeSpan.End()
 	if err != nil {
@@ -151,42 +139,7 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 	started := time.Now()
 	state := &streamState{writer: writer, id: newCompletionID(), model: request.Model, created: time.Now().Unix()}
 	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
-		adapter, account, err := s.resolve(candidate)
-		if err != nil {
-			return routing.AttemptResult{Failure: routing.FailureUnknown}, err
-		}
-		providerCtx, providerSpan := tracer.Start(ctx, "provider.stream")
-		providerSpan.SetAttributes(attribute.String("gen_ai.provider.name", candidate.ProviderName))
-		stream, err := adapter.ChatStream(providerCtx, account, request)
-		if err != nil {
-			providerSpan.RecordError(err)
-			providerSpan.SetStatus(codes.Error, "provider stream failed")
-			providerSpan.End()
-			return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
-		}
-		defer providerSpan.End()
-		defer func() { _ = stream.Close() }()
-
-		for {
-			chunk, err := stream.Recv(ctx)
-			if err == io.EOF {
-				if state.started {
-					state.done()
-				}
-				return routing.AttemptResult{}, nil
-			}
-			if err != nil {
-				if state.started {
-					state.errorEvent()
-					state.done()
-					return routing.AttemptResult{FirstTokenSent: true, Failure: routing.ClassifyProviderError(err)}, err
-				}
-				return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
-			}
-			if err := state.chunk(chunk); err != nil {
-				return routing.AttemptResult{FirstTokenSent: state.started, Failure: routing.FailureUnknown}, err
-			}
-		}
+		return s.attemptStream(ctx, candidate, request, state)
 	})
 	if err == nil {
 		s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", "bypass", state.usage, time.Since(started))
@@ -194,16 +147,171 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 	return err
 }
 
-func (s *Service) resolve(candidate routing.Candidate) (provider.Adapter, provider.Account, error) {
-	account, err := routing.ResolveAccount(candidate, s.decrypter)
+func (s *Service) resolve(ctx context.Context, candidate routing.Candidate, forceDirect bool, forced *proxy.Lease) (provider.Adapter, provider.Account, proxy.Lease, error) {
+	if s.proxies == nil {
+		account, err := routing.ResolveAccount(candidate, s.decrypter)
+		if err != nil {
+			return nil, provider.Account{}, proxy.Lease{}, err
+		}
+		adapter, err := s.adapters(candidate.ProviderKind)
+		return adapter, account, proxy.Lease{}, err
+	}
+	account, err := routing.ResolveCredentials(candidate, s.decrypter)
 	if err != nil {
-		return nil, provider.Account{}, err
+		return nil, provider.Account{}, proxy.Lease{}, err
 	}
 	adapter, err := s.adapters(candidate.ProviderKind)
 	if err != nil {
-		return nil, provider.Account{}, err
+		return nil, provider.Account{}, proxy.Lease{}, err
 	}
-	return adapter, account, nil
+	if forceDirect {
+		return adapter, account, proxy.Lease{}, nil
+	}
+	lease := proxy.Lease{}
+	if forced != nil {
+		lease = *forced
+	} else {
+		lease, err = s.proxies.Resolve(ctx, candidate.TenantID, candidate.AccountID, candidate.ProxyMode)
+		if err != nil {
+			return nil, provider.Account{}, proxy.Lease{}, err
+		}
+	}
+	account.ProxyURL = lease.ProxyURL
+	return adapter, account, lease, nil
+}
+
+func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, request provider.ChatRequest) (provider.ChatResponse, routing.AttemptResult, error) {
+	var forced *proxy.Lease
+	forceDirect := false
+	var lastErr error
+	for round := 0; round <= maxProxyRotations; round++ {
+		adapter, account, lease, err := s.resolve(ctx, candidate, forceDirect, forced)
+		forced = nil
+		forceDirect = false
+		if err != nil {
+			return provider.ChatResponse{}, routing.AttemptResult{Failure: attemptFailureKind(err)}, err
+		}
+		providerCtx, providerSpan := tracer.Start(ctx, "provider.chat")
+		providerSpan.SetAttributes(
+			attribute.String("gen_ai.provider.name", candidate.ProviderName),
+			attribute.String("gen_ai.request.model", request.Model),
+		)
+		result, err := adapter.Chat(providerCtx, account, request)
+		if err != nil {
+			providerSpan.RecordError(err)
+			providerSpan.SetStatus(codes.Error, "provider request failed")
+		}
+		providerSpan.End()
+		if err == nil {
+			s.proxySuccess(ctx, candidate.TenantID, lease)
+			return result, routing.AttemptResult{}, nil
+		}
+		lastErr = err
+		if s.canRotate(lease, err, round) {
+			next, rotateErr := s.proxies.Rotate(ctx, candidate.TenantID, candidate.AccountID, lease.EndpointID, candidate.ProxyMode)
+			if errors.Is(rotateErr, provider.ErrProxyRequired) {
+				return provider.ChatResponse{}, routing.AttemptResult{Failure: routing.FailureProxy}, rotateErr
+			}
+			if rotateErr == nil {
+				forceDirect, forced = rotateTarget(next)
+				continue
+			}
+		}
+		return provider.ChatResponse{}, routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
+	}
+	return provider.ChatResponse{}, routing.AttemptResult{Failure: routing.ClassifyProviderError(lastErr)}, lastErr
+}
+
+func (s *Service) attemptStream(ctx context.Context, candidate routing.Candidate, request provider.ChatRequest, state *streamState) (routing.AttemptResult, error) {
+	var forced *proxy.Lease
+	forceDirect := false
+	var lastErr error
+	for round := 0; round <= maxProxyRotations; round++ {
+		adapter, account, lease, err := s.resolve(ctx, candidate, forceDirect, forced)
+		forced = nil
+		forceDirect = false
+		if err != nil {
+			return routing.AttemptResult{Failure: attemptFailureKind(err)}, err
+		}
+		providerCtx, providerSpan := tracer.Start(ctx, "provider.stream")
+		providerSpan.SetAttributes(attribute.String("gen_ai.provider.name", candidate.ProviderName))
+		stream, err := adapter.ChatStream(providerCtx, account, request)
+		if err == nil {
+			err = s.consumeStream(ctx, stream, state)
+		}
+		if err != nil {
+			providerSpan.RecordError(err)
+			providerSpan.SetStatus(codes.Error, "provider stream failed")
+		}
+		providerSpan.End()
+		if err == nil {
+			s.proxySuccess(ctx, candidate.TenantID, lease)
+			return routing.AttemptResult{}, nil
+		}
+		lastErr = err
+		if state.started {
+			return routing.AttemptResult{FirstTokenSent: true, Failure: routing.ClassifyProviderError(err)}, err
+		}
+		if s.canRotate(lease, err, round) {
+			next, rotateErr := s.proxies.Rotate(ctx, candidate.TenantID, candidate.AccountID, lease.EndpointID, candidate.ProxyMode)
+			if errors.Is(rotateErr, provider.ErrProxyRequired) {
+				return routing.AttemptResult{Failure: routing.FailureProxy}, rotateErr
+			}
+			if rotateErr == nil {
+				forceDirect, forced = rotateTarget(next)
+				continue
+			}
+		}
+		return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
+	}
+	return routing.AttemptResult{Failure: routing.ClassifyProviderError(lastErr)}, lastErr
+}
+
+func (s *Service) consumeStream(ctx context.Context, stream provider.Stream, state *streamState) error {
+	defer func() { _ = stream.Close() }()
+	for {
+		chunk, err := stream.Recv(ctx)
+		if err == io.EOF {
+			if state.started {
+				state.done()
+			}
+			return nil
+		}
+		if err != nil {
+			if state.started {
+				state.errorEvent()
+				state.done()
+			}
+			return err
+		}
+		if err := state.chunk(chunk); err != nil {
+			return err
+		}
+	}
+}
+
+func (s *Service) canRotate(lease proxy.Lease, err error, round int) bool {
+	return s.proxies != nil && lease.EndpointID != "" && round < maxProxyRotations && errors.Is(err, provider.ErrProxyFailure)
+}
+
+func (s *Service) proxySuccess(ctx context.Context, tenantID string, lease proxy.Lease) {
+	if s.proxies != nil {
+		s.proxies.Success(ctx, tenantID, lease)
+	}
+}
+
+func rotateTarget(next proxy.Lease) (bool, *proxy.Lease) {
+	if next.EndpointID == "" {
+		return true, nil
+	}
+	return false, &next
+}
+
+func attemptFailureKind(err error) routing.FailureKind {
+	if errors.Is(err, provider.ErrProxyRequired) {
+		return routing.FailureProxy
+	}
+	return routing.FailureUnknown
 }
 
 type streamState struct {

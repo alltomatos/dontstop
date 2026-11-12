@@ -1,0 +1,565 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1280" viewBox="0 0 1440 1280" role="img" aria-label="Mock da página Rede de proxy: cada linha é um IP do pool Webshare, com as contas que usam o IP, localidade, sticky, score, saúde e ações">
+  <defs>
+    <style>
+      .bg { fill: #F8FAFC; }
+      .surface { fill: #FFFFFF; }
+      .border { fill: none; stroke: #E2E8F0; stroke-width: 1; }
+      .sidebar { fill: #1E3A8A; }
+      .text { fill: #0F172A; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .muted { fill: #475569; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .faint { fill: #94A3B8; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .white { fill: #FFFFFF; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .mono { font-family: 'Fira Code',Consolas,monospace; fill: #0F172A; }
+      .h1 { font-size: 30px; font-weight: 700; }
+      .h2 { font-size: 16px; font-weight: 700; }
+      .small { font-size: 12px; }
+      .tiny { font-size: 11px; }
+      .kpi-value { font-size: 24px; font-weight: 700; }
+      .label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; fill: #64748B; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip { fill: #F1F5F9; }
+      .chip-green { fill: #ECFDF5; }
+      .chip-green-t { fill: #047857; font-size: 11px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip-amber { fill: #FFFBEB; }
+      .chip-amber-t { fill: #B45309; font-size: 11px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip-red { fill: #FEF2F2; }
+      .chip-red-t { fill: #B91C1C; font-size: 11px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip-gray-t { fill: #475569; font-size: 11px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip-navy { fill: #EEF2FF; }
+      .chip-navy-t { fill: #1E3A8A; font-size: 10px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .btn { fill: #FFFFFF; stroke: #CBD5E1; }
+      .btn-primary { fill: #1E3A8A; }
+      .btn-t { fill: #0F172A; font-size: 12px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .btn-primary-t { fill: #FFFFFF; font-size: 12px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .divider { stroke: #EEF2F7; stroke-width: 1; }
+      .bar-bg { fill: #E2E8F0; }
+      .assoc { fill: #F8FAFC; stroke: #E2E8F0; }
+      .dot-s { fill: #059669; }
+      .dot-w { fill: #D97706; }
+      .dot-a { fill: #0EA5E9; }
+      .dot-d { fill: #DC2626; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1440" height="1280"/>
+
+  <!-- Sidebar -->
+  <rect class="sidebar" width="240" height="1280"/>
+  <circle cx="36" cy="42" r="7" fill="#0EA5E9"/>
+  <text x="52" y="48" class="white" font-size="18" font-weight="700">DonStop IA</text>
+
+  <g class="white" font-size="14">
+    <g stroke="#93C5FD" stroke-width="1.4" fill="none">
+      <rect x="24" y="95" width="7" height="7" rx="1"/>
+      <rect x="33" y="95" width="7" height="7" rx="1"/>
+      <rect x="24" y="104" width="7" height="7" rx="1"/>
+      <rect x="33" y="104" width="7" height="7" rx="1"/>
+      <rect x="24" y="139" width="16" height="4" rx="1"/>
+      <rect x="24" y="145" width="16" height="4" rx="1"/>
+      <rect x="24" y="151" width="16" height="4" rx="1"/>
+    </g>
+    <text x="52" y="107">Dashboard</text>
+    <text x="52" y="151">Provedores</text>
+
+    <rect x="12" y="170" width="216" height="36" rx="8" fill="#2B4AA3"/>
+    <rect x="12" y="170" width="3" height="36" fill="#0EA5E9"/>
+    <g stroke="#FFFFFF" stroke-width="1.5" fill="none">
+      <circle cx="32" cy="191" r="7.5"/>
+      <ellipse cx="32" cy="191" rx="3.2" ry="7.5"/>
+      <line x1="24.5" y1="191" x2="39.5" y2="191"/>
+    </g>
+    <text x="52" y="195" font-weight="600">Rede de proxy</text>
+
+    <g stroke="#93C5FD" stroke-width="1.4" fill="none">
+      <rect x="24" y="231" width="16" height="8" rx="2"/>
+      <line x1="28" y1="231" x2="28" y2="227"/>
+      <line x1="36" y1="231" x2="36" y2="227"/>
+      <circle cx="28" cy="279" r="4"/>
+      <line x1="32" y1="279" x2="40" y2="279"/>
+      <line x1="36" y1="279" x2="36" y2="283"/>
+      <line x1="39" y1="279" x2="39" y2="282"/>
+      <rect x="24" y="319" width="16" height="12" rx="2"/>
+      <polyline points="27,323 30,325 27,327"/>
+      <line x1="32" y1="327" x2="37" y2="327"/>
+      <ellipse cx="32" cy="363" rx="8" ry="3"/>
+      <line x1="24" y1="363" x2="24" y2="371"/>
+      <line x1="40" y1="363" x2="40" y2="371"/>
+      <path d="M24 371 a8 3 0 0 0 16 0"/>
+      <path d="M32 403 L40 406 V412 C40 417 36 419 32 421 C28 419 24 417 24 412 V406 Z"/>
+      <polyline points="24,455 28,455 30,449 33,459 35,453 40,453"/>
+      <circle cx="32" cy="543" r="4"/>
+      <line x1="32" y1="535" x2="32" y2="538"/>
+      <line x1="32" y1="548" x2="32" y2="551"/>
+      <line x1="24" y1="543" x2="27" y2="543"/>
+      <line x1="37" y1="543" x2="40" y2="543"/>
+    </g>
+    <text x="52" y="239">Endpoints</text>
+    <text x="52" y="283">Gerenciador de API</text>
+    <text x="52" y="327">MCP</text>
+    <text x="52" y="371">Cache</text>
+    <text x="52" y="415">DLP</text>
+    <text x="52" y="459">Observabilidade</text>
+    <text x="26" y="508" font-size="15" font-weight="600" fill="#93C5FD" font-family="'Fira Sans','Segoe UI',Arial,sans-serif">$</text>
+    <text x="52" y="503">Custo</text>
+    <text x="52" y="547">Configurações</text>
+  </g>
+  <text x="24" y="1252" fill="#93C5FD" font-size="11" font-family="'Fira Code',Consolas,monospace">dontstop · v0.1</text>
+
+  <!-- Topbar -->
+  <rect x="240" y="0" width="1200" height="56" class="surface"/>
+  <line x1="240" y1="56" x2="1440" y2="56" class="divider"/>
+  <rect x="272" y="12" width="680" height="32" rx="8" fill="#F1F5F9"/>
+  <circle cx="292" cy="28" r="6" fill="none" stroke="#64748B" stroke-width="1.6"/>
+  <line x1="296" y1="32" x2="301" y2="37" stroke="#64748B" stroke-width="1.6"/>
+  <text x="312" y="32" class="muted" font-size="13">Buscar IP, cidade, provedor ou conta…</text>
+  <rect x="904" y="18" width="34" height="20" rx="5" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <text x="912" y="32" class="faint" font-size="11">⌘K</text>
+
+  <rect x="1256" y="12" width="72" height="32" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="1274" y="32" class="text" font-size="13">Ajuda</text>
+  <path d="M1346 20 v9 M1342 29 h8" stroke="#475569" stroke-width="1.6" fill="none"/>
+  <circle cx="1396" cy="28" r="16" fill="#E2E8F0"/>
+  <text x="1384" y="33" class="muted" font-size="12" font-weight="700">AD</text>
+
+  <!-- Breadcrumb / title -->
+  <text x="288" y="88" class="muted" font-size="12">Provedores</text>
+  <text x="368" y="88" class="faint" font-size="12">/</text>
+  <text x="378" y="88" class="muted" font-size="12">Rede de proxy</text>
+
+  <text x="288" y="122" class="text h1">Rede de proxy</text>
+  <text x="288" y="148" class="muted" font-size="14">Cada IP do pool Webshare com as contas que usam essa saída, sticky, score e saúde.</text>
+
+  <rect x="948" y="100" width="104" height="36" rx="8" class="btn"/>
+  <text x="966" y="123" class="btn-t">Testar todos</text>
+  <rect x="1064" y="100" width="148" height="36" rx="8" class="btn-primary"/>
+  <text x="1084" y="123" class="btn-primary-t">Sincronizar agora</text>
+  <rect x="1224" y="100" width="168" height="36" rx="8" class="btn"/>
+  <text x="1244" y="123" class="btn-t">Configurar Webshare</text>
+
+  <!-- KPIs (contagens de IP) -->
+  <rect x="288" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="288" y="176" width="211" height="88" rx="12" class="border"/>
+  <text x="308" y="202" class="label">IPs no pool</text>
+  <text x="308" y="232" class="text kpi-value">128</text>
+  <text x="308" y="250" class="muted small">de 500 no plano</text>
+
+  <rect x="511" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="511" y="176" width="211" height="88" rx="12" class="border"/>
+  <text x="531" y="202" class="label">Atribuídos</text>
+  <text x="531" y="232" class="text kpi-value">96</text>
+  <text x="531" y="250" class="muted small">com pelo menos 1 conta</text>
+
+  <rect x="734" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="734" y="176" width="211" height="88" rx="12" class="border"/>
+  <text x="754" y="202" class="label">Livres</text>
+  <text x="754" y="232" class="text kpi-value">32</text>
+  <text x="754" y="250" class="muted small">prontos para atribuir</text>
+
+  <rect x="957" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="957" y="176" width="211" height="88" rx="12" class="border"/>
+  <text x="977" y="202" class="label">Em quarentena</text>
+  <text x="977" y="232" class="text kpi-value">5</text>
+  <text x="977" y="250" class="muted small">2 por 407/timeout</text>
+
+  <rect x="1180" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="1180" y="176" width="211" height="88" rx="12" class="border"/>
+  <text x="1200" y="202" class="label">Países</text>
+  <text x="1200" y="232" class="text kpi-value">6</text>
+  <text x="1200" y="250" class="muted small">12 cidades</text>
+
+  <!-- Filtros -->
+  <rect x="288" y="284" width="320" height="36" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <circle cx="308" cy="302" r="6" fill="none" stroke="#64748B" stroke-width="1.5"/>
+  <line x1="312" y1="306" x2="317" y2="311" stroke="#64748B" stroke-width="1.5"/>
+  <text x="328" y="307" class="faint" font-size="12">IP, cidade, provedor ou conta</text>
+
+  <rect x="620" y="284" width="64" height="32" rx="16" fill="#1E3A8A"/>
+  <text x="634" y="305" class="white" font-size="12" font-weight="600">Todos</text>
+  <rect x="692" y="284" width="84" height="32" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="706" y="305" class="muted" font-size="12">Atribuído</text>
+  <rect x="784" y="284" width="64" height="32" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="806" y="305" class="muted" font-size="12">Livre</text>
+  <rect x="856" y="284" width="100" height="32" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="870" y="305" class="muted" font-size="12">Quarentena</text>
+  <rect x="964" y="284" width="76" height="32" rx="16" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="978" y="305" class="muted" font-size="12">Inválido</text>
+
+  <rect x="1052" y="284" width="130" height="32" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="1066" y="305" class="muted" font-size="12">Provedor: todos</text>
+  <rect x="1190" y="284" width="110" height="32" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="1204" y="305" class="muted" font-size="12">Conta: todas</text>
+  <rect x="1308" y="284" width="84" height="32" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="1320" y="305" class="muted" font-size="12">País: todos</text>
+
+  <!-- Tabela por IP -->
+  <rect x="288" y="336" width="1104" height="548" rx="12" class="surface"/>
+  <rect x="288" y="336" width="1104" height="548" rx="12" class="border"/>
+  <path d="M288 380 h1104" class="divider"/>
+
+  <text x="304" y="362" class="label">IP · porta</text>
+  <text x="536" y="362" class="label">Contas usando este IP</text>
+  <text x="836" y="362" class="label">Sticky até</text>
+  <text x="936" y="362" class="label">Score</text>
+  <text x="1002" y="362" class="label">Últ. verificação</text>
+  <text x="1110" y="362" class="label">Quarentena</text>
+  <text x="1392" y="362" class="label" text-anchor="end">Ações</text>
+
+  <!-- Row 1: IP com duas contas -->
+  <text x="304" y="406" class="mono" font-size="13" font-weight="600">45.12.33.10:8168</text>
+  <circle cx="308" cy="424" r="4" class="dot-s"/>
+  <text x="318" y="428" class="muted tiny">São Paulo, BR · Saudável · 12 ms</text>
+
+  <rect x="536" y="388" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="401" r="8" fill="#10A37F"/>
+  <text x="548" y="404" text-anchor="middle" class="white" font-size="8" font-weight="700">OA</text>
+  <text x="562" y="405" class="text" font-size="10.5">OpenAI · produção · <tspan class="mono">sk-...9f2</tspan></text>
+  <rect x="762" y="392" width="50" height="18" rx="9" class="chip-navy"/>
+  <text x="770" y="404" class="chip-navy-t">required</text>
+
+  <rect x="536" y="418" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="431" r="8" fill="#6B7280"/>
+  <text x="548" y="434" text-anchor="middle" class="white" font-size="8" font-weight="700">OR</text>
+  <text x="562" y="435" class="text" font-size="10.5">OpenRouter · default · <tspan class="mono">sk-or-...7c1</tspan></text>
+  <rect x="758" y="422" width="54" height="18" rx="9" class="chip"/>
+  <text x="766" y="434" class="chip-gray-t">preferred</text>
+
+  <text x="836" y="406" class="text" font-size="13">28 min</text>
+  <text x="836" y="424" class="faint tiny">expira 12:58</text>
+
+  <text x="936" y="405" class="text" font-size="14" font-weight="700">98</text>
+  <rect x="936" y="412" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="412" width="41" height="4" rx="2" fill="#059669"/>
+
+  <text x="1002" y="406" class="text" font-size="12">há 2 min</text>
+  <text x="1002" y="424" class="faint tiny">12:40</text>
+
+  <text x="1110" y="406" class="faint" font-size="13">—</text>
+
+  <g>
+    <title>Rotacionar agora</title>
+    <rect x="1208" y="394" width="30" height="28" rx="7" class="btn"/>
+    <path d="M1218 408 a6 6 0 1 0 2-4" stroke="#334155" stroke-width="1.5" fill="none"/>
+    <path d="M1224 402 l0 4 -4 0" stroke="#334155" stroke-width="1.5" fill="none"/>
+  </g>
+  <g>
+    <title>Fixar nesta conta</title>
+    <rect x="1244" y="394" width="30" height="28" rx="7" class="btn"/>
+    <path d="M1259 402 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+    <circle cx="1259" cy="402" r="2" fill="#334155"/>
+  </g>
+  <g>
+    <title>Desatribuir contas</title>
+    <rect x="1280" y="394" width="30" height="28" rx="7" class="btn"/>
+    <path d="M1288 404 l7 8 M1295 404 l-7 8" stroke="#334155" stroke-width="1.4"/>
+  </g>
+  <g>
+    <title>Colocar em quarentena</title>
+    <rect x="1316" y="394" width="30" height="28" rx="7" class="btn"/>
+    <path d="M1331 401 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  </g>
+  <circle cx="1372" cy="408" r="2" fill="#475569"/>
+  <circle cx="1379" cy="408" r="2" fill="#475569"/>
+
+  <path d="M304 452 h1072" class="divider"/>
+
+  <!-- Row 2 -->
+  <text x="304" y="478" class="mono" font-size="13" font-weight="600">191.96.42.7:9111</text>
+  <circle cx="308" cy="496" r="4" class="dot-s"/>
+  <text x="318" y="500" class="muted tiny">Miami, US · Saudável · 38 ms</text>
+
+  <rect x="536" y="460" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="473" r="8" fill="#D97757"/>
+  <text x="548" y="476" text-anchor="middle" class="white" font-size="8" font-weight="700">AN</text>
+  <text x="562" y="477" class="text" font-size="10.5">Anthropic · staging · <tspan class="mono">sk-ant-...4d9</tspan></text>
+  <rect x="758" y="464" width="54" height="18" rx="9" class="chip"/>
+  <text x="766" y="476" class="chip-gray-t">preferred</text>
+
+  <text x="836" y="478" class="text" font-size="13">12 min</text>
+  <text x="836" y="496" class="faint tiny">expira 12:42</text>
+
+  <text x="936" y="477" class="text" font-size="14" font-weight="700">91</text>
+  <rect x="936" y="484" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="484" width="38" height="4" rx="2" fill="#059669"/>
+
+  <text x="1002" y="478" class="text" font-size="12">há 5 min</text>
+  <text x="1002" y="496" class="faint tiny">12:37</text>
+
+  <text x="1110" y="478" class="faint" font-size="13">—</text>
+
+  <rect x="1208" y="466" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1218 480 a6 6 0 1 0 2-4" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <path d="M1224 474 l0 4 -4 0" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <rect x="1244" y="466" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1259 474 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+  <rect x="1280" y="466" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1288 476 l7 8 M1295 476 l-7 8" stroke="#334155" stroke-width="1.4"/>
+  <rect x="1316" y="466" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1331 473 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  <circle cx="1372" cy="480" r="2" fill="#475569"/>
+  <circle cx="1379" cy="480" r="2" fill="#475569"/>
+
+  <path d="M304 524 h1072" class="divider"/>
+
+  <!-- Row 3: IP livre -->
+  <text x="304" y="550" class="mono" font-size="13" font-weight="600">45.12.33.44:8168</text>
+  <circle cx="308" cy="568" r="4" class="dot-s"/>
+  <text x="318" y="572" class="muted tiny">São Paulo, BR · Saudável · 21 ms</text>
+
+  <text x="536" y="558" class="faint" font-size="12">Nenhuma conta associada</text>
+  <rect x="536" y="566" width="44" height="18" rx="9" class="chip"/>
+  <text x="547" y="578" class="chip-gray-t">Livre</text>
+
+  <text x="836" y="550" class="faint" font-size="13">—</text>
+  <text x="836" y="568" class="faint tiny">sem sticky</text>
+
+  <text x="936" y="549" class="text" font-size="14" font-weight="700">87</text>
+  <rect x="936" y="556" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="556" width="36" height="4" rx="2" fill="#059669"/>
+
+  <text x="1002" y="550" class="text" font-size="12">há 1 min</text>
+  <text x="1002" y="568" class="faint tiny">12:41</text>
+
+  <text x="1110" y="550" class="faint" font-size="13">—</text>
+
+  <rect x="1208" y="538" width="76" height="28" rx="7" class="btn-primary"/>
+  <text x="1220" y="556" class="btn-primary-t">Atribuir</text>
+  <rect x="1290" y="538" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1305 546 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+  <rect x="1326" y="538" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1341 545 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  <circle cx="1372" cy="552" r="2" fill="#475569"/>
+  <circle cx="1379" cy="552" r="2" fill="#475569"/>
+
+  <path d="M304 596 h1072" class="divider"/>
+
+  <!-- Row 4: quarentena -->
+  <text x="304" y="622" class="mono" font-size="13" font-weight="600">103.152.112.9:7000</text>
+  <circle cx="308" cy="640" r="4" class="dot-w"/>
+  <text x="318" y="644" class="muted tiny">Lisboa, PT · Quarentena · 407</text>
+
+  <rect x="536" y="608" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="621" r="8" fill="#F55036"/>
+  <text x="548" y="624" text-anchor="middle" class="white" font-size="8" font-weight="700">GQ</text>
+  <text x="562" y="625" class="text" font-size="10.5">Groq · produção · <tspan class="mono">gsk_...2a8</tspan></text>
+  <rect x="758" y="612" width="54" height="18" rx="9" class="chip"/>
+  <text x="766" y="624" class="chip-gray-t">preferred</text>
+
+  <text x="836" y="622" class="faint" font-size="13">—</text>
+  <text x="836" y="640" class="faint tiny">liberado</text>
+
+  <text x="936" y="621" class="text" font-size="14" font-weight="700">62</text>
+  <rect x="936" y="628" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="628" width="26" height="4" rx="2" fill="#D97706"/>
+
+  <text x="1002" y="622" class="text" font-size="12">há 9 min</text>
+  <text x="1002" y="640" class="faint tiny">12:33</text>
+
+  <rect x="1110" y="610" width="86" height="20" rx="10" class="chip-amber"/>
+  <text x="1120" y="624" class="chip-amber-t">6 min restantes</text>
+  <text x="1110" y="642" class="faint tiny">motivo: 407</text>
+
+  <rect x="1208" y="610" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1223 617 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  <line x1="1215" y1="633" x2="1231" y2="617" stroke="#DC2626" stroke-width="1.4"/>
+  <rect x="1244" y="610" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1254 624 a6 6 0 1 0 2-4" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <path d="M1260 618 l0 4 -4 0" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <rect x="1280" y="610" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1295 618 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+  <circle cx="1372" cy="624" r="2" fill="#475569"/>
+  <circle cx="1379" cy="624" r="2" fill="#475569"/>
+
+  <path d="M304 668 h1072" class="divider"/>
+
+  <!-- Row 5: duas contas -->
+  <text x="304" y="694" class="mono" font-size="13" font-weight="600">45.12.33.71:8168</text>
+  <circle cx="308" cy="712" r="4" class="dot-s"/>
+  <text x="318" y="716" class="muted tiny">Fortaleza, BR · Saudável · 18 ms</text>
+
+  <rect x="536" y="676" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="689" r="8" fill="#4D6BFE"/>
+  <text x="548" y="692" text-anchor="middle" class="white" font-size="8" font-weight="700">DS</text>
+  <text x="562" y="693" class="text" font-size="10.5">DeepSeek · backup · <tspan class="mono">sk-...1f4</tspan></text>
+  <rect x="758" y="680" width="50" height="18" rx="9" class="chip-navy"/>
+  <text x="766" y="692" class="chip-navy-t">required</text>
+
+  <rect x="536" y="706" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="719" r="8" fill="#F97316"/>
+  <text x="548" y="722" text-anchor="middle" class="white" font-size="8" font-weight="700">CB</text>
+  <text x="562" y="723" class="text" font-size="10.5">Cerebras · default · <tspan class="mono">csk-...5b0</tspan></text>
+  <rect x="758" y="710" width="54" height="18" rx="9" class="chip"/>
+  <text x="766" y="722" class="chip-gray-t">preferred</text>
+
+  <text x="836" y="694" class="text" font-size="13">31 min</text>
+  <text x="836" y="712" class="faint tiny">expira 13:01</text>
+
+  <text x="936" y="693" class="text" font-size="14" font-weight="700">95</text>
+  <rect x="936" y="700" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="700" width="40" height="4" rx="2" fill="#059669"/>
+
+  <text x="1002" y="694" class="text" font-size="12">há 3 min</text>
+  <text x="1002" y="712" class="faint tiny">12:39</text>
+
+  <text x="1110" y="694" class="faint" font-size="13">—</text>
+
+  <rect x="1208" y="682" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1218 696 a6 6 0 1 0 2-4" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <path d="M1224 690 l0 4 -4 0" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <rect x="1244" y="682" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1259 690 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+  <rect x="1280" y="682" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1288 692 l7 8 M1295 692 l-7 8" stroke="#334155" stroke-width="1.4"/>
+  <rect x="1316" y="682" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1331 689 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  <circle cx="1372" cy="696" r="2" fill="#475569"/>
+  <circle cx="1379" cy="696" r="2" fill="#475569"/>
+
+  <path d="M304 740 h1072" class="divider"/>
+
+  <!-- Row 6: IP livre inválido -->
+  <text x="304" y="766" class="mono" font-size="13" font-weight="600">185.220.101.5:8080</text>
+  <circle cx="308" cy="784" r="4" class="dot-d"/>
+  <text x="318" y="788" class="muted tiny">Frankfurt, DE · Inválido · timeout</text>
+
+  <text x="536" y="774" class="faint" font-size="12">Nenhuma conta associada</text>
+  <rect x="536" y="782" width="44" height="18" rx="9" class="chip"/>
+  <text x="547" y="794" class="chip-gray-t">Livre</text>
+
+  <text x="836" y="766" class="faint" font-size="13">—</text>
+  <text x="836" y="784" class="faint tiny">sem sticky</text>
+
+  <text x="936" y="765" class="text" font-size="14" font-weight="700">41</text>
+  <rect x="936" y="772" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="772" width="17" height="4" rx="2" fill="#DC2626"/>
+
+  <text x="1002" y="766" class="text" font-size="12">há 12 min</text>
+  <text x="1002" y="784" class="faint tiny">12:30</text>
+
+  <rect x="1110" y="754" width="72" height="20" rx="10" class="chip-red"/>
+  <text x="1120" y="768" class="chip-red-t">9 min</text>
+  <text x="1110" y="786" class="faint tiny">motivo: timeout</text>
+
+  <rect x="1208" y="754" width="76" height="28" rx="7" class="btn"/>
+  <text x="1220" y="772" class="btn-t">Atribuir</text>
+  <rect x="1290" y="754" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1305 761 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  <line x1="1297" y1="777" x2="1313" y2="761" stroke="#DC2626" stroke-width="1.4"/>
+  <rect x="1326" y="754" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1341 762 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+  <circle cx="1372" cy="768" r="2" fill="#475569"/>
+  <circle cx="1379" cy="768" r="2" fill="#475569"/>
+
+  <path d="M304 812 h1072" class="divider"/>
+
+  <!-- Row 7 -->
+  <text x="304" y="838" class="mono" font-size="13" font-weight="600">191.96.42.19:9111</text>
+  <circle cx="308" cy="856" r="4" class="dot-s"/>
+  <text x="318" y="860" class="muted tiny">Miami, US · Saudável · 41 ms</text>
+
+  <rect x="536" y="820" width="284" height="26" rx="8" class="assoc"/>
+  <circle cx="548" cy="833" r="8" fill="#D97757"/>
+  <text x="548" y="836" text-anchor="middle" class="white" font-size="8" font-weight="700">AN</text>
+  <text x="562" y="837" class="text" font-size="10.5">Anthropic · backup · <tspan class="mono">sk-ant-...9b1</tspan></text>
+  <rect x="758" y="824" width="54" height="18" rx="9" class="chip"/>
+  <text x="766" y="836" class="chip-gray-t">preferred</text>
+
+  <text x="836" y="838" class="text" font-size="13">7 min</text>
+  <text x="836" y="856" class="faint tiny">expira 12:47</text>
+
+  <text x="936" y="837" class="text" font-size="14" font-weight="700">89</text>
+  <rect x="936" y="844" width="42" height="4" rx="2" class="bar-bg"/>
+  <rect x="936" y="844" width="37" height="4" rx="2" fill="#059669"/>
+
+  <text x="1002" y="838" class="text" font-size="12">há 4 min</text>
+  <text x="1002" y="856" class="faint tiny">12:38</text>
+
+  <text x="1110" y="838" class="faint" font-size="13">—</text>
+
+  <rect x="1208" y="826" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1218 840 a6 6 0 1 0 2-4" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <path d="M1224 834 l0 4 -4 0" stroke="#334155" stroke-width="1.5" fill="none"/>
+  <rect x="1244" y="826" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1259 834 l0 8 -3 3 6 0 -3 -3" stroke="#334155" stroke-width="1.4" fill="none"/>
+  <rect x="1280" y="826" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1288 836 l7 8 M1295 836 l-7 8" stroke="#334155" stroke-width="1.4"/>
+  <rect x="1316" y="826" width="30" height="28" rx="7" class="btn"/>
+  <path d="M1331 833 l6 2 v5 c0 3 -3 4 -6 5 c-3 -1 -6 -2 -6 -5 v-5 z" stroke="#334155" stroke-width="1.3" fill="none"/>
+  <circle cx="1372" cy="840" r="2" fill="#475569"/>
+  <circle cx="1379" cy="840" r="2" fill="#475569"/>
+
+  <!-- Contas sem proxy -->
+  <rect x="288" y="900" width="1104" height="72" rx="12" class="surface"/>
+  <rect x="288" y="900" width="1104" height="72" rx="12" class="border"/>
+  <circle cx="318" cy="936" r="12" fill="#FFFBEB"/>
+  <path d="M318 929 l0 8" stroke="#B45309" stroke-width="1.8"/>
+  <circle cx="318" cy="941" r="1.4" fill="#B45309"/>
+  <text x="342" y="932" class="text" font-size="14" font-weight="700">2 contas sem proxy</text>
+  <text x="342" y="951" class="muted small">Cerebras · default e Mistral · staging estão em fallback direto (modo preferred).</text>
+  <rect x="1156" y="916" width="92" height="34" rx="8" class="btn"/>
+  <text x="1170" y="938" class="btn-t">Ver contas</text>
+  <rect x="1258" y="916" width="122" height="34" rx="8" class="btn-primary"/>
+  <text x="1272" y="938" class="btn-primary-t">Atribuir proxy</text>
+
+  <!-- Cards inferiores -->
+  <rect x="288" y="992" width="357" height="240" rx="12" class="surface"/>
+  <rect x="288" y="992" width="357" height="240" rx="12" class="border"/>
+  <text x="312" y="1024" class="text h2">Localidades</text>
+  <text x="312" y="1054" class="muted small">São Paulo</text>
+  <rect x="424" y="1044" width="170" height="8" rx="4" class="bar-bg"/>
+  <rect x="424" y="1044" width="170" height="8" rx="4" fill="#1E3A8A"/>
+  <text x="608" y="1053" class="muted small">48</text>
+  <text x="312" y="1090" class="muted small">Miami</text>
+  <rect x="424" y="1080" width="170" height="8" rx="4" class="bar-bg"/>
+  <rect x="424" y="1080" width="78" height="8" rx="4" fill="#0EA5E9"/>
+  <text x="608" y="1089" class="muted small">22</text>
+  <text x="312" y="1126" class="muted small">Lisboa</text>
+  <rect x="424" y="1116" width="170" height="8" rx="4" class="bar-bg"/>
+  <rect x="424" y="1116" width="50" height="8" rx="4" fill="#0EA5E9"/>
+  <text x="608" y="1125" class="muted small">14</text>
+  <text x="312" y="1162" class="muted small">Fortaleza</text>
+  <rect x="424" y="1152" width="170" height="8" rx="4" class="bar-bg"/>
+  <rect x="424" y="1152" width="28" height="8" rx="4" fill="#0EA5E9"/>
+  <text x="608" y="1161" class="muted small">8</text>
+  <text x="312" y="1198" class="muted small">Frankfurt</text>
+  <rect x="424" y="1188" width="170" height="8" rx="4" class="bar-bg"/>
+  <rect x="424" y="1188" width="14" height="8" rx="4" fill="#0EA5E9"/>
+  <text x="608" y="1197" class="muted small">4</text>
+
+  <rect x="661" y="992" width="357" height="240" rx="12" class="surface"/>
+  <rect x="661" y="992" width="357" height="240" rx="12" class="border"/>
+  <text x="685" y="1024" class="text h2">Pool Webshare</text>
+  <text x="685" y="1056" class="muted small">Plano</text>
+  <text x="986" y="1056" class="text small" text-anchor="end">Proxy-500</text>
+  <text x="685" y="1084" class="muted small">IPs</text>
+  <text x="986" y="1084" class="text small" text-anchor="end">128 / 500</text>
+  <text x="685" y="1112" class="muted small">Atribuídos / livres</text>
+  <text x="986" y="1112" class="text small" text-anchor="end">96 / 32</text>
+  <text x="685" y="1140" class="muted small">Banda</text>
+  <text x="986" y="1140" class="text small" text-anchor="end">42%</text>
+  <rect x="685" y="1148" width="301" height="6" rx="3" class="bar-bg"/>
+  <rect x="685" y="1148" width="126" height="6" rx="3" fill="#0EA5E9"/>
+  <text x="685" y="1178" class="muted small">Última sync</text>
+  <text x="986" y="1178" class="text small" text-anchor="end">12:42</text>
+  <text x="685" y="1206" class="muted small">Token</text>
+  <text x="986" y="1206" class="mono small" text-anchor="end">••••••••••</text>
+
+  <rect x="1034" y="992" width="357" height="240" rx="12" class="surface"/>
+  <rect x="1034" y="992" width="357" height="240" rx="12" class="border"/>
+  <text x="1058" y="1024" class="text h2">Atividade recente</text>
+  <circle cx="1064" cy="1052" r="4" class="dot-s"/>
+  <text x="1078" y="1056" class="text small">Sync concluído · +12 IPs</text>
+  <text x="1368" y="1056" class="faint tiny" text-anchor="end">12:42</text>
+  <circle cx="1064" cy="1088" r="4" class="dot-a"/>
+  <text x="1078" y="1092" class="text small">Atribuído OpenAI → 45.12.33.10</text>
+  <text x="1368" y="1092" class="faint tiny" text-anchor="end">12:31</text>
+  <circle cx="1064" cy="1124" r="4" class="dot-a"/>
+  <text x="1078" y="1128" class="text small">Rotação 191.96.42.7</text>
+  <text x="1368" y="1128" class="faint tiny" text-anchor="end">12:28</text>
+  <circle cx="1064" cy="1160" r="4" class="dot-w"/>
+  <text x="1078" y="1164" class="text small">Quarentena 103.152.112.9</text>
+  <text x="1368" y="1164" class="faint tiny" text-anchor="end">12:26</text>
+  <circle cx="1064" cy="1196" r="4" class="dot-d"/>
+  <text x="1078" y="1200" class="text small">Timeout 185.220.101.5</text>
+  <text x="1368" y="1200" class="faint tiny" text-anchor="end">12:24</text>
+
+  <text x="1392" y="1262" class="faint tiny" text-anchor="end">Mock para aprovação · clique no IP abre o drawer de detalhe</text>
+</svg>

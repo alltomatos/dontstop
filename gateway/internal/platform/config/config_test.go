@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
 )
@@ -52,6 +53,14 @@ func TestLoadReadsMasterKey(t *testing.T) {
 	}
 	if cfg.MasterKey != "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=" {
 		t.Fatalf("unexpected master key")
+	}
+}
+
+func TestLoadReadsWebshareInterval(t *testing.T) {
+	t.Setenv("WEBSHARE_SYNC_INTERVAL", "15m")
+	cfg, err := config.Load()
+	if err != nil || cfg.WebshareSyncInterval != 15*time.Minute {
+		t.Fatalf("unexpected interval: %s err=%v", cfg.WebshareSyncInterval, err)
 	}
 }
 

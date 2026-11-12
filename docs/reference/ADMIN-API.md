@@ -77,6 +77,307 @@ Cria uma conta. A credencial é cifrada com AES-256-GCM antes do INSERT e nunca 
 
 Resposta: `201` com `id`, `name`, `status`, `base_url`, `priority`, `weight` e `cooldown_until`.
 
+### `DELETE /admin/v1/providers/{id}/accounts/{accountId}`
+
+Remove uma conta. Se for a última conta do provedor, o provedor também é removido (com seus
+modelos) para sair da lista de provedores configurados.
+
+```json
+{"deleted": true, "provider_deleted": true}
+```
+
+Resposta `404` quando a conta não existe. O console usa essa rota no botão "Remover conta" e
+redireciona para `/providers` quando `provider_deleted` é `true`.
+
+### `PATCH /admin/v1/providers/{id}/accounts/{accountId}`
+
+Atualiza o modo de proxy da conta (`off`, `preferred` ou `required`).
+
+```json
+{ "proxy_mode": "preferred" }
+```
+
+Retorna `{ "proxy_mode": "preferred" }`. Valor inválido retorna `400`.
+
+### `GET /admin/v1/proxies`
+
+Lista o pool de proxies do tenant sem credenciais:
+
+```json
+{
+  "object": "list",
+  "data": [{
+    "id": "…",
+    "label": "Webshare SP 01",
+    "address": "203.0.113.10",
+    "port": 8080,
+    "country_code": "BR",
+    "city_name": "São Paulo",
+    "source": "manual",
+    "valid": true,
+    "health": "healthy",
+    "assigned_count": 1
+  }]
+}
+```
+
+`health` é `healthy`, `quarantined` ou `unhealthy`. Credenciais nunca são retornadas.
+
+### `POST /admin/v1/proxies`
+
+Cadastra um proxy manual no tenant. `address`, `port` e, se houver autenticação, `username`/`password`.
+
+```json
+{
+  "label": "Webshare SP 01",
+  "address": "203.0.113.10",
+  "port": 8080,
+  "country_code": "BR",
+  "city_name": "São Paulo",
+  "username": "user",
+  "password": "secret"
+}
+```
+
+Endereço inválido retorna `400`; duplicidade retorna `409`. A senha é cifrada e não volta na resposta.
+
+### `PUT /admin/v1/providers/{id}/accounts/{accountId}/proxy`
+
+Atribui ou reatribui um proxy à conta, limitado a **3 contas por proxy**:
+
+```json
+{ "proxy_endpoint_id": "…" }
+```
+
+Proxy/conta inexistente ou de outro tenant retorna `404`; limite retorna `409`.
+
+### `DELETE /admin/v1/providers/{id}/accounts/{accountId}/proxy`
+
+Remove a atribuição da conta. O modo `required` passa a falhar fechado até receber um proxy saudável.
+
+### `GET /admin/v1/proxies/webshare`
+
+Retorna o estado sanitizado da integração: `configured`, `plan_id`, `enabled`, `key_version`,
+`last_sync_at`, `last_sync_status`, `last_sync_error`, `last_sync_total`, `last_sync_imported`,
+`proxy_count` e `healthy_count`. A API key nunca é retornada.
+
+### `POST /admin/v1/proxies/webshare/test`
+
+Testa a conexão real com o Webshare antes de salvar.
+
+```json
+{ "api_key": "…", "plan_id": "opcional" }
+```
+
+Retorna `{ ok, plan_id, state, available }`. Erros: `400 webshare_unauthorized`,
+`400 webshare_forbidden`, `429 webshare_rate_limited`, `502 webshare_unavailable`.
+
+### `PUT /admin/v1/proxies/webshare`
+
+Valida e persiste a credencial cifrada (AES-256-GCM, `key_version`). Envie `api_key` vazio para
+manter a chave atual; `plan_id` é opcional quando existe apenas um plano.
+
+```json
+{ "api_key": "…", "plan_id": "…", "enabled": true }
+```
+
+Retorna o mesmo status sanitizado de `GET`. A operação é auditada em `audit_outbox`.
+
+### `POST /admin/v1/proxies/webshare/sync`
+
+Importa/sincroniza os proxies `direct` do plano, aplicando diff idempotente. Proxies ausentes ficam
+`valid=false`, mas atribuições em uso não são removidas. Retorna
+`{ imported, total, status }`. Retorna `409 sync_in_progress` quando outro worker está sincronizando.
+
+### `GET /admin/v1/providers/{id}`
+
+Além do resumo consolidado (`models_count`, `models_usable`, `usable_accounts`), cada item de
+`accounts` traz `models_available`, `models_usable`, `capabilities`, `health` e `active`.
+`health` é `active`, `cooldown`, `quarantined`, `unhealthy` ou `disabled`; contas em
+cooldown/quarentena não entram em `usable_accounts` e têm `models_usable=0`.
+
+### `GET /admin/v1/providers/{id}/accounts/{accountId}/summary`
+
+Retorna o agregado do provedor e o resumo explícito da conta selecionada. Conta de outro
+tenant/provedor retorna `404`.
+
+### `POST /admin/v1/providers/{id}/accounts/{accountId}/test`
+
+Testa somente a conta informada, usando a credencial, URL e configuração dela. Retorna
+`account_id`, `account_name`, `ok`, `status`, `latency_ms`, `model_count` e `error`.
+Conta de outro tenant/provedor retorna `404`. Não altera o provedor nem outras contas.
+
+### `POST /admin/v1/providers/{id}/models/test`
+
+Testa o modelo na conta escolhida:
+
+```json
+{ "model_id": "deepseek-v4.1-flash", "account_id": "…" }
+```
+
+Sem `account_id`, usa a primeira conta ativa. A resposta inclui o agregado e `accounts[]` com
+`account_id`, `account_name`, `ok`, `status`, `latency_ms` e `error`. Conta inválida ou de
+outro provedor retorna `404`.
+
+### `POST /admin/v1/providers/{id}/test`
+
+Testa a conta ativa de maior prioridade contra o endpoint de modelos do provedor. Retorna `200` mesmo quando o upstream falha, com `ok=false` e uma mensagem sanitizada.
+
+```json
+{"ok":true,"status":200,"latency_ms":874,"model_count":425}
+```
+
+### `GET /admin/v1/providers/{id}/models`
+
+Lista os modelos anunciados pelo provedor, sem persistir nada.
+
+```json
+{"object":"list","data":[{"id":"openai/gpt-4o-mini","name":"OpenAI: GPT-4o mini","owned_by":"openai"}]}
+```
+
+### `POST /admin/v1/providers/{id}/models/import`
+
+Persiste apenas modelos que o provedor realmente anunciou. IDs desconhecidos são ignorados; modelos existentes são reativados e renomeados.
+
+```json
+{"models":["openai/gpt-4o-mini","anthropic/claude-sonnet-4"]}
+```
+
+Resposta: `{"imported":2}`.
+
+Ao criar o provedor (`POST /providers` e `POST /provider-catalog/{slug}/connect`), o gateway já importa
+automaticamente todos os modelos anunciados pelo endpoint do provedor. A falha nessa importação não
+impede a criação; ela pode ser repetida manualmente.
+
+### `GET /admin/v1/providers/{id}/models/configured`
+
+Lista os modelos persistidos com o estado de roteamento.
+
+```json
+{"object":"list","data":[{"model_id":"gpt-4.1","display_name":"GPT-4.1","active":true,"capabilities":{}}]}
+```
+
+### `POST /admin/v1/providers/{id}/models/sync`
+
+Importa tudo o que o provedor anuncia, preservando o estado ativo/inativo dos modelos que já existem.
+
+```json
+{"imported":12,"total":12}
+```
+
+Se o provedor não expõe `/models` (ex.: `perplexity`), responde `200` com `error` descritivo.
+
+### `PATCH /admin/v1/providers/{id}/models`
+
+Ativa ou desativa um modelo. Modelos inativos saem de `/v1/models` e do roteamento.
+
+```json
+{"model_id":"gpt-4.1","active":false}
+```
+
+### `PATCH /admin/v1/providers/{id}/models/bulk`
+
+Ativa ou desativa vários modelos em uma chamada, sem abortar os demais em caso de erro parcial.
+O `PATCH /models` individual continua funcionando.
+
+```json
+{"models":["gpt-4.1","gpt-4o-mini","missing-model"],"active":false}
+```
+
+```json
+{"updated":2,"results":[
+  {"model_id":"gpt-4.1","ok":true},
+  {"model_id":"gpt-4o-mini","ok":true},
+  {"model_id":"missing-model","ok":false,"error":"model not found"}
+]}
+```
+
+### `POST /admin/v1/providers/{id}/models/test`
+
+Envia uma requisição mínima de chat com a conta ativa de maior prioridade. Retorna `200` mesmo quando o
+upstream falha, com `ok=false` e mensagem sanitizada.
+
+```json
+{"ok":true,"status":200,"latency_ms":42}
+```
+
+### `POST /admin/v1/providers/{id}/models/test-all`
+
+Enfileira o teste de vários modelos. O processamento é feito por um worker no gateway, um modelo por
+vez, com lease no banco — a requisição não bloqueia a UI. Um provedor tem no máximo uma execução ativa:
+chamar de novo devolve a execução existente.
+
+```json
+{"models":["gpt-4.1","gpt-4o-mini"]}
+```
+
+Corpo vazio testa todos os modelos persistidos. Resposta `202` com a execução (`status=queued`).
+
+### `GET /admin/v1/providers/{id}/models/test-runs/{runId}`
+
+Retorna a execução com progresso e resultado por modelo (`pending`, `running`, `ok`, `failed`).
+
+### `GET /admin/v1/providers/{id}/models/test-runs/latest`
+
+Retorna a execução mais recente do provedor (`404` se nunca houve teste).
+
+## Catálogo versionado de provedores
+
+O catálogo é global (não por tenant) e versionado por `catalog_version`. Ele é a fonte de verdade de
+protocolo, base URL, path de modelos, header/scheme de autenticação, headers fixos, capabilities,
+rede e quirks. Ao conectar por `slug`, o operador informa apenas a credencial.
+
+Provedores criados por catálogo gravam `catalog_slug` em `providers` e o `kind` do adapter é
+derivado do protocolo (`openai` → `openai`, `anthropic` → `anthropic`).
+
+### `GET /admin/v1/provider-catalog`
+
+Lista as entradas habilitadas com os modelos declarados.
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "slug": "openrouter",
+      "display_name": "OpenRouter",
+      "protocol": "openai",
+      "default_base_url": "https://openrouter.ai/api/v1",
+      "models_path": "/models",
+      "auth_type": "api_key",
+      "auth_header": "Authorization",
+      "auth_scheme": "bearer",
+      "capabilities": {"stream": true, "tools": true, "vision": true, "reasoning": true},
+      "network": {"proxy_policy": "optional", "private_host": false},
+      "quirks": ["dynamic_catalog", "optional_http_referer_and_x_title"],
+      "source_ref": "omniroute@3.8.53+9router@0.5.112+allcode@1.27.6",
+      "catalog_version": "2026-11",
+      "models": [
+        {"model_id": "auto", "context_window": 200000, "supports_tools": true,
+         "input_price_per_million": 2, "output_price_per_million": 8,
+         "pricing_source": "9router:pricing.js@0.5.112"}
+      ]
+    }
+  ]
+}
+```
+
+### `POST /admin/v1/provider-catalog/{slug}/connect`
+
+Cria provedor, conta e modelos do catálogo em uma transação. `name`, `account_name` e `base_url` são
+opcionais (default: nome do catálogo, `default` e a base do catálogo). `base_url` só aceita
+`http`/`https`. Conflito de nome retorna `409`; `slug` inexistente retorna `404`.
+
+```json
+{"credential": "sk-or-...", "name": "OpenRouter", "account_name": "produção"}
+```
+
+Resposta: `201` com o provedor criado (inclui `catalog_slug`).
+
+Provedores cujo catálogo declara `models_path` vazio (ex.: `perplexity`) não expõem endpoint de
+modelos: `GET /providers/{id}/models` e o import respondem `400`, e `POST /providers/{id}/test`
+retorna `ok=false` com a causa.
+
 ## Integração com o frontend
 
 `admin/lib/admin-api.ts` usa:

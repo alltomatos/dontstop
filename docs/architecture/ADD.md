@@ -100,7 +100,7 @@ flowchart TB
 |---|---|---|
 | Requisição + cache exato | Auth → rate limit → cache → DLP → rota → upstream → usage | [03-UML §2](../03-UML.md) |
 | Cache semântico | Embedding → ANN no Qdrant → validação de metadados → resposta | [03-UML §3](../03-UML.md) |
-| Failover | Circuit breaker → cooldown → próxima conta/modelo/provider | [03-UML §4](../03-UML.md) |
+| Failover | Circuit breaker → cooldown → próxima conta do mesmo provedor → próximo provider; 400 do cliente é terminal; SSE só antes do primeiro chunk | [03-UML §4](../03-UML.md), [ADR-022](../05-ADRS.md) |
 | Proxy Webshare | Acquire → health/score → CONNECT → report/quarentena | [03-UML §5](../03-UML.md) |
 | Lazy loading do console | Shell SSR → skeleton → chunk sob demanda → dados com SWR | [03-UML §6.1](../03-UML.md) |
 | Endpoint + API key | Resolve endpoint/política + escopo da chave → limites → roteamento | [03-UML §6.2](../03-UML.md) |

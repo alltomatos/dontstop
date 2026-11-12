@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/api"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
+	"github.com/alltomatos/dontstop/gateway/internal/routing"
 )
 
 type fakeChatService struct {
@@ -108,6 +110,63 @@ func TestChatMapsTranslationError(t *testing.T) {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Error.Type != "translation_error" {
+		t.Fatalf("unexpected error type: %+v", body)
+	}
+}
+
+func TestChatMapsUpstreamQuotaError(t *testing.T) {
+	service := &fakeChatService{err: fmt.Errorf("%w: %w", routing.ErrAllCandidatesFailed, provider.ErrProviderQuota)}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-4.1","messages":[{"role":"user","content":"Oi"}]}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusPaymentRequired {
+		t.Fatalf("expected 402, got %d: %s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Error struct {
+			Type string `json:"type"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Error.Type != "billing_error" {
+		t.Fatalf("unexpected error type: %+v", body)
+	}
+}
+func TestChatMapsTerminalProviderRequestError(t *testing.T) {
+	service := &fakeChatService{err: provider.ErrProviderInvalidRequest}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-4.1","messages":[{"role":"user","content":"Oi"}]}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestChatMapsRequiredProxyError(t *testing.T) {
+	service := &fakeChatService{err: fmt.Errorf("%w: %w", routing.ErrAllCandidatesFailed, provider.ErrProxyRequired)}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-4.1","messages":[{"role":"user","content":"Oi"}]}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d: %s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Error struct {
+			Type string `json:"type"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Error.Type != "proxy_unavailable" {
 		t.Fatalf("unexpected error type: %+v", body)
 	}
 }

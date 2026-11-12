@@ -42,9 +42,9 @@ func (a *openAIAdapter) Chat(ctx context.Context, account Account, request ChatR
 		MaxTokens:   request.MaxTokens,
 	}
 	var response openAIResponse
-	err := postJSON(ctx, a.client, baseURL+"/chat/completions", map[string]string{
+	err := postJSON(ctx, clientFor(a.client, account), baseURL+"/chat/completions", map[string]string{
 		"Authorization": "Bearer " + account.APIKey,
-	}, payload, &response)
+	}, payload, &response, account.ProxyURL != "")
 	if err != nil {
 		return ChatResponse{}, err
 	}
@@ -85,9 +85,9 @@ func (a *openAIAdapter) ChatStream(ctx context.Context, account Account, request
 		MaxTokens:   request.MaxTokens,
 		Stream:      true,
 	}
-	body, err := postSSE(ctx, a.client, baseURL+"/chat/completions", map[string]string{
+	body, err := postSSE(ctx, clientFor(a.client, account), baseURL+"/chat/completions", map[string]string{
 		"Authorization": "Bearer " + account.APIKey,
-	}, payload)
+	}, payload, account.ProxyURL != "")
 	if err != nil {
 		return nil, err
 	}

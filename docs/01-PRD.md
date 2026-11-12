@@ -89,6 +89,7 @@ Os gateways auditados mostram que o padrão funciona: um endpoint OpenAI-compati
 | FR-14 | Fallback em três níveis: conta → modelo → provider | P0 | Falha injetada em conta/modelo/provider resulta em sucesso quando há alternativa, em ≤ 2 s |
 | FR-15 | Circuit breaker por provider (closed/open/half-open) | P0 | 5 falhas ou 50% de erro em 30 s abre; half-open após 15 s |
 | FR-16 | Cooldown exponencial por conta e lockout por modelo | P0 | 429/401/5xx aplicam cooldown; modelo ruim não derruba a conta inteira |
+| FR-16.1 | Failover padrão entre contas do mesmo provedor | P0 | 429/quota/5xx/timeout tenta a próxima conta do provedor antes de outro provedor; 400 do cliente não consome outra conta |
 | FR-17 | Idempotência de requisições (header `Idempotency-Key`) | P1 | Repetição devolve a mesma resposta dentro da janela configurada |
 | FR-18 | Timeout, retry e abort budget por requisição | P0 | Nenhuma requisição excede o budget total configurado |
 

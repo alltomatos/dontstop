@@ -40,6 +40,7 @@ A arquitetura inicial é **single-tenant (instância única)**, mas o modelo de 
 | — | [Guia do usuário](user-guide/README.md) | Guias por página/modal em 6 idiomas, com imagens, alt e fallback |
 | — | [Referência: Endpoints/API Manager](reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md) | Como 9Router e OmniRoute tratam endpoints e API keys; o que adotar/evitar |
 | — | [Referência: MCP](reference/MCP-REFERENCIAS.md) | Como 9Router e OmniRoute expõem MCP; decisões do dontstop |
+| — | [Referência: Proxy Webshare](reference/WEBSHARE-PROXY-PLAN.md) | Estudo da API, comparativo 9Router/OmniRoute, plano por etapas e riscos do proxy por conta |
 
 ## 3. Fontes consultadas
 

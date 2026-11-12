@@ -1,16 +1,39 @@
 export type ProviderOrigin = "native" | "custom";
 export type ProviderStatus = "ok" | "warn";
 export type ProviderAccountStatus = "ok" | "warn";
+export type ProviderProxyMode = "off" | "preferred" | "required";
+export type ProviderProxyHealth = "healthy" | "quarantined" | "unhealthy";
+export type ProviderAccountHealth = "active" | "cooldown" | "quarantined" | "unhealthy" | "disabled";
+
+export interface ProviderProxy {
+  id: string;
+  label: string;
+  address: string;
+  port: number;
+  countryCode: string;
+  cityName: string;
+  health: ProviderProxyHealth;
+}
 
 export interface ProviderAccount {
+  id?: string;
   name: string;
   meta: string;
   status: ProviderAccountStatus;
   statusKey: string;
+  proxyMode?: ProviderProxyMode;
+  proxy?: ProviderProxy | null;
+  modelsAvailable?: number;
+  modelsUsable?: number;
+  capabilities?: string[];
+  health?: ProviderAccountHealth;
+  active?: boolean;
 }
 
 export interface Provider {
   id: string;
+  slug?: string;
+  catalogSlug?: string;
   name: string;
   icon: string;
   type: string;
@@ -20,6 +43,9 @@ export interface Provider {
   origins: ProviderOrigin[];
   accounts: ProviderAccount[];
   accountsCount?: number;
+  usableAccounts?: number;
+  modelsCount?: number;
+  modelsUsable?: number;
   signupUrl: string;
   guide: string;
   configured: boolean;
@@ -155,6 +181,20 @@ export const PROVIDERS: Record<string, Provider> = {
     signupUrl: "https://ollama.com/download",
     guide: "providers",
     accounts: [{ name: "localhost:11434", meta: "local", status: "ok", statusKey: healthy }]
+  },
+  "opencode-go": {
+    id: "opencode-go",
+    name: "OpenCode Go",
+    icon: "OG",
+    type: "API key · OpenCode Go",
+    status: "ok",
+    statusKey: healthy,
+    capabilities: ["Chat", "Tools", "Reasoning", "Vision"],
+    origins: ["native"],
+    configured: false,
+    signupUrl: "https://opencode.ai/",
+    guide: "providers",
+    accounts: []
   },
   "opencode-free": {
     id: "opencode-free",
@@ -338,6 +378,20 @@ export const PROVIDERS: Record<string, Provider> = {
     guide: "providers",
     accounts: []
   }
+};
+
+// UI-only signing pages for catalog slugs that have no static entry in PROVIDERS.
+export const SIGNUP_URLS: Record<string, string> = {
+  alibaba: "https://dashscope.console.aliyun.com/apiKey",
+  cerebras: "https://cloud.cerebras.ai/",
+  cohere: "https://dashboard.cohere.com/api-keys",
+  mistral: "https://console.mistral.ai/api-keys",
+  nvidia: "https://build.nvidia.com/",
+  perplexity: "https://www.perplexity.ai/settings/api",
+  together: "https://api.together.ai/settings/api-keys",
+  venice: "https://venice.ai/settings/api",
+  "vercel-ai-gateway": "https://vercel.com/dashboard/ai-gateway",
+  xai: "https://console.x.ai/"
 };
 
 export const CONFIGURED_PROVIDERS = Object.values(PROVIDERS).filter(provider => provider.configured);

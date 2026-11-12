@@ -60,6 +60,14 @@ export const PROVIDER_SETUP: Record<string, ProviderSetup> = {
     requiredFields: ["base_url", "model_id"],
     supported: false
   },
+  "opencode-go": {
+    authType: "api_key",
+    requiredFields: ["credential"],
+    kind: "openai",
+    defaultBaseUrl: "https://opencode.ai/inference/go/openai/v1",
+    defaultModel: "deepseek-v4.1-flash",
+    supported: true
+  },
   "opencode-free": {
     authType: "none",
     requiredFields: [],

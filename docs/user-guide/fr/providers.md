@@ -33,6 +33,14 @@ Utilisez cet écran pour inspecter, configurer ou exploiter cette partie de la p
 - Si une action est désactivée, confirmez votre rôle et le périmètre du tenant.
 - Les états vides sont normaux avant la première requête ; suivez l’appel à l’action.
 
+## Proxy par compte
+
+Configurez Webshare dans **Réseau proxy**, testez l'API key et synchronisez la liste des proxies direct. Dans le compte du fournisseur, choisissez Off, Preferred ou Required ; l'endpoint attribué, la région et la santé apparaissent dans le même bloc. Un proxy en quarantaine ou absent bascule en direct avec Preferred et bloque l'appel avec Required.
+
+## Comptes et tests
+
+Le détail du fournisseur conserve le résumé consolidé et ajoute un résumé par compte avec état actif, santé, modèles disponibles/utilisables et capacités. Utilisez le sélecteur **Compte de test** au-dessus de la liste des modèles pour choisir le compte utilisé. Seuls les comptes actifs avec des modèles utilisables sont sélectionnables, le dernier choix valide est mémorisé et le résultat indique toujours le compte utilisé. Chaque compte possède aussi son bouton de test ; l'échec d'un compte n'affecte pas les autres.
+
 ## Guides associés
 
 - [Points de terminaison](endpoints.md)

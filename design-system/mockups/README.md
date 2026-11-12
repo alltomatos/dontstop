@@ -179,3 +179,10 @@ Custo e Quotas                     [Exportar] [+ Quota]
 - Não é código de produção: sem autenticação real, dados reais ou integração com APIs.
 - Não define biblioteca final de gráficos; a decisão fica no P0.
 - Não substitui os specs de página em [`../pages/`](../pages/).
+
+## Mockups de proxy
+
+- `provider-account-proxy.svg` - bloco de proxy por conta (modo, endpoint, saúde e ações).
+- `proxy-network.svg` - visão IP-first do pool.
+- `proxy-network-drawer.svg` - drawer do IP.
+- `proxy-webshare-config.svg` - modal de configuração do Webshare (API key, plan ID opcional e teste real).

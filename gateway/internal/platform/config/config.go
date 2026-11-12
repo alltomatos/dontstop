@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const defaultPort = 8080
@@ -22,21 +23,30 @@ func secretValue(name string) string {
 
 // Config contains process configuration loaded from environment variables.
 type Config struct {
-	Port        int
-	DatabaseURL string
-	RedisURL    string
-	MasterKey   string
-	NATSURL     string
+	Port                 int
+	DatabaseURL          string
+	RedisURL             string
+	MasterKey            string
+	NATSURL              string
+	WebshareSyncInterval time.Duration
 }
 
 // Load reads and validates process configuration.
 func Load() (Config, error) {
 	cfg := Config{
-		Port:        defaultPort,
-		DatabaseURL: secretValue("DATABASE_URL"),
-		RedisURL:    secretValue("REDIS_URL"),
-		MasterKey:   secretValue("MASTER_KEY"),
-		NATSURL:     secretValue("NATS_URL"),
+		Port:                 defaultPort,
+		DatabaseURL:          secretValue("DATABASE_URL"),
+		RedisURL:             secretValue("REDIS_URL"),
+		MasterKey:            secretValue("MASTER_KEY"),
+		NATSURL:              secretValue("NATS_URL"),
+		WebshareSyncInterval: time.Hour,
+	}
+	if raw := os.Getenv("WEBSHARE_SYNC_INTERVAL"); raw != "" {
+		interval, err := time.ParseDuration(raw)
+		if err != nil || interval <= 0 {
+			return Config{}, fmt.Errorf("invalid WEBSHARE_SYNC_INTERVAL %q: expected a positive duration", raw)
+		}
+		cfg.WebshareSyncInterval = interval
 	}
 	rawPort := os.Getenv("PORT")
 	if rawPort == "" {

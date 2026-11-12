@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { Breadcrumbs, PageHeader } from "@/components/console/page";
+import { Breadcrumbs, EmptyState, PageHeader } from "@/components/console/page";
 import { OriginChips } from "@/components/console/origin-chips";
 import { useI18n } from "@/components/console/i18n-provider";
-import { CATALOG_PROVIDERS, ORIGIN_ORDER, type ProviderOrigin } from "@/lib/providers";
+import { configurePath } from "@/src/catalog";
+import { ORIGIN_ORDER, type Provider, type ProviderOrigin } from "@/lib/providers";
 
 type OriginFilter = ProviderOrigin | "all";
 type TypeFilter = "all" | "oauth" | "api" | "compatible" | "local";
@@ -19,7 +20,7 @@ function matchesType(type: string, filter: TypeFilter): boolean {
   return type.includes("Local");
 }
 
-export function CatalogView() {
+export function CatalogView({ providers, error = false }: { providers: Provider[]; error?: boolean }) {
   const { t, tp } = useI18n();
   const [query, setQuery] = useState("");
   const [origin, setOrigin] = useState<OriginFilter>("all");
@@ -27,12 +28,12 @@ export function CatalogView() {
 
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return CATALOG_PROVIDERS.filter(provider => {
+    return providers.filter(provider => {
       const matchesQuery = !normalized || provider.name.toLowerCase().includes(normalized);
       const matchesOrigin = origin === "all" || provider.origins.includes(origin);
       return matchesQuery && matchesOrigin && matchesType(provider.type, type);
     });
-  }, [origin, query, type]);
+  }, [origin, providers, query, type]);
 
   return (
     <>
@@ -42,6 +43,12 @@ export function CatalogView() {
         subtitle={t("providers.catalogSubtitle")}
         actions={<Link className="btn" href="/providers"><ArrowLeft aria-hidden="true" size={16} />{t("providers.backToProviders")}</Link>}
       />
+
+      {error ? (
+        <p className="small" role="status" style={{ color: "var(--danger)", marginBottom: 12 }}>
+          {t("common.gatewayError")}
+        </p>
+      ) : null}
 
       <div className="card">
         <div className="toolbar">
@@ -79,6 +86,14 @@ export function CatalogView() {
         </div>
       </div>
 
+      {visible.length === 0 ? (
+        <EmptyState
+          title={t("providers.catalogEmptyTitle")}
+          body={error ? t("providers.catalogUnavailable") : t("providers.catalogEmptyBody")}
+          action={<Link className="btn" href="/providers">{t("providers.backToProviders")}</Link>}
+        />
+      ) : null}
+
       <div className="provider-grid" style={{ marginTop: 16 }}>
         {visible.map(provider => (
           <article className="provider-card" key={provider.id}>
@@ -95,7 +110,7 @@ export function CatalogView() {
             </div>
             <div className="foot">
               <span className="meta">{t("providers.available")}</span>
-              <Link className="btn" href={`/providers/${provider.id}`}>{t("providers.configure")}</Link>
+              <Link className="btn" href={configurePath(provider.id)}>{t("providers.configure")}</Link>
             </div>
           </article>
         ))}

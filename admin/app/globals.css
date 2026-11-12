@@ -182,11 +182,27 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
 .provider-detail-title h1 { margin: 0; }
 .provider-detail-title .provider-icon { width: 44px; height: 44px; flex-basis: 44px; font-size: 14px; }
 .account-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.model-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-top: 8px; }
+.model-row { display: flex; align-items: flex-start; gap: 10px; padding: 6px 4px; border-radius: 6px; }
+.model-row:hover { background: var(--muted); }
+.model-row span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.model-row strong { font-size: 13px; overflow-wrap: anywhere; }
+.model-row small { color: var(--muted-fg); font-size: 12px; }
+.spin { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .account-row:last-child { border-bottom: 0; }
 .account-row .name { font-weight: 600; }
 .account-row .meta { font-size: 12px; color: var(--muted-fg); }
 .account-row .actions { display: flex; gap: 8px; align-items: center; }
+.proxy-config { flex-basis: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: #f8fafc; }
+.proxy-config-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.proxy-config-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--primary); }
+.proxy-mode-field { display: inline-flex; align-items: center; gap: 8px; }
+.proxy-mode-field .input { width: auto; min-width: 132px; padding: 4px 8px; }
+.proxy-config .helper { margin: 0; font-size: 12px; color: var(--muted-fg); }
+.proxy-config-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.proxy-endpoint { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
 .list { display: flex; flex-direction: column; gap: 8px; }
 .list-item { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; min-width: 0; }
 .list-item > span:first-child { min-width: 0; }

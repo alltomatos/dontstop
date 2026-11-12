@@ -189,20 +189,33 @@ func TestAnthropicAdapterStreamsContent(t *testing.T) {
 }
 
 func TestAdaptersMapProviderErrors(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`{"error":{"message":"bad key"}}`))
-	}))
-	defer server.Close()
-
-	adapter, err := provider.NewAdapter("openai")
-	if err != nil {
-		t.Fatalf("new adapter: %v", err)
+	tests := []struct {
+		status int
+		want   error
+	}{
+		{status: http.StatusUnauthorized, want: provider.ErrProviderAuth},
+		{status: http.StatusForbidden, want: provider.ErrProviderAuth},
+		{status: http.StatusPaymentRequired, want: provider.ErrProviderQuota},
+		{status: http.StatusTooManyRequests, want: provider.ErrProviderRateLimited},
+		{status: http.StatusInternalServerError, want: provider.ErrProviderUnavailable},
+		{status: http.StatusBadRequest, want: provider.ErrProviderInvalidRequest},
 	}
-	_, err = adapter.Chat(context.Background(), provider.Account{BaseURL: server.URL, APIKey: "bad"}, provider.ChatRequest{
-		Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}},
-	})
-	if !errors.Is(err, provider.ErrProviderAuth) {
-		t.Fatalf("expected ErrProviderAuth, got %v", err)
+	for _, test := range tests {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(test.status)
+			_, _ = w.Write([]byte(`{"error":{"message":"upstream failure"}}`))
+		}))
+		adapter, err := provider.NewAdapter("openai")
+		if err != nil {
+			server.Close()
+			t.Fatalf("new adapter: %v", err)
+		}
+		_, err = adapter.Chat(context.Background(), provider.Account{BaseURL: server.URL, APIKey: "bad"}, provider.ChatRequest{
+			Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}},
+		})
+		server.Close()
+		if !errors.Is(err, test.want) {
+			t.Fatalf("status %d: expected %v, got %v", test.status, test.want, err)
+		}
 	}
 }

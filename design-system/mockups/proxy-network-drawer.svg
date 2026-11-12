@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120" role="img" aria-label="Mock do drawer de detalhe do IP: dados do IP, contas que o usam, histórico de rotações e verificações de saúde">
+  <defs>
+    <style>
+      .bg { fill: #F8FAFC; }
+      .surface { fill: #FFFFFF; }
+      .border { fill: none; stroke: #E2E8F0; stroke-width: 1; }
+      .sidebar { fill: #1E3A8A; }
+      .text { fill: #0F172A; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .muted { fill: #475569; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .faint { fill: #94A3B8; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .white { fill: #FFFFFF; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .mono { font-family: 'Fira Code',Consolas,monospace; fill: #0F172A; }
+      .h2 { font-size: 16px; font-weight: 700; }
+      .small { font-size: 12px; }
+      .tiny { font-size: 11px; }
+      .label { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; fill: #64748B; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip-green { fill: #ECFDF5; }
+      .chip-green-t { fill: #047857; font-size: 11px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip-navy { fill: #EEF2FF; }
+      .chip-navy-t { fill: #1E3A8A; font-size: 10px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .chip { fill: #F1F5F9; }
+      .chip-gray-t { fill: #475569; font-size: 11px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .btn { fill: #FFFFFF; stroke: #CBD5E1; }
+      .btn-primary { fill: #1E3A8A; }
+      .btn-danger { fill: #FEF2F2; stroke: #FECACA; }
+      .btn-t { fill: #0F172A; font-size: 12px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .btn-primary-t { fill: #FFFFFF; font-size: 12px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .btn-danger-t { fill: #B91C1C; font-size: 12px; font-weight: 600; font-family: 'Fira Sans','Segoe UI',Arial,sans-serif; }
+      .divider { stroke: #EEF2F7; stroke-width: 1; }
+      .bar-bg { fill: #E2E8F0; }
+      .assoc { fill: #F8FAFC; stroke: #E2E8F0; }
+      .dot-s { fill: #059669; }
+      .dot-a { fill: #0EA5E9; }
+      .dot-n { fill: #64748B; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1440" height="1120"/>
+
+  <!-- Página de fundo (silhueta) -->
+  <rect class="sidebar" width="240" height="1120"/>
+  <text x="52" y="48" class="white" font-size="18" font-weight="700">DonStop IA</text>
+  <rect x="240" y="0" width="1200" height="56" class="surface"/>
+  <line x1="240" y1="56" x2="1440" y2="56" class="divider"/>
+  <rect x="272" y="12" width="680" height="32" rx="8" fill="#F1F5F9"/>
+  <rect x="1256" y="12" width="72" height="32" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+
+  <rect x="288" y="96" width="380" height="32" rx="6" fill="#E2E8F0" opacity=".7"/>
+  <rect x="288" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="511" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="734" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="957" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="1180" y="176" width="211" height="88" rx="12" class="surface"/>
+  <rect x="288" y="284" width="700" height="32" rx="8" fill="#FFFFFF" stroke="#E2E8F0"/>
+  <rect x="288" y="336" width="1104" height="548" rx="12" class="surface"/>
+  <rect x="288" y="336" width="1104" height="548" rx="12" class="border"/>
+  <g stroke="#EEF2F7">
+    <line x1="288" y1="380" x2="1392" y2="380"/>
+    <line x1="304" y1="452" x2="1376" y2="452"/>
+    <line x1="304" y1="524" x2="1376" y2="524"/>
+    <line x1="304" y1="596" x2="1376" y2="596"/>
+    <line x1="304" y1="668" x2="1376" y2="668"/>
+    <line x1="304" y1="740" x2="1376" y2="740"/>
+    <line x1="304" y1="812" x2="1376" y2="812"/>
+  </g>
+  <rect x="288" y="900" width="1104" height="72" rx="12" class="surface"/>
+  <rect x="288" y="992" width="357" height="240" rx="12" class="surface"/>
+  <rect x="661" y="992" width="357" height="240" rx="12" class="surface"/>
+  <rect x="1034" y="992" width="357" height="240" rx="12" class="surface"/>
+
+  <!-- Overlay -->
+  <rect x="0" y="0" width="1440" height="1120" fill="#0F172A" opacity="0.35"/>
+  <rect x="868" y="0" width="12" height="1120" fill="#0F172A" opacity="0.12"/>
+
+  <!-- Drawer -->
+  <rect x="880" y="0" width="560" height="1120" class="surface"/>
+  <line x1="880" y1="0" x2="880" y2="1120" class="divider"/>
+
+  <text x="912" y="46" class="label">IP · porta</text>
+  <text x="912" y="78" class="mono" font-size="20" font-weight="600">45.12.33.10:8168</text>
+  <rect x="1160" y="58" width="16" height="16" rx="4" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+  <rect x="1164" y="62" width="16" height="16" rx="4" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+  <path d="M1392 56 l12 12 M1404 56 l-12 12" stroke="#64748B" stroke-width="1.8"/>
+
+  <rect x="912" y="92" width="72" height="20" rx="10" class="chip-green"/>
+  <text x="922" y="106" class="chip-green-t">Saudável</text>
+  <text x="994" y="106" class="muted small">12 ms · p95 28 ms</text>
+  <text x="912" y="126" class="muted small">São Paulo, BR · ASN 264409 · Webshare direct</text>
+  <line x1="912" y1="148" x2="1408" y2="148" class="divider"/>
+
+  <!-- Contas usando este IP -->
+  <text x="912" y="178" class="text h2">Contas usando este IP</text>
+  <rect x="1316" y="164" width="92" height="20" rx="10" class="chip"/>
+  <text x="1326" y="178" class="chip-gray-t">2 associações</text>
+
+  <rect x="912" y="192" width="496" height="82" rx="10" class="assoc"/>
+  <circle cx="936" cy="216" r="12" fill="#10A37F"/>
+  <text x="936" y="220" text-anchor="middle" class="white" font-size="10" font-weight="700">OA</text>
+  <text x="958" y="212" class="text" font-size="14" font-weight="600">OpenAI · produção</text>
+  <text x="958" y="230" class="muted tiny"><tspan class="mono">sk-...9f2</tspan> · sticky até 12:58</text>
+  <rect x="1320" y="200" width="60" height="18" rx="9" class="chip-navy"/>
+  <text x="1328" y="212" class="chip-navy-t">required</text>
+  <text x="1238" y="252" class="muted tiny">Desatribuir</text>
+  <text x="1320" y="252" class="muted tiny">Fixar</text>
+
+  <rect x="912" y="284" width="496" height="82" rx="10" class="assoc"/>
+  <circle cx="936" cy="308" r="12" fill="#6B7280"/>
+  <text x="936" y="312" text-anchor="middle" class="white" font-size="10" font-weight="700">OR</text>
+  <text x="958" y="304" class="text" font-size="14" font-weight="600">OpenRouter · default</text>
+  <text x="958" y="322" class="muted tiny"><tspan class="mono">sk-or-...7c1</tspan> · sticky até 12:34</text>
+  <rect x="1316" y="292" width="64" height="18" rx="9" class="chip"/>
+  <text x="1324" y="304" class="chip-gray-t">preferred</text>
+  <text x="1238" y="344" class="muted tiny">Desatribuir</text>
+  <text x="1320" y="344" class="muted tiny">Fixar</text>
+
+  <line x1="912" y1="392" x2="1408" y2="392" class="divider"/>
+
+  <!-- Sticky e score -->
+  <text x="912" y="422" class="text h2">Sticky e score</text>
+  <rect x="912" y="436" width="496" height="92" rx="10" class="assoc"/>
+  <text x="932" y="462" class="label">Sticky até</text>
+  <text x="932" y="486" class="text" font-size="15" font-weight="700">12:58</text>
+  <text x="932" y="506" class="faint tiny">28 min restantes</text>
+
+  <text x="1072" y="462" class="label">Score</text>
+  <text x="1072" y="486" class="text" font-size="15" font-weight="700">98</text>
+  <rect x="1072" y="496" width="90" height="5" rx="2.5" class="bar-bg"/>
+  <rect x="1072" y="496" width="88" height="5" rx="2.5" fill="#059669"/>
+
+  <text x="1200" y="462" class="label">Latência p50</text>
+  <text x="1200" y="486" class="text" font-size="15" font-weight="700">12 ms</text>
+  <text x="1200" y="506" class="faint tiny">últimos 15 min</text>
+
+  <text x="1308" y="462" class="label">Falhas</text>
+  <text x="1308" y="486" class="text" font-size="15" font-weight="700">0</text>
+  <text x="1308" y="506" class="faint tiny">24 h</text>
+
+  <line x1="912" y1="556" x2="1408" y2="556" class="divider"/>
+
+  <!-- Histórico -->
+  <text x="912" y="586" class="text h2">Histórico de rotações</text>
+  <line x1="922" y1="606" x2="922" y2="702" stroke="#E2E8F0" stroke-width="2"/>
+  <circle cx="922" cy="612" r="5" class="dot-a"/>
+  <text x="942" y="610" class="text small">12:31 · Rotação manual</text>
+  <text x="942" y="626" class="faint tiny">operador · sticky reiniciado</text>
+
+  <circle cx="922" cy="652" r="5" class="dot-n"/>
+  <text x="942" y="650" class="text small">11:58 · Sticky expirou e foi renovado</text>
+  <text x="942" y="666" class="faint tiny">IP mantido por 30 min</text>
+
+  <circle cx="922" cy="692" r="5" class="dot-s"/>
+  <text x="942" y="690" class="text small">11:20 · Atribuído a OpenAI · produção</text>
+  <text x="942" y="706" class="faint tiny">modo required</text>
+
+  <line x1="912" y1="736" x2="1408" y2="736" class="divider"/>
+
+  <!-- Health checks -->
+  <text x="912" y="766" class="text h2">Verificações de saúde</text>
+  <circle cx="920" cy="792" r="4" class="dot-s"/>
+  <text x="936" y="796" class="mono small">12:40</text>
+  <text x="996" y="796" class="muted small">ok</text>
+  <text x="1348" y="796" class="muted small" text-anchor="end">12 ms</text>
+  <circle cx="920" cy="822" r="4" class="dot-s"/>
+  <text x="936" y="826" class="mono small">12:35</text>
+  <text x="996" y="826" class="muted small">ok</text>
+  <text x="1348" y="826" class="muted small" text-anchor="end">14 ms</text>
+  <circle cx="920" cy="852" r="4" class="dot-s"/>
+  <text x="936" y="856" class="mono small">12:30</text>
+  <text x="996" y="856" class="muted small">ok</text>
+  <text x="1348" y="856" class="muted small" text-anchor="end">11 ms</text>
+  <circle cx="920" cy="882" r="4" class="dot-s"/>
+  <text x="936" y="886" class="mono small">12:25</text>
+  <text x="996" y="886" class="muted small">ok</text>
+  <text x="1348" y="886" class="muted small" text-anchor="end">13 ms</text>
+
+  <!-- Footer do drawer -->
+  <line x1="880" y1="980" x2="1440" y2="980" class="divider"/>
+  <rect x="912" y="1012" width="170" height="40" rx="8" class="btn-primary"/>
+  <text x="932" y="1037" class="btn-primary-t">Rotacionar agora</text>
+  <rect x="1094" y="1012" width="150" height="40" rx="8" class="btn"/>
+  <text x="1112" y="1037" class="btn-t">Fixar nesta conta</text>
+  <rect x="1256" y="1012" width="152" height="40" rx="8" class="btn-danger"/>
+  <text x="1270" y="1037" class="btn-danger-t">Colocar em quarentena</text>
+
+  <text x="1408" y="1084" class="faint tiny" text-anchor="end">Drawer · clique fora ou ESC fecha</text>
+</svg>

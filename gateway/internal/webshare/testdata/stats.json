@@ -1,0 +1,13 @@
+{
+  "available_countries": {
+    "BR": 100,
+    "US": 50
+  },
+  "asns": {
+    "AS1": 10
+  },
+  "available_asns": {
+    "AS1": 5
+  },
+  "ip_ranges_24": {}
+}

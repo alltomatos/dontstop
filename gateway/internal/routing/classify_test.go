@@ -14,9 +14,12 @@ func TestClassifyProviderError(t *testing.T) {
 		want routing.FailureKind
 	}{
 		{provider.ErrProviderAuth, routing.FailureAuth},
+		{provider.ErrProviderQuota, routing.FailureQuota},
 		{provider.ErrProviderRateLimited, routing.FailureRateLimit},
 		{provider.ErrProviderUnavailable, routing.FailureServer},
 		{provider.ErrProviderResponse, routing.FailureUnknown},
+		{provider.ErrProviderInvalidRequest, routing.FailureTerminal},
+		{provider.ErrTranslation, routing.FailureTerminal},
 		{errors.New("other"), routing.FailureUnknown},
 	}
 	for _, tc := range cases {

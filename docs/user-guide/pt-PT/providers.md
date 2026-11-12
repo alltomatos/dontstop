@@ -33,6 +33,14 @@ Utilize este ecrã quando precisar de inspecionar, configurar ou operar esta par
 - Se uma ação estiver desativada, confirme o seu papel e o âmbito do tenant.
 - Estados vazios são esperados antes do primeiro pedido; siga a chamada para ação.
 
+## Proxy por conta
+
+Configure o Webshare em **Rede de proxy**, teste a API key e sincronize a lista de proxies direct. Na conta do fornecedor, escolha Off, Preferred ou Required; o endpoint atribuído, a região e a saúde aparecem no mesmo bloco. Proxy em quarentena ou ausente recorre à ligação direta em Preferred e bloqueia a chamada em Required.
+
+## Contas e testes
+
+O detalhe do fornecedor mantém o resumo consolidado e adiciona um resumo por conta com estado ativo, saúde, modelos disponíveis/utilizáveis e capacidades. Use o seletor **Conta para teste** acima da lista de modelos para escolher em que conta o modelo será testado. Apenas contas ativas com modelos utilizáveis são selecionáveis, a última escolha válida é memorizada e o resultado indica sempre a conta usada. Cada conta tem também o seu botão de teste; a falha de uma conta não afeta as restantes.
+
 ## Guias relacionados
 
 - [Endpoints](endpoints.md)

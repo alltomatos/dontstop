@@ -21,10 +21,17 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model string) ([]Candidate, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT pa.tenant_id::text, pa.id::text, pa.provider_id::text,
-		       p.name, p.kind, pa.priority, pa.weight, pa.base_url, pa.credential_cipher, pa.credential_key_version
+		       p.name, p.kind, pa.priority, pa.weight, pa.base_url, pa.credential_cipher, pa.credential_key_version,
+		       pa.proxy_mode,
+		       coalesce(pe.id::text, ''), coalesce(pe.address, ''), coalesce(pe.port, 0),
+		       coalesce(pe.country_code, ''), coalesce(pe.city_name, ''),
+		       pe.username_cipher, pe.password_cipher,
+		       coalesce(pe.valid, false) AND (pe.quarantined_until IS NULL OR pe.quarantined_until <= now())
 		FROM provider_accounts pa
 		JOIN providers p ON p.id = pa.provider_id AND p.tenant_id = pa.tenant_id
 		JOIN provider_models pm ON pm.provider_id = p.id AND pm.tenant_id = pa.tenant_id
+		LEFT JOIN proxy_assignments pxa ON pxa.tenant_id = pa.tenant_id AND pxa.provider_account_id = pa.id
+		LEFT JOIN proxy_endpoints pe ON pe.id = pxa.proxy_endpoint_id AND pe.tenant_id = pa.tenant_id
 		WHERE pa.tenant_id = $1
 		  AND pm.model_id = $2
 		  AND pm.active = true
@@ -52,6 +59,15 @@ func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model str
 			&candidate.BaseURL,
 			&candidate.CredentialCipher,
 			&candidate.CredentialKeyVersion,
+			&candidate.ProxyMode,
+			&candidate.ProxyEndpointID,
+			&candidate.ProxyAddress,
+			&candidate.ProxyPort,
+			&candidate.ProxyCountry,
+			&candidate.ProxyCity,
+			&candidate.ProxyUsernameCipher,
+			&candidate.ProxyPasswordCipher,
+			&candidate.ProxyHealthy,
 		); err != nil {
 			return nil, fmt.Errorf("scan routing candidate: %w", err)
 		}

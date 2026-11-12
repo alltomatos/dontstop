@@ -27,8 +27,10 @@ func NewRedisBreaker(client redis.UniversalClient, config BreakerConfig) *RedisB
 	defaults := BreakerConfig{
 		BaseDelays: map[FailureKind]time.Duration{
 			FailureAuth:      5 * time.Minute,
+			FailureQuota:     5 * time.Minute,
 			FailureRateLimit: 30 * time.Second,
 			FailureServer:    10 * time.Second,
+			FailureProxy:     30 * time.Second,
 			FailureUnknown:   5 * time.Second,
 		},
 		MaxDelay:   15 * time.Minute,

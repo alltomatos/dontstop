@@ -23,8 +23,10 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/platform/secret"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/telemetry"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
+	proxycoord "github.com/alltomatos/dontstop/gateway/internal/proxy"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
 	"github.com/alltomatos/dontstop/gateway/internal/usage"
+	"github.com/alltomatos/dontstop/gateway/internal/webshare"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -82,6 +84,8 @@ func run(logger *slog.Logger) error {
 	readiness := health.NewRegistry(readinessTimeout)
 	deps := api.Dependencies{Readiness: readiness}
 	var pool *pgxpool.Pool
+	var providerService *admin.ProviderService
+	var webshareService *admin.WebshareService
 	var usageRecorder *usage.Recorder
 	var outbox *usage.OutboxPublisher
 	if cfg.DatabaseURL != "" {
@@ -119,7 +123,12 @@ func run(logger *slog.Logger) error {
 		if err != nil {
 			return fmt.Errorf("load master key: %w", err)
 		}
-		deps.Admin = admin.NewProviderService(pool, box)
+		providerService = admin.NewProviderService(pool, box)
+		deps.Admin = providerService
+		deps.AdminProxy = admin.NewProxyService(pool, box)
+		webshareService = admin.NewWebshareService(pool, box, webshare.NewClient(nil))
+		deps.AdminWebshare = webshareService
+		deps.AdminCatalog = providerService
 		deps.AdminKeys = admin.NewAPIKeyService(pool)
 		deps.AdminUsage = admin.NewUsageService(pool)
 		deps.AdminMCP = admin.NewMCPService(pool)
@@ -128,7 +137,10 @@ func run(logger *slog.Logger) error {
 		deps.AdminEndpoints = admin.NewEndpointService()
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
-		deps.Chat = chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)
+		coordinator := proxycoord.NewCoordinator(proxycoord.NewPostgresRepository(pool), proxycoord.NewRedisState(redisConn), box)
+		chatService := chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)
+		chatService.SetProxyResolver(coordinator)
+		deps.Chat = chatService
 	} else if cfg.DatabaseURL != "" {
 		logger.Warn("chat completions disabled", "reason", "DATABASE_URL, REDIS_URL and MASTER_KEY are required")
 	}
@@ -149,7 +161,14 @@ func run(logger *slog.Logger) error {
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	if webshareService != nil {
+		go webshareService.Run(ctx, cfg.WebshareSyncInterval)
+	}
 	defer stop()
+
+	if providerService != nil {
+		go providerService.RunModelTestWorker(ctx, 2*time.Second)
+	}
 
 	if outbox != nil {
 		go outbox.Run(ctx, time.Second, func(err error) {

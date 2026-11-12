@@ -33,6 +33,14 @@ Verwenden Sie diese Seite, um diesen Teil des Gateways zu prüfen, zu konfigurie
 - Wenn eine Aktion deaktiviert ist, prüfen Sie Rolle und Tenant-Bereich.
 - Leere Zustände sind vor der ersten Anfrage normal; folgen Sie der Handlungsaufforderung.
 
+## Proxy pro Konto
+
+Konfiguriere Webshare unter **Proxy-Netzwerk**, teste den API-Key und synchronisiere die Direct-Proxy-Liste. Im Provider-Konto wähle Off, Preferred oder Required; zugewiesener Endpoint, Region und Gesundheit erscheinen im selben Block. Ein Proxy in Quarantäne oder ohne Zuweisung fällt bei Preferred auf direkt zurück und blockiert den Aufruf bei Required.
+
+## Konten und Tests
+
+Die Anbieterdetailseite behält die konsolidierte Zusammenfassung und ergänzt eine Zusammenfassung pro Konto mit Aktivstatus, Gesundheit, verfügbaren/nutzbaren Modellen und Fähigkeiten. Wähle über **Testkonto** oberhalb der Modellliste das Konto für den Modelltest. Nur aktive Konten mit nutzbaren Modellen sind auswählbar, die letzte gültige Auswahl wird gespeichert und das Ergebnis nennt immer das verwendete Konto. Jedes Konto hat außerdem einen eigenen Testbutton; ein Fehler eines Kontos beeinflusst die anderen nicht.
+
 ## Verwandte Leitfäden
 
 - [Endpunkte](endpoints.md)
