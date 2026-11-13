@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   response.cookies.set(SESSION_COOKIE, session.token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" && process.env.DONTSTOP_INSECURE_COOKIES !== "on",
     path: "/",
     maxAge: 60 * 60 * 8
   });
