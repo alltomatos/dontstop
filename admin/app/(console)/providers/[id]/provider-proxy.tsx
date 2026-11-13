@@ -14,18 +14,23 @@ interface ProxyEndpoint {
   city_name: string;
   health: string;
   assigned_count: number;
+  accounts?: Array<{ id: string; provider_id: string }>;
 }
 
+const MODES: ProviderProxyMode[] = ["inherit", "off", "manual", "auto"];
+
 const MODE_KEYS: Record<ProviderProxyMode, string> = {
+  inherit: "providers.proxyModeInherit",
   off: "providers.proxyModeOff",
-  preferred: "providers.proxyModePreferred",
-  required: "providers.proxyModeRequired"
+  manual: "providers.proxyModeManual",
+  auto: "providers.proxyModeAuto"
 };
 
 const MODE_HINT_KEYS: Record<ProviderProxyMode, string> = {
+  inherit: "providers.proxyModeInheritHint",
   off: "providers.proxyModeOffHint",
-  preferred: "providers.proxyModePreferredHint",
-  required: "providers.proxyModeRequiredHint"
+  manual: "providers.proxyModeManualHint",
+  auto: "providers.proxyModeAutoHint"
 };
 
 const HEALTH_KEYS: Record<string, string> = {
@@ -50,7 +55,7 @@ export function AccountProxyControl({
   onUpdated?: () => void;
 }) {
   const { t } = useI18n();
-  const [mode, setMode] = useState<ProviderProxyMode>(account.proxyMode ?? "off");
+  const [mode, setMode] = useState<ProviderProxyMode>(account.proxyMode ?? "inherit");
   const [modeBusy, setModeBusy] = useState(false);
   const [modeError, setModeError] = useState("");
   const [open, setOpen] = useState(false);
@@ -233,12 +238,13 @@ export function AccountProxyControl({
             onChange={event => changeMode(event.target.value as ProviderProxyMode)}
             aria-label={`${t("providers.proxyMode")}: ${account.name}`}
           >
-            {(["off", "preferred", "required"] as ProviderProxyMode[]).map(value => (
+            {MODES.map(value => (
               <option key={value} value={value}>{t(MODE_KEYS[value])}</option>
             ))}
           </select>
           {modeBusy ? <LoaderCircle aria-hidden="true" size={14} className="spin" /> : null}
         </label>
+        {mode === "auto" ? <span className="chip ok">{t("providers.proxyAutoBadge")}</span> : null}
       </div>
       <p className="helper">{t(MODE_HINT_KEYS[mode])}</p>
       <div className="proxy-config-row">
@@ -256,7 +262,7 @@ export function AccountProxyControl({
         ) : (
           <span className="muted small">{t("providers.proxyUnassigned")}</span>
         )}
-        <button className="btn" type="button" onClick={openAssignment} disabled={!account.id}>
+        <button className="btn" type="button" onClick={openAssignment} disabled={!account.id || mode === "auto"}>
           <Network aria-hidden="true" size={14} />
           {account.proxy ? t("providers.proxyReassign") : t("providers.proxyAssign")}
         </button>
@@ -294,7 +300,10 @@ export function AccountProxyControl({
             ) : (
               <div className="model-list">
                 {endpoints.map(endpoint => {
-                  const atLimit = endpoint.assigned_count >= 3 && account.proxy?.id !== endpoint.id;
+                  const usedBySameProvider = (endpoint.accounts ?? []).some(
+                    assigned => assigned.provider_id === providerId && assigned.id !== account.id
+                  );
+                  const atLimit = usedBySameProvider && account.proxy?.id !== endpoint.id;
                   return (
                     <label className="model-row" key={endpoint.id} style={{ opacity: atLimit ? 0.55 : 1 }}>
                       <input

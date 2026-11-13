@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/cache"
@@ -26,6 +27,11 @@ var tracer = otel.Tracer("dontstop/gateway/chat")
 // AccountRouter selects an account and applies failover.
 type AccountRouter interface {
 	Route(ctx context.Context, tenantID, model string, attempt routing.Attempt) (routing.Candidate, error)
+}
+
+// ComboResolver resolves an active combo into concrete targets.
+type ComboResolver interface {
+	ResolveTargets(ctx context.Context, tenantID, slug string) ([]routing.ComboTarget, int, error)
 }
 
 // UsageRecorder persists request usage and cost.
@@ -49,6 +55,7 @@ type Service struct {
 	promptVersion string
 	recorder      UsageRecorder
 	proxies       ProxyResolver
+	combos        ComboResolver
 }
 
 // NewService creates a chat service.
@@ -64,6 +71,9 @@ func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func
 	}
 }
 
+// SetComboResolver enables combo/<slug> models.
+func (s *Service) SetComboResolver(resolver ComboResolver) { s.combos = resolver }
+
 // Chat executes a non-streaming chat completion.
 func (s *Service) Chat(ctx context.Context, tenantID string, request provider.ChatRequest, idempotencyKey string) (provider.ChatResponse, string, error) {
 	ctx, span := tracer.Start(ctx, "chat.completion")
@@ -74,6 +84,10 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 		if cached, found, err := s.store.Get(ctx, tenantID+":"+idempotencyKey); err == nil && found {
 			return cached, "bypass", nil
 		}
+	}
+
+	if slug, ok := comboSlug(request.Model); ok {
+		return s.chatCombo(ctx, tenantID, request, slug, started)
 	}
 
 	cacheKey := ""
@@ -138,6 +152,9 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 	span.SetAttributes(attribute.String("gen_ai.request.model", request.Model))
 	started := time.Now()
 	state := &streamState{writer: writer, id: newCompletionID(), model: request.Model, created: time.Now().Unix()}
+	if slug, ok := comboSlug(request.Model); ok {
+		return s.streamCombo(ctx, tenantID, request, slug, state, started)
+	}
 	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		return s.attemptStream(ctx, candidate, request, state)
 	})
@@ -186,8 +203,6 @@ func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, 
 	var lastErr error
 	for round := 0; round <= maxProxyRotations; round++ {
 		adapter, account, lease, err := s.resolve(ctx, candidate, forceDirect, forced)
-		forced = nil
-		forceDirect = false
 		if err != nil {
 			return provider.ChatResponse{}, routing.AttemptResult{Failure: attemptFailureKind(err)}, err
 		}
@@ -196,7 +211,11 @@ func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, 
 			attribute.String("gen_ai.provider.name", candidate.ProviderName),
 			attribute.String("gen_ai.request.model", request.Model),
 		)
-		result, err := adapter.Chat(providerCtx, account, request)
+		attemptRequest := request
+		if candidate.ModelID != "" {
+			attemptRequest.Model = candidate.ModelID
+		}
+		result, err := adapter.Chat(providerCtx, account, attemptRequest)
 		if err != nil {
 			providerSpan.RecordError(err)
 			providerSpan.SetStatus(codes.Error, "provider request failed")
@@ -207,8 +226,8 @@ func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, 
 			return result, routing.AttemptResult{}, nil
 		}
 		lastErr = err
-		if s.canRotate(lease, err, round) {
-			next, rotateErr := s.proxies.Rotate(ctx, candidate.TenantID, candidate.AccountID, lease.EndpointID, candidate.ProxyMode)
+		if kind, ttl, ok := s.canRotate(lease, err, round); ok {
+			next, rotateErr := s.proxies.Rotate(ctx, candidate.TenantID, candidate.AccountID, lease.EndpointID, candidate.ProxyMode, kind, ttl)
 			if errors.Is(rotateErr, provider.ErrProxyRequired) {
 				return provider.ChatResponse{}, routing.AttemptResult{Failure: routing.FailureProxy}, rotateErr
 			}
@@ -228,14 +247,16 @@ func (s *Service) attemptStream(ctx context.Context, candidate routing.Candidate
 	var lastErr error
 	for round := 0; round <= maxProxyRotations; round++ {
 		adapter, account, lease, err := s.resolve(ctx, candidate, forceDirect, forced)
-		forced = nil
-		forceDirect = false
 		if err != nil {
 			return routing.AttemptResult{Failure: attemptFailureKind(err)}, err
 		}
 		providerCtx, providerSpan := tracer.Start(ctx, "provider.stream")
 		providerSpan.SetAttributes(attribute.String("gen_ai.provider.name", candidate.ProviderName))
-		stream, err := adapter.ChatStream(providerCtx, account, request)
+		attemptRequest := request
+		if candidate.ModelID != "" {
+			attemptRequest.Model = candidate.ModelID
+		}
+		stream, err := adapter.ChatStream(providerCtx, account, attemptRequest)
 		if err == nil {
 			err = s.consumeStream(ctx, stream, state)
 		}
@@ -252,8 +273,8 @@ func (s *Service) attemptStream(ctx context.Context, candidate routing.Candidate
 		if state.started {
 			return routing.AttemptResult{FirstTokenSent: true, Failure: routing.ClassifyProviderError(err)}, err
 		}
-		if s.canRotate(lease, err, round) {
-			next, rotateErr := s.proxies.Rotate(ctx, candidate.TenantID, candidate.AccountID, lease.EndpointID, candidate.ProxyMode)
+		if kind, ttl, ok := s.canRotate(lease, err, round); ok {
+			next, rotateErr := s.proxies.Rotate(ctx, candidate.TenantID, candidate.AccountID, lease.EndpointID, candidate.ProxyMode, kind, ttl)
 			if errors.Is(rotateErr, provider.ErrProxyRequired) {
 				return routing.AttemptResult{Failure: routing.FailureProxy}, rotateErr
 			}
@@ -290,8 +311,15 @@ func (s *Service) consumeStream(ctx context.Context, stream provider.Stream, sta
 	}
 }
 
-func (s *Service) canRotate(lease proxy.Lease, err error, round int) bool {
-	return s.proxies != nil && lease.EndpointID != "" && round < maxProxyRotations && errors.Is(err, provider.ErrProxyFailure)
+func (s *Service) canRotate(lease proxy.Lease, err error, round int) (provider.ProxyFailureKind, time.Duration, bool) {
+	if s.proxies == nil || lease.EndpointID == "" || round >= maxProxyRotations {
+		return "", 0, false
+	}
+	kind, ok := provider.ClassifyProxyFailure(err)
+	if !ok {
+		return "", 0, false
+	}
+	return kind, provider.ProxyPoisonTTL(kind), true
 }
 
 func (s *Service) proxySuccess(ctx context.Context, tenantID string, lease proxy.Lease) {
@@ -433,4 +461,65 @@ func newCompletionID() string {
 		return "chatcmpl_ds_fallback"
 	}
 	return "chatcmpl_ds_" + hex.EncodeToString(buffer)
+}
+
+func comboSlug(model string) (string, bool) {
+	if !strings.HasPrefix(model, "combo/") {
+		return "", false
+	}
+	slug := strings.TrimSpace(strings.TrimPrefix(model, "combo/"))
+	return slug, slug != ""
+}
+
+type comboAccountRouter interface {
+	RouteTargets(ctx context.Context, tenantID string, targets []routing.ComboTarget, attempt routing.Attempt) (routing.Candidate, error)
+}
+
+func (s *Service) chatCombo(ctx context.Context, tenantID string, request provider.ChatRequest, slug string, started time.Time) (provider.ChatResponse, string, error) {
+	if s.combos == nil {
+		return provider.ChatResponse{}, "", routing.ErrComboNotFound
+	}
+	targets, _, err := s.combos.ResolveTargets(ctx, tenantID, slug)
+	if err != nil {
+		return provider.ChatResponse{}, "", err
+	}
+	router, ok := s.router.(comboAccountRouter)
+	if !ok {
+		return provider.ChatResponse{}, "", routing.ErrComboExhausted
+	}
+	var response provider.ChatResponse
+	selected, err := router.RouteTargets(ctx, tenantID, targets, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+		result, outcome, err := s.attemptChat(ctx, candidate, request)
+		if err == nil {
+			response = result
+		}
+		return outcome, err
+	})
+	if err != nil {
+		return provider.ChatResponse{}, "", err
+	}
+	response.Model = request.Model
+	s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", "bypass", response.Usage, time.Since(started))
+	return response, "bypass", nil
+}
+
+func (s *Service) streamCombo(ctx context.Context, tenantID string, request provider.ChatRequest, slug string, state *streamState, started time.Time) error {
+	if s.combos == nil {
+		return routing.ErrComboNotFound
+	}
+	targets, _, err := s.combos.ResolveTargets(ctx, tenantID, slug)
+	if err != nil {
+		return err
+	}
+	router, ok := s.router.(comboAccountRouter)
+	if !ok {
+		return routing.ErrComboExhausted
+	}
+	selected, err := router.RouteTargets(ctx, tenantID, targets, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+		return s.attemptStream(ctx, candidate, request, state)
+	})
+	if err == nil {
+		s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", "bypass", state.usage, time.Since(started))
+	}
+	return err
 }

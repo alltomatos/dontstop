@@ -1,7 +1,7 @@
 export type ProviderOrigin = "native" | "custom";
 export type ProviderStatus = "ok" | "warn";
 export type ProviderAccountStatus = "ok" | "warn";
-export type ProviderProxyMode = "off" | "preferred" | "required";
+export type ProviderProxyMode = "inherit" | "off" | "manual" | "auto";
 export type ProviderProxyHealth = "healthy" | "quarantined" | "unhealthy";
 export type ProviderAccountHealth = "active" | "cooldown" | "quarantined" | "unhealthy" | "disabled";
 
@@ -46,6 +46,7 @@ export interface Provider {
   usableAccounts?: number;
   modelsCount?: number;
   modelsUsable?: number;
+  proxyAuto?: boolean;
   signupUrl: string;
   guide: string;
   configured: boolean;

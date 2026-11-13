@@ -19,6 +19,9 @@ const (
 	ProxyModeOff       ProxyMode = "off"
 	ProxyModePreferred ProxyMode = "preferred"
 	ProxyModeRequired  ProxyMode = "required"
+	ProxyModeManual    ProxyMode = "manual"
+	ProxyModeAuto      ProxyMode = "auto"
+	ProxyModeInherit   ProxyMode = "inherit"
 )
 
 var (
@@ -28,19 +31,24 @@ var (
 	ErrInvalidProxyMode = errors.New("invalid proxy mode")
 )
 
-// NormalizeProxyMode defaults an empty value to off.
+// NormalizeProxyMode defaults an empty or inherited value to off. Inherit is a
+// declaration resolved by ResolveEffectiveMode, never a runtime behavior.
 func NormalizeProxyMode(value string) ProxyMode {
 	switch ProxyMode(strings.ToLower(strings.TrimSpace(value))) {
 	case ProxyModePreferred:
 		return ProxyModePreferred
 	case ProxyModeRequired:
 		return ProxyModeRequired
+	case ProxyModeManual:
+		return ProxyModeManual
+	case ProxyModeAuto:
+		return ProxyModeAuto
 	default:
 		return ProxyModeOff
 	}
 }
 
-// ParseProxyMode validates an explicit proxy mode.
+// ParseProxyMode validates an explicit proxy mode, including inherit.
 func ParseProxyMode(value string) (ProxyMode, bool) {
 	switch ProxyMode(strings.ToLower(strings.TrimSpace(value))) {
 	case ProxyModeOff:
@@ -49,21 +57,52 @@ func ParseProxyMode(value string) (ProxyMode, bool) {
 		return ProxyModePreferred, true
 	case ProxyModeRequired:
 		return ProxyModeRequired, true
+	case ProxyModeManual:
+		return ProxyModeManual, true
+	case ProxyModeAuto:
+		return ProxyModeAuto, true
+	case ProxyModeInherit:
+		return ProxyModeInherit, true
 	default:
 		return "", false
 	}
 }
 
+// ResolveEffectiveMode expands inherit into the provider default (ADR-024).
+func ResolveEffectiveMode(accountMode string, providerAuto bool) ProxyMode {
+	mode, ok := ParseProxyMode(accountMode)
+	if !ok {
+		return ProxyModeOff
+	}
+	if mode == ProxyModeInherit {
+		if providerAuto {
+			return ProxyModeAuto
+		}
+		return ProxyModeOff
+	}
+	return mode
+}
+
+// RequiresProxy reports whether the mode fails closed without a healthy proxy.
+func RequiresProxy(mode ProxyMode) bool {
+	switch mode {
+	case ProxyModeRequired, ProxyModeManual, ProxyModeAuto:
+		return true
+	default:
+		return false
+	}
+}
+
 // SelectProxy decides whether the account must use its assigned proxy.
 // It never acquires a proxy for off, falls back to direct for preferred, and
-// fails closed for required.
+// fails closed for required/manual/auto.
 func SelectProxy(mode ProxyMode, healthy bool) (bool, error) {
 	switch mode {
-	case "", ProxyModeOff:
+	case "", ProxyModeOff, ProxyModeInherit:
 		return false, nil
 	case ProxyModePreferred:
 		return healthy, nil
-	case ProxyModeRequired:
+	case ProxyModeRequired, ProxyModeManual, ProxyModeAuto:
 		if !healthy {
 			return false, ErrProxyRequired
 		}

@@ -418,3 +418,60 @@ func TestAdminProviderBulkModelState(t *testing.T) {
 		t.Fatalf("unexpected bulk response: %+v", body)
 	}
 }
+
+func (f fakeAdminProviders) SetProxyAuto(_ context.Context, _ string, _ string, enabled bool) (bool, error) {
+	return enabled, nil
+}
+
+func TestAdminProviderSetProxyAuto(t *testing.T) {
+	verifier, key := testVerifier(t, []string{"manage"})
+	router := api.NewRouter(api.Dependencies{
+		Readiness: health.NewRegistry(0),
+		Verifier:  verifier,
+		Admin:     fakeAdminProviders{},
+	})
+	request := httptest.NewRequest(http.MethodPatch, "/admin/v1/providers/provider-1", strings.NewReader(`{"proxy_auto":true}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	var body map[string]bool
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil || !body["proxy_auto"] {
+		t.Fatalf("unexpected body: %s", response.Body.String())
+	}
+}
+
+func TestAdminProviderSetProxyAutoRequiresField(t *testing.T) {
+	verifier, key := testVerifier(t, []string{"manage"})
+	router := api.NewRouter(api.Dependencies{
+		Readiness: health.NewRegistry(0),
+		Verifier:  verifier,
+		Admin:     fakeAdminProviders{},
+	})
+	request := httptest.NewRequest(http.MethodPatch, "/admin/v1/providers/provider-1", strings.NewReader(`{}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", response.Code)
+	}
+}
+
+func TestAdminProviderSetProxyAutoRequiresManageScope(t *testing.T) {
+	verifier, key := testVerifier(t, []string{"chat:write"})
+	router := api.NewRouter(api.Dependencies{
+		Readiness: health.NewRegistry(0),
+		Verifier:  verifier,
+		Admin:     fakeAdminProviders{},
+	})
+	request := httptest.NewRequest(http.MethodPatch, "/admin/v1/providers/provider-1", strings.NewReader(`{"proxy_auto":true}`))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 without manage scope, got %d", response.Code)
+	}
+}

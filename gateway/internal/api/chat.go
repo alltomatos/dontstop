@@ -101,6 +101,10 @@ func validateChatRequest(request provider.ChatRequest) error {
 
 func writeChatError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, routing.ErrComboNotFound):
+		writeAPIError(w, http.StatusNotFound, "not_found", "combo not found")
+	case errors.Is(err, routing.ErrComboExhausted):
+		writeAPIError(w, http.StatusServiceUnavailable, "combo_exhausted", "combo has no eligible member")
 	case errors.Is(err, routing.ErrNoCandidate):
 		writeAPIError(w, http.StatusServiceUnavailable, "model_unavailable", "no account available for the requested model")
 	case errors.Is(err, provider.ErrProviderInvalidRequest):

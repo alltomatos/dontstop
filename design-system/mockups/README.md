@@ -1,7 +1,7 @@
 # Mockups — Console dontstop
 
 > Mockup navegável (HTML estático) para validar hierarquia, densidade e fluxos **antes** do desenvolvimento.
-> Abra [`console.html`](console.html) no navegador. As abas laterais alternam entre Dashboard, Providers, Cache, DLP, Observabilidade e Custo/Quotas.
+> Abra [`console.html`](console.html) para o console geral e [`combos.html`](combos.html) para o fluxo completo de combos.
 
 ## Como visualizar
 
@@ -27,6 +27,7 @@ Cada provedor exibe a origem (`Native` ou `Custom`) em chips e nos filtros. 9Rou
 |---|---|
 | Dashboard | KPIs, saúde de providers, incidentes e hierarquia |
 | Providers | Grade/lista, filtros por auth/capability, contas, teste e credencial mascarada |
+| Combos | Lista, criação manual em 4 passos, chat de IA com rascunho, detalhe, ativação, reordenação, exclusão e estados |
 | Endpoints | Endpoint final, URLs pública/local, catálogo por categoria, aliases e system prompt; **sem túneis** |
 | Gerenciador de API | Chaves, escopos, rate limits, quotas, schedule, rotação e auditoria |
 | MCP | Ativar/desativar servidor, transporte (stdio/SSE/Streamable HTTP), status, atividade e ferramentas |
@@ -35,6 +36,16 @@ Cada provedor exibe a origem (`Native` ou `Custom`) em chips e nos filtros. 9Rou
 | DLP | Regras, teste com redaction e eventos sem PII |
 | Observabilidade | SLOs e deep links para backend gerenciado (sem Grafana/Prometheus) |
 | Custo | Orçamento, quotas, chargeback e exportação |
+
+## Fluxo de combos
+
+O mockup dedicado fica em [`combos.html`](combos.html) e replica o padrão visual do console com sidebar, topbar, densidade de dashboard e os seis locales.
+
+- `?locale=en|pt-PT|pt-BR|es|fr|de` abre um idioma específico.
+- `?view=manual`, `?view=ai` ou `?view=detail` abre o fluxo correspondente.
+- `?state=empty|loading|error|success` valida os estados da lista.
+- Ações interativas: criar manualmente em quatro passos, criar com IA, aplicar o rascunho ao formulário, ativar/desativar, reordenar membros, abrir detalhe e excluir com confirmação.
+- O chat de IA é simulado (sem chamada real); o rascunho só é salvo após uma ação explícita do usuário.
 
 ## Wireframes ASCII
 

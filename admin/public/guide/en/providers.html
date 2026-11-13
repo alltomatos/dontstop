@@ -54,6 +54,10 @@ hr { border: 0; border-top: 1px solid #e7eaf3; margin: 28px 0; }
 </tbody></table>
 <h2>Common errors and states</h2>
 <ul><li>If data fails to load, retry. If the error persists, check the gateway and provider status.</li><li>If an action is disabled, confirm your role and the tenant scope.</li><li>Empty states are expected before the first request; follow the call to action.</li></ul>
+<h2>Proxy per account</h2>
+<p>Configure Webshare in <strong>Proxy network</strong>, test the API key and sync the direct proxy list. In the provider account, choose Off, Preferred or Required; the assigned endpoint, region and health appear in the same block. Quarantined or missing proxies fall back to direct in Preferred and block the call in Required.</p>
+<h2>Accounts and testing</h2>
+<p>The provider detail keeps the consolidated summary and adds a per-account summary with active state, health, available/usable models and capabilities. Use the <strong>Test account</strong> selector above the model list to choose which account tests a model. Only active accounts with usable models are selectable, the last valid choice is remembered, and results always name the account used. Each account also has its own test button; one failing account does not affect the others.</p>
 <h2>Related guides</h2>
 <ul><li><a href="endpoints.html">Endpoints</a></li><li><a href="dashboard.html">Dashboard</a></li><li><a href="cost.html">Cost</a></li></ul>
 <blockquote><p>Screenshot of the Providers screen in English.</p></blockquote>

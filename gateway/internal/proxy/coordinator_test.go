@@ -17,13 +17,14 @@ type fakeRepo struct {
 	assignCalls  []string
 	failureCalls []string
 	successCalls []string
+	banCalls     []string
 }
 
 func (r *fakeRepo) Assignment(context.Context, string, string) (proxy.Endpoint, bool, error) {
 	return r.assignment, r.assigned, nil
 }
 
-func (r *fakeRepo) Candidates(context.Context, string, string, int) ([]proxy.Endpoint, error) {
+func (r *fakeRepo) Candidates(context.Context, string, string, string, int) ([]proxy.Endpoint, error) {
 	return r.candidates, nil
 }
 
@@ -41,6 +42,11 @@ func (r *fakeRepo) RecordFailure(_ context.Context, _, endpointID string) error 
 
 func (r *fakeRepo) RecordSuccess(_ context.Context, _, endpointID string) error {
 	r.successCalls = append(r.successCalls, endpointID)
+	return nil
+}
+
+func (r *fakeRepo) RecordBan(_ context.Context, _, _, endpointID, reason string, _ time.Time) error {
+	r.banCalls = append(r.banCalls, endpointID+":"+reason)
 	return nil
 }
 
@@ -128,7 +134,7 @@ func TestRotateQuarantinesAndAssignsNext(t *testing.T) {
 	repo := &fakeRepo{candidates: []proxy.Endpoint{endpoint("proxy-2")}}
 	state := &fakeState{}
 	coordinator := proxy.NewCoordinator(repo, state, fakeDecrypter{})
-	lease, err := coordinator.Rotate(context.Background(), "tenant-1", "account-1", "proxy-1", "preferred")
+	lease, err := coordinator.Rotate(context.Background(), "tenant-1", "account-1", "proxy-1", "preferred", provider.ProxyFailureUnreachable, 15*time.Minute)
 	if err != nil || lease.EndpointID != "proxy-2" {
 		t.Fatalf("unexpected rotation: %+v err=%v", lease, err)
 	}
@@ -142,8 +148,33 @@ func TestRotateQuarantinesAndAssignsNext(t *testing.T) {
 
 func TestRotateRequiredFailsClosedWhenPoolExhausted(t *testing.T) {
 	coordinator := proxy.NewCoordinator(&fakeRepo{}, &fakeState{}, fakeDecrypter{})
-	_, err := coordinator.Rotate(context.Background(), "tenant-1", "account-1", "proxy-1", "required")
+	_, err := coordinator.Rotate(context.Background(), "tenant-1", "account-1", "proxy-1", "required", provider.ProxyFailureUnreachable, 15*time.Minute)
 	if !errors.Is(err, provider.ErrProxyRequired) {
 		t.Fatalf("expected ErrProxyRequired, got %v", err)
+	}
+}
+
+type fakeRefresher struct{ calls chan string }
+
+func (f *fakeRefresher) RefreshPool(_ context.Context, tenantID string) error {
+	f.calls <- tenantID
+	return nil
+}
+
+func TestRotateTriggersPoolRefresh(t *testing.T) {
+	repo := &fakeRepo{candidates: []proxy.Endpoint{endpoint("proxy-2")}}
+	refresher := &fakeRefresher{calls: make(chan string, 1)}
+	coordinator := proxy.NewCoordinator(repo, &fakeState{}, fakeDecrypter{})
+	coordinator.SetPoolRefresher(refresher)
+	if _, err := coordinator.Rotate(context.Background(), "tenant-1", "account-1", "proxy-1", "auto", provider.ProxyFailureBan, time.Hour); err != nil {
+		t.Fatalf("rotate: %v", err)
+	}
+	select {
+	case tenantID := <-refresher.calls:
+		if tenantID != "tenant-1" {
+			t.Fatalf("unexpected refresh tenant: %s", tenantID)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("pool refresh was not triggered")
 	}
 }

@@ -11,8 +11,9 @@
 
 Mostrar o pool de saída e responder, por IP: quem usa, de onde sai, em que modo, com que sticky, score e saúde.
 
-- um provedor tem N contas e cada conta recebe o seu próprio IP;
-- um mesmo IP pode atender mais de uma conta (chips empilhados), sem esconder vínculos;
+- um provedor tem N contas e cada conta recebe o seu próprio IP **daquele provedor**;
+- um mesmo IP pode ser reutilizado por contas de **provedores diferentes** (chips empilhados com provedores distintos), sem esconder vínculos;
+- dentro do **mesmo provedor**, um IP nunca atende mais de uma conta (regra 1:1 por provedor — ADR-024);
 - IPs livres aparecem na tabela com a coluna de contas vazia e ação **Atribuir**;
 - contas sem IP **não** viram linha: ficam no bloco **Contas sem proxy**.
 
@@ -60,7 +61,7 @@ Cada linha = `address:port` único.
 | Coluna | Conteúdo |
 |---|---|
 | **IP · porta** | IP em mono + `:porta`; abaixo, localidade (cidade, país), status do IP (Saudável/Quarentena/Inválido) e latência |
-| **Contas usando este IP** | 0..N chips. Cada chip: ícone do provedor, provedor, conta/alias, sufixo mascarado da credencial e modo (`off`/`preferred`/`required`). Com mais de duas, mostrar 2 + `+N` (o drawer lista todas) |
+| **Contas usando este IP** | 0..1 por provedor, N no total (só provedores distintos). Cada chip: ícone do provedor, provedor, conta/alias e modo (`inherit`/`off`/`manual`/`auto`). Se 2+ provedores, mostrar 2 + `+N` (o drawer lista todas) |
 | **Sticky até** | menor expiração entre as contas do IP, com tempo restante; `—` quando livre. O drawer lista a expiração de cada associação |
 | **Score** | 0–100 + barra (verde ≥ 85, âmbar 60–84, vermelho < 60) |
 | **Últ. verificação** | “há X min” + hora |
@@ -113,11 +114,11 @@ Campos e estados:
 2. **Status do teste** — `Conectado · token válido`, com plano e quantidade de IPs; erros `401`
    (token inválido), `403` (plano), `429` (limite) e `5xx` exibidos inline com ação de tentar novamente.
 3. **Plano detectado** — somente leitura: plano, IPs `128/500`, banda, última sync.
-4. **Modo padrão das novas contas** — segmented Off / Preferred / Required, com helper do comportamento.
-5. **País preferido**, **Sticky (min)** e **Máx. contas por IP** (padrão 3).
-6. **Fallback direto quando o proxy falhar** (toggle; aplicado em `preferred`).
-7. **Sincronizar automaticamente** + intervalo (padrão 60 min).
-8. **Quarentena após N falhas** (padrão 3; 10 min).
+4. **Modo padrão das novas contas** — segmented `Herdar do provedor` / `Off` / `Manual` / `Auto`, com helper do comportamento.
+5. **Provedor: proxy auto** — toggle que liga o modo `auto` como default das contas do provedor.
+6. **País preferido**, **Sticky (min)** e **Máx. contas por IP por provedor** (padrão 1; reuso cross-provider permitido).
+7. **Sincronizar automaticamente** + intervalo (padrão 60 min) e **re-sync automático ao falhar** (debounce 30 s).
+8. **Quarentena após N falhas** (padrão 3; 10 min) e **poison por classe de falha** (unreachable 15 min, auth 1 h, ban 24 h).
 
 Rodapé: **Cancelar** e **Salvar e sincronizar** (primário; loading + bloqueio de clique). O salvamento
 persiste apenas no admin/dontstop; o primeiro sync com o Webshare acontece após salvar.
@@ -156,16 +157,16 @@ Chaves i18n: `proxy.webshare.title`, `...subtitle`, `...token`, `...createToken`
 | Modo de proxy da conta | `PATCH /admin/v1/providers/{id}/accounts/{accountId}/proxy` |
 | Configurar Webshare | `GET/PUT /admin/v1/proxies/webshare` (token nunca retornado) |
 
-Regras de dados: `proxy_assignments` permite N contas por IP **dentro do mesmo tenant** (limite configurável,
-padrão 3); nunca entre tenants. Token/credenciais nunca retornam.
+Regras de dados: `proxy_assignments` garante **1 conta por IP por provedor** (`UNIQUE(tenant_id, provider_id, proxy_endpoint_id)`); o reuso entre provedores diferentes é permitido e visível; nunca entre tenants. `proxy_poison` mantém o ban por `(provedor, endpoint)` com TTL por classe de falha. Token/credenciais nunca retornam.
 
 ## Estados
 
 - Sem Webshare configurado: empty state + CTA **Configurar Webshare**.
 - Carregando: skeleton nas KPIs/tabela; cards secundários em paralelo.
 - Erro de sync: banner com último sucesso e **Tentar novamente**.
-- Parcial: banner de contas sem proxy; IPs em fallback direto destacados.
+- Parcial: banner de contas sem proxy; contas `manual` em falha ficam fail-closed (sem fallback direto).
 - Quarentena total: aviso com recomendação de rotação/sync.
+- Ban (poison): banner por provedor com classe da falha e tempo restante.
 
 ## Acessibilidade (WCAG 2.2 AA)
 

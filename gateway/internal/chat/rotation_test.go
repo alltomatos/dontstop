@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/chat"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
@@ -24,7 +25,7 @@ func (r *rotatingResolver) Resolve(context.Context, string, string, string) (pro
 	return r.lease, r.resolveErr
 }
 
-func (r *rotatingResolver) Rotate(context.Context, string, string, string, string) (proxy.Lease, error) {
+func (r *rotatingResolver) Rotate(context.Context, string, string, string, string, provider.ProxyFailureKind, time.Duration) (proxy.Lease, error) {
 	r.rotations++
 	return r.rotate, r.rotateErr
 }
@@ -134,5 +135,37 @@ func TestChatRequiredProxyFailsBeforeUpstream(t *testing.T) {
 	}
 	if adapter.calls != 0 {
 		t.Fatalf("upstream must not be called, got %d calls", adapter.calls)
+	}
+}
+
+func TestChatRotatesOnUpstreamBan(t *testing.T) {
+	adapter := &sequenceAdapter{errors: []error{provider.ErrProxyBanned, nil}}
+	resolver := &rotatingResolver{
+		lease:  proxy.Lease{EndpointID: "proxy-1", ProxyURL: "http://proxy-1"},
+		rotate: proxy.Lease{EndpointID: "proxy-2", ProxyURL: "http://proxy-2"},
+	}
+	service := proxyService(adapter, resolver)
+	if _, _, err := service.Chat(context.Background(), "tenant-1", provider.ChatRequest{
+		Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}},
+	}, ""); err != nil {
+		t.Fatalf("chat: %v", err)
+	}
+	if resolver.rotations != 1 || adapter.calls != 2 {
+		t.Fatalf("upstream ban must rotate: rotations=%d calls=%d", resolver.rotations, adapter.calls)
+	}
+}
+
+func TestChatDoesNotRotateRateLimit(t *testing.T) {
+	adapter := &sequenceAdapter{errors: []error{provider.ErrProviderRateLimited}}
+	resolver := &rotatingResolver{lease: proxy.Lease{EndpointID: "proxy-1", ProxyURL: "http://proxy-1"}}
+	service := proxyService(adapter, resolver)
+	_, _, err := service.Chat(context.Background(), "tenant-1", provider.ChatRequest{
+		Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}},
+	}, "")
+	if !errors.Is(err, provider.ErrProviderRateLimited) {
+		t.Fatalf("expected rate limit error, got %v", err)
+	}
+	if resolver.rotations != 0 || adapter.calls != 1 {
+		t.Fatalf("rate limit must not rotate the proxy: rotations=%d calls=%d", resolver.rotations, adapter.calls)
 	}
 }

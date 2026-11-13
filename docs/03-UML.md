@@ -186,38 +186,46 @@ sequenceDiagram
     RT->>RT: registra failover_event
 ```
 
-## 5. Sequência — seleção de proxy Webshare
+## 5. Sequência — seleção de proxy Webshare (isolamento por provedor)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant G as Gateway
     participant PM as ProxyManager
+    participant DB as PostgreSQL
     participant R as Redis
     participant W as Webshare API
     participant X as Proxy
     participant U as Upstream
 
-    G->>PM: acquire(pool, conta, estratégia)
-    PM->>R: lê score/latência/quarentena
-    alt pool vazio ou sync vencido
-        PM->>W: lista/sync de proxies
-        W-->>PM: proxies + metadados
-        PM->>R: atualiza catálogo
+    G->>PM: resolve(conta, modo efetivo)
+    PM->>DB: assignment atual + health + poison(provedor, endpoint)
+    alt modo auto e assignment ausente
+        PM->>DB: candidatos webshare, sem outra conta do MESMO provedor
+        DB-->>PM: IP livre (maior score)
+        PM->>DB: assign(conta, endpoint)
     end
-    PM->>PM: escolhe (sticky / round-robin / least-latency)
-    PM->>R: reserva concorrência do proxy
-    PM-->>G: proxy selecionado
+    PM-->>G: proxy selecionado (IP fixo)
     G->>X: CONNECT (HTTP/SOCKS5)
     X->>U: requisição
-    U-->>X: resposta
-    X-->>G: stream
-    G->>PM: report(sucesso, latência)
-    PM->>R: atualiza score/health
-    alt falha repetida
-        PM->>R: quarentena (banned_until)
+    alt falha classificada (unreachable/407/ban)
+        U-->>G: erro
+        G->>PM: rotate(conta, endpoint)
+        PM->>DB: poison(provedor, endpoint, TTL por classe)
+        PM->>R: debounce t:{tenant}:proxy:refresh
+        PM->>DB: próximo candidato do mesmo provedor
+        PM-->>G: novo IP (retry na mesma request)
+    else sucesso
+        U-->>X: resposta
+        X-->>G: stream
+        G->>PM: report(sucesso, latência)
+        PM->>DB: score/health
     end
+    Note over PM,W: assíncrono: re-sync importa o substituto do IP morto
 ```
+
+> Regra de alocação (ADR-024): 1 conta por IP **por provedor**; reuso entre provedores permitido.
 
 ## 6. Sequência — DLP (redact/block)
 
@@ -381,9 +389,11 @@ classDiagram
       +decide(findings, policy) Decision
     }
     class ProxyManager {
-      +acquire(poolID, accountID) Proxy
+      +resolve(accountID, mode) Lease
+      +rotate(accountID, failedEndpointID) Lease
       +report(proxy, outcome)
-      +quarantine(proxy)
+      +poison(providerID, endpointID, reason, ttl)
+      +refreshPool(tenantID)
     }
     class UsageMeter {
       +record(request, usage)

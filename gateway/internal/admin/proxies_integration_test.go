@@ -49,15 +49,15 @@ func TestProxyModeAndAssignmentPersistWithoutCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatalf("add account: %v", err)
 	}
-	if account.ProxyMode != "off" || account.Proxy != nil {
-		t.Fatalf("account must start off without proxy: %+v", account)
+	if account.ProxyMode != "inherit" || account.Proxy != nil {
+		t.Fatalf("account must inherit the provider default without proxy: %+v", account)
 	}
 
-	if _, err := providers.SetProxyMode(ctx, tenantID, providerID, account.ID, "auto"); !errors.Is(err, admin.ErrInvalidInput) {
+	if _, err := providers.SetProxyMode(ctx, tenantID, providerID, account.ID, "bogus"); !errors.Is(err, admin.ErrInvalidInput) {
 		t.Fatalf("expected invalid proxy mode, got %v", err)
 	}
-	mode, err := providers.SetProxyMode(ctx, tenantID, providerID, account.ID, "preferred")
-	if err != nil || mode != "preferred" {
+	mode, err := providers.SetProxyMode(ctx, tenantID, providerID, account.ID, "manual")
+	if err != nil || mode != "manual" {
 		t.Fatalf("set proxy mode: %q err=%v", mode, err)
 	}
 
@@ -86,7 +86,7 @@ func TestProxyModeAndAssignmentPersistWithoutCredentials(t *testing.T) {
 	}
 	assigned := provider.Accounts[0].Proxy
 	if assigned.Address != "203.0.113.10" || assigned.Port != 8080 || assigned.Health != "healthy" ||
-		assigned.CityName != "São Paulo" || provider.Accounts[0].ProxyMode != "preferred" {
+		assigned.CityName != "São Paulo" || provider.Accounts[0].ProxyMode != "manual" {
 		t.Fatalf("unexpected proxy summary: %+v", assigned)
 	}
 	encoded, _ = json.Marshal(provider.Accounts[0])
@@ -101,7 +101,7 @@ func TestProxyModeAndAssignmentPersistWithoutCredentials(t *testing.T) {
 	if err != nil || len(endpoints) != 1 || endpoints[0].Health != "quarantined" {
 		t.Fatalf("expected quarantined endpoint: %+v err=%v", endpoints, err)
 	}
-	if len(endpoints[0].Accounts) != 1 || endpoints[0].Accounts[0].Name != "prod" || endpoints[0].Accounts[0].ProxyMode != "preferred" {
+	if len(endpoints[0].Accounts) != 1 || endpoints[0].Accounts[0].Name != "prod" || endpoints[0].Accounts[0].ProxyMode != "manual" {
 		t.Fatalf("expected assigned account summary: %+v", endpoints[0].Accounts)
 	}
 	provider, _ = providers.Get(ctx, tenantID, providerID)
@@ -159,19 +159,17 @@ func TestProxyAssignmentLimitAndTenantIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create proxy: %v", err)
 	}
-	for index := 0; index < 3; index++ {
-		if err := proxies.Assign(ctx, tenantID, providerID, accounts[index].ID, endpoint.ID); err != nil {
-			t.Fatalf("assign %d: %v", index, err)
-		}
+	if err := proxies.Assign(ctx, tenantID, providerID, accounts[0].ID, endpoint.ID); err != nil {
+		t.Fatalf("assign first account: %v", err)
 	}
-	if err := proxies.Assign(ctx, tenantID, providerID, accounts[3].ID, endpoint.ID); !errors.Is(err, admin.ErrProxyLimit) {
-		t.Fatalf("expected proxy limit, got %v", err)
+	if err := proxies.Assign(ctx, tenantID, providerID, accounts[1].ID, endpoint.ID); !errors.Is(err, admin.ErrProxyLimit) {
+		t.Fatalf("same provider must not share an IP, got %v", err)
 	}
 	if err := proxies.Unassign(ctx, tenantID, providerID, accounts[0].ID); err != nil {
 		t.Fatalf("unassign: %v", err)
 	}
-	if err := proxies.Assign(ctx, tenantID, providerID, accounts[3].ID, endpoint.ID); err != nil {
-		t.Fatalf("assign after freeing slot: %v", err)
+	if err := proxies.Assign(ctx, tenantID, providerID, accounts[1].ID, endpoint.ID); err != nil {
+		t.Fatalf("assign after freeing the provider slot: %v", err)
 	}
 
 	var otherTenant string

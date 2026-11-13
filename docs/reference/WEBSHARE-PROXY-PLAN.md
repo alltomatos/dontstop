@@ -166,14 +166,12 @@ GET /api/v2/proxy/list/download/{token}/{CCs|'-'}/any/{username|sourceip}/{direc
 
 ## 4. Estratégia de seleção (resumo)
 
-1. Assignment existente, saudável e dentro do `sticky_until` → reutiliza.
-2. Senão, endpoint do tenant não quarentenado, com menos contas (limite padrão 3 por IP) e maior score
-   (`0.6*success_rate + 0.4*(1/p95_normalizado)`), desempate por menor latência.
-3. Grava assignment (sticky 30 min) e usa o proxy por **todas** as tentativas daquela conta até
-   falha/timeout de sticky.
-4. Falha de transporte/407: libera assignment, quarentena e escolhe outro; `preferred` pode ir direto;
-   `required` falha.
-5. Sync/health periódico alimenta `valid`, `score` e quarentena.
+1. Assignment existente, saudável e dentro do `sticky_until` → reutiliza (IP fixo por conta).
+2. Senão, endpoint `source='webshare'` não quarentenado/envenenado, **sem outra conta do mesmo provedor** (1:1 por provedor; reuso cross-provider permitido) e maior score.
+3. Grava assignment (sticky) e usa o proxy por todas as tentativas daquela conta até falha.
+4. Falha classificada (`proxy_unreachable` 15 min, `proxy_auth` 1 h, `upstream_ban` 24 h): grava `proxy_poison` por `(provedor, endpoint)`, escolhe outro IP e dispara **re-sync Webshare** (debounce 30 s) para importar o substituto.
+5. `manual` é fixo e fail-closed; `auto` rotaciona; `upstream_quota` (429 sem sinal de ban) não envenena.
+6. Sync/health periódico alimenta `valid`, `score` e quarentena.
 
 ## 5. Riscos de segurança e privacidade
 
@@ -209,3 +207,6 @@ GET /api/v2/proxy/list/download/{token}/{CCs|'-'}/any/{username|sourceip}/{direc
 
 - **Implementado:** API key cifrada em `webshare_settings` (AES-256-GCM + `key_version`) com teste real antes de salvar e auditoria; cliente v2/v3 com paginação, download token, refresh e backoff de 60 s em 429; sync sob demanda e worker (`WEBSHARE_SYNC_INTERVAL`) com advisory lock e diff idempotente; `proxy_endpoints` com `external_id`, score e saúde; seleção/rotação em `internal/proxy` com quarentena Redis `t:{tenant}:proxy:*`, fallback direto em `preferred` e falha fechada em `required`; UI de configuração/status/sync em `/proxies`; testes de cliente/contrato, coordenação, integração de sync e rotação.
 - **Pendente:** health check ativo contra `ipv4.webshare.io`, métricas OTel dedicadas de proxy, caos/carga de streaming com proxy, fallback de download em massa e backbone sticky.
+- **Próxima onda (ADR-024):** isolamento 1 conta/IP **por provedor** (reuso cross-provider permitido), modo `auto` híbrido (`providers.proxy_auto` + `inherit|off|manual|auto`), poison persistente por `(provedor, endpoint)` com classificação de falha e re-sync Webshare na falha. Hoje o limite é de 3 contas por IP no tenant inteiro e não há poison nem `auto`.
+- **Progresso E2.1 (2026-11-13):** migração `0020` aplicada no working tree — `proxy_assignments.provider_id` + `UNIQUE(tenant_id, provider_id, proxy_endpoint_id)`, dedup por provedor, `proxy_poison`, colunas de ban e `Candidates` provider-aware. Rotação por classe de falha e re-sync ainda pendentes (E2.3/E2.4).
+- **E2 concluído (2026-11-13):** modo efetivo (`inherit|off|manual|auto` + `providers.proxy_auto`), alocação 1 conta/IP por provedor (reuso cross-provider), classificação de falha + poison por `(provedor, endpoint)`, re-sync Webshare com debounce, Admin API (`PATCH /providers/{id}`, `POST /proxies/webshare/refresh`), console (proxy por conta, rede de proxy com ban, re-sync), testes de segurança/concorrência e métricas `proxy.rotate`/`proxy.poison`/`proxy.candidate_miss`/`proxy.refresh`.

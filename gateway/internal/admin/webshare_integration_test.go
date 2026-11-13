@@ -17,11 +17,13 @@ import (
 )
 
 type fakeWebshare struct {
-	proxies []webshare.Proxy
-	err     error
+	proxies   []webshare.Proxy
+	err       error
+	listCalls int
 }
 
 func (f *fakeWebshare) ListDirect(context.Context, string, string) ([]webshare.Proxy, error) {
+	f.listCalls++
 	return f.proxies, f.err
 }
 
@@ -70,7 +72,7 @@ func TestWebshareCredentialSyncAndRotationPreserveAssignment(t *testing.T) {
 		{ID: "p-1", Address: "203.0.113.10", Port: 8080, Username: "u1", Password: "p1", Valid: true, CountryCode: "BR", CityName: "Sao Paulo"},
 		{ID: "p-2", Address: "203.0.113.11", Port: 8081, Username: "u2", Password: "p2", Valid: true, CountryCode: "US", CityName: "New York"},
 	}}
-	service := admin.NewWebshareService(pool, box, api)
+	service := admin.NewWebshareService(pool, box, api, nil)
 
 	status, err := service.Save(ctx, tenantID, "admin-1", admin.WebshareSaveInput{APIKey: "super-secret", PlanID: "plan-1"})
 	if err != nil {
@@ -191,7 +193,7 @@ func TestWebshareRejectsInvalidKeyWithoutPersisting(t *testing.T) {
 		t.Fatalf("migrate: %v", err)
 	}
 	box, _ := secret.NewBox(make([]byte, 32))
-	service := admin.NewWebshareService(pool, box, &fakeWebshare{err: webshare.ErrUnauthorized})
+	service := admin.NewWebshareService(pool, box, &fakeWebshare{err: webshare.ErrUnauthorized}, nil)
 	_, err = service.Save(ctx, "00000000-0000-0000-0000-000000000000", "admin-1", admin.WebshareSaveInput{APIKey: "bad"})
 	if !errors.Is(err, webshare.ErrUnauthorized) {
 		t.Fatalf("expected unauthorized, got %v", err)

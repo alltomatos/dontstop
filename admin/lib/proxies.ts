@@ -5,7 +5,9 @@ export interface ProxyAccountSummary {
   name: string;
   providerId: string;
   providerName: string;
-  proxyMode: "off" | "preferred" | "required";
+  proxyMode: "inherit" | "off" | "manual" | "auto";
+  bannedUntil?: string;
+  banReason?: string;
 }
 
 export interface ProxyEndpoint {

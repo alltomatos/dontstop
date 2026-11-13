@@ -18,9 +18,10 @@ const HEALTH_KEYS: Record<ProxyHealth, string> = {
 };
 
 const MODE_KEYS = {
+  inherit: "providers.proxyModeInherit",
   off: "providers.proxyModeOff",
-  preferred: "providers.proxyModePreferred",
-  required: "providers.proxyModeRequired"
+  manual: "providers.proxyModeManual",
+  auto: "providers.proxyModeAuto"
 } as const;
 
 function healthClass(health: ProxyHealth): string {
@@ -48,6 +49,8 @@ export function ProxiesView({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState("");
   const [form, setForm] = useState({
     label: "",
     address: "",
@@ -71,9 +74,31 @@ export function ProxiesView({
   const healthy = endpoints.filter(endpoint => endpoint.health === "healthy").length;
   const quarantined = endpoints.filter(endpoint => endpoint.health === "quarantined").length;
   const assigned = endpoints.reduce((total, endpoint) => total + endpoint.assignedCount, 0);
+  const banned = endpoints.filter(endpoint => endpoint.accounts.some(account => (
+    account.bannedUntil ? new Date(account.bannedUntil).getTime() > Date.now() : false
+  ))).length;
 
   function refresh() {
     startTransition(() => router.refresh());
+  }
+
+  async function refreshPool() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshMessage("");
+    try {
+      const response = await fetch("/api/admin/proxies/webshare/refresh", { method: "POST" });
+      if (!response.ok) {
+        setRefreshMessage(t("proxies.refreshFailed"));
+        return;
+      }
+      setRefreshMessage(t("proxies.refreshDone"));
+      refresh();
+    } catch {
+      setRefreshMessage(t("proxies.refreshFailed"));
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function createProxy(event: React.FormEvent<HTMLFormElement>) {
@@ -126,6 +151,10 @@ export function ProxiesView({
               {pending ? <LoaderCircle aria-hidden="true" size={16} className="spin" /> : <RefreshCw aria-hidden="true" size={16} />}
               {t("proxies.refresh")}
             </button>
+            <button className="btn" type="button" onClick={refreshPool} disabled={refreshing}>
+              {refreshing ? <LoaderCircle aria-hidden="true" size={16} className="spin" /> : <RefreshCw aria-hidden="true" size={16} />}
+              {refreshing ? t("proxies.refreshing") : t("proxies.refreshPool")}
+            </button>
             <button className="btn primary" type="button" onClick={() => setOpen(true)}>
               <Plus aria-hidden="true" size={16} />
               {t("proxies.create")}
@@ -137,6 +166,9 @@ export function ProxiesView({
       <WebsharePanel status={webshare} onRefresh={refresh} />
       {webshareError ? (
         <p className="small" role="status" style={{ color: "var(--danger)", marginBottom: 12 }}>{t("webshare.failed")}</p>
+      ) : null}
+      {refreshMessage ? (
+        <p className="small" role="status" style={{ marginBottom: 12 }}>{refreshMessage}</p>
       ) : null}
 
       {error ? (
@@ -172,6 +204,7 @@ export function ProxiesView({
         <div className="caps" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
           <span className="chip ok">{tp("proxies.healthyCount", healthy)}</span>
           <span className="chip warn">{tp("proxies.quarantinedCount", quarantined)}</span>
+          <span className="chip warn">{tp("proxies.bannedCount", banned)}</span>
           <span className="chip">{tp("proxies.assignedCount", assigned)}</span>
         </div>
       </div>
@@ -216,16 +249,24 @@ export function ProxiesView({
                       <span className="muted small">{t("proxies.noAccounts")}</span>
                     ) : (
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {endpoint.accounts.map(account => (
-                          <Link
-                            className="chip"
-                            key={account.id}
-                            href={`/providers/${encodeURIComponent(account.providerId)}`}
-                            title={t(MODE_KEYS[account.proxyMode])}
-                          >
-                            {account.providerName} · {account.name}
-                          </Link>
-                        ))}
+                        {endpoint.accounts.map(account => {
+                          const banned = account.bannedUntil ? new Date(account.bannedUntil).getTime() > Date.now() : false;
+                          return (
+                            <span key={account.id} style={{ display: "inline-flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                              <Link
+                                className="chip"
+                                href={`/providers/${encodeURIComponent(account.providerId)}`}
+                                title={t(MODE_KEYS[account.proxyMode])}
+                              >
+                                {account.providerName} · {account.name}
+                                {account.proxyMode === "auto" ? ` · ${t("providers.proxyAutoBadge")}` : ""}
+                              </Link>
+                              {banned ? (
+                                <span className="chip warn" title={account.banReason || ""}>{t("providers.proxyBan")}</span>
+                              ) : null}
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
                   </td>

@@ -54,6 +54,10 @@ hr { border: 0; border-top: 1px solid #e7eaf3; margin: 28px 0; }
 </tbody></table>
 <h2>Errores y estados comunes</h2>
 <ul><li>Si los datos no cargan, vuelva a intentarlo. Si persiste, revise el gateway y los proveedores.</li><li>Si una acción está deshabilitada, confirme su rol y el ámbito del tenant.</li><li>Los estados vacíos son normales antes de la primera solicitud; siga la llamada a la acción.</li></ul>
+<h2>Proxy por cuenta</h2>
+<p>Configura Webshare en <strong>Red de proxy</strong>, prueba la API key y sincroniza la lista de proxies direct. En la cuenta del proveedor, elige Off, Preferred o Required; el endpoint asignado, la región y la salud aparecen en el mismo bloque. Un proxy en cuarentena o ausente usa conexión directa en Preferred y bloquea la llamada en Required.</p>
+<h2>Cuentas y pruebas</h2>
+<p>El detalle del proveedor mantiene el resumen consolidado y añade un resumen por cuenta con estado activo, salud, modelos disponibles/utilizables y capacidades. Usa el selector <strong>Cuenta de prueba</strong> sobre la lista de modelos para elegir en qué cuenta se prueba el modelo. Solo se pueden elegir cuentas activas con modelos utilizables, se recuerda la última elección válida y el resultado siempre indica la cuenta usada. Cada cuenta tiene su propio botón de prueba; el fallo de una cuenta no afecta a las demás.</p>
 <h2>Guías relacionadas</h2>
 <ul><li><a href="endpoints.html">Endpoints</a></li><li><a href="dashboard.html">Panel</a></li><li><a href="cost.html">Coste</a></li></ul>
 <blockquote><p>Captura de pantalla de Proveedores en Español.</p></blockquote>

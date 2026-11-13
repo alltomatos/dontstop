@@ -29,6 +29,7 @@
 |---|---|---|---|
 | `dashboard` | Dashboard | [English](en/dashboard.md) | [PNG](assets/en/dashboard.png) |
 | `providers` | Providers | [English](en/providers.md) | [PNG](assets/en/providers.png) |
+| `combos` | Combos | [English](en/combos.md) | [PNG](assets/en/combos.png) |
 | `endpoints` | Endpoints | [English](en/endpoints.md) | [PNG](assets/en/endpoints.png) |
 | `api-manager` | API Manager | [English](en/api-manager.md) | [PNG](assets/en/api-manager.png) |
 | `mcp` | MCP | [English](en/mcp.md) | [PNG](assets/en/mcp.png) |
@@ -39,6 +40,7 @@
 | `settings` | Settings | [English](en/settings.md) | [PNG](assets/en/settings.png) |
 | `new-api-key` | New API key | [English](en/new-api-key.md) | [PNG](assets/en/new-api-key.png) |
 | `onboarding` | Onboarding | [English](en/onboarding.md) | [PNG](assets/en/onboarding.png) |
+| `provider-setup` | Provider setup | [English](en/provider-setup.md) | [PNG](assets/en/provider-setup.png) |
 
 ## Locale preference
 

@@ -1,0 +1,21 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - misspell
+  exclusions:
+    rules:
+      # Pre-existing in-progress combos work (untracked); not part of the proxy
+      # isolation scope. Remove once the combos slice consumes comboConstraints.
+      - path: .*combos\.go
+        linters:
+          - unused
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -49,7 +49,21 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 		  AND pm.active = true
 		  AND p.enabled = true
 		  AND EXISTS (SELECT 1 FROM provider_accounts pa WHERE pa.provider_id = p.id)
-		ORDER BY pm.model_id
+		UNION ALL
+		SELECT 'combo/' || c.slug, c.name, 'dontstop', 'combo', extract(epoch from c.created_at)::bigint,
+			CASE WHEN EXISTS (
+				SELECT 1 FROM combo_members cm
+				JOIN providers p ON p.id = cm.provider_id AND p.tenant_id = cm.tenant_id
+				JOIN provider_models pm ON pm.tenant_id = cm.tenant_id AND pm.provider_id = cm.provider_id AND pm.model_id = cm.model_id
+				WHERE cm.tenant_id = c.tenant_id AND cm.combo_id = c.id
+				  AND cm.enabled = true AND p.enabled = true AND pm.active = true
+				  AND EXISTS (SELECT 1 FROM provider_accounts pa
+				              WHERE pa.tenant_id = cm.tenant_id AND pa.provider_id = cm.provider_id
+				                AND pa.status = 'active' AND (pa.cooldown_until IS NULL OR pa.cooldown_until <= now()))
+			) THEN 'active' ELSE 'degraded' END
+		FROM combos c
+		WHERE c.tenant_id = $1 AND c.status = 'active'
+		ORDER BY model_id
 	`, tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("query models: %w", err)

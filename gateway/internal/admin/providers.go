@@ -31,6 +31,7 @@ type Provider struct {
 	Origin         string    `json:"origin"`
 	CatalogSlug    string    `json:"catalog_slug,omitempty"`
 	Enabled        bool      `json:"enabled"`
+	ProxyAuto      bool      `json:"proxy_auto"`
 	AccountsCount  int       `json:"accounts_count"`
 	UsableAccounts int       `json:"usable_accounts"`
 	ModelsCount    int       `json:"models_count"`
@@ -79,8 +80,9 @@ type AccountInput struct {
 
 // ProviderService is the PostgreSQL-backed admin provider service.
 type ProviderService struct {
-	pool *pgxpool.Pool
-	box  *secret.Box
+	pool                *pgxpool.Pool
+	box                 *secret.Box
+	agentRouterRelayURL string
 }
 
 // NewProviderService creates a provider service.
@@ -88,10 +90,16 @@ func NewProviderService(pool *pgxpool.Pool, box *secret.Box) *ProviderService {
 	return &ProviderService{pool: pool, box: box}
 }
 
+// SetAgentRouterRelayURL routes new AgentRouter accounts to the internal relay
+// sidecar (ADR-025). An explicit account base_url still wins.
+func (s *ProviderService) SetAgentRouterRelayURL(relayURL string) {
+	s.agentRouterRelayURL = strings.TrimSpace(relayURL)
+}
+
 // List returns configured providers for a tenant.
 func (s *ProviderService) List(ctx context.Context, tenantID string) ([]Provider, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT p.id::text, p.name, p.kind, p.origin, coalesce(p.catalog_slug, ''), p.enabled,
+		SELECT p.id::text, p.name, p.kind, p.origin, coalesce(p.catalog_slug, ''), p.enabled, p.proxy_auto,
 		       (SELECT count(*) FROM provider_accounts pa WHERE pa.provider_id = p.id AND pa.tenant_id = p.tenant_id),
 		       (SELECT count(*) FROM provider_models pm WHERE pm.provider_id = p.id AND pm.tenant_id = p.tenant_id AND pm.active = true)
 		FROM providers p
@@ -106,7 +114,7 @@ func (s *ProviderService) List(ctx context.Context, tenantID string) ([]Provider
 	providers := make([]Provider, 0)
 	for rows.Next() {
 		var provider Provider
-		if err := rows.Scan(&provider.ID, &provider.Name, &provider.Kind, &provider.Origin, &provider.CatalogSlug, &provider.Enabled, &provider.AccountsCount, &provider.ModelsCount); err != nil {
+		if err := rows.Scan(&provider.ID, &provider.Name, &provider.Kind, &provider.Origin, &provider.CatalogSlug, &provider.Enabled, &provider.ProxyAuto, &provider.AccountsCount, &provider.ModelsCount); err != nil {
 			return nil, fmt.Errorf("scan admin provider: %w", err)
 		}
 		providers = append(providers, provider)
@@ -146,12 +154,12 @@ func (s *ProviderService) Get(ctx context.Context, tenantID, providerID string) 
 	}
 	var provider Provider
 	err := s.pool.QueryRow(ctx, `
-		SELECT p.id::text, p.name, p.kind, p.origin, coalesce(p.catalog_slug, ''), p.enabled,
+		SELECT p.id::text, p.name, p.kind, p.origin, coalesce(p.catalog_slug, ''), p.enabled, p.proxy_auto,
 		       (SELECT count(*) FROM provider_accounts pa WHERE pa.provider_id = p.id AND pa.tenant_id = p.tenant_id),
 		       (SELECT count(*) FROM provider_models pm WHERE pm.provider_id = p.id AND pm.tenant_id = p.tenant_id AND pm.active = true)
 		FROM providers p
 		WHERE p.tenant_id = $1 AND p.id = $2::uuid
-	`, tenantID, providerID).Scan(&provider.ID, &provider.Name, &provider.Kind, &provider.Origin, &provider.CatalogSlug, &provider.Enabled, &provider.AccountsCount, &provider.ModelsCount)
+	`, tenantID, providerID).Scan(&provider.ID, &provider.Name, &provider.Kind, &provider.Origin, &provider.CatalogSlug, &provider.Enabled, &provider.ProxyAuto, &provider.AccountsCount, &provider.ModelsCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Provider{}, ErrNotFound
 	}
@@ -179,12 +187,17 @@ func (s *ProviderService) accounts(ctx context.Context, tenantID, providerID str
 		SELECT pa.id::text, pa.name, pa.status, pa.base_url, pa.priority, pa.weight, pa.cooldown_until,
 		       pa.proxy_mode,
 		       pe.id::text, pe.label, pe.address, pe.port, pe.country_code, pe.city_name,
-		       pe.valid, pe.quarantined_until
+		       pe.valid, pe.quarantined_until, pp.banned_until
 		FROM provider_accounts pa
 		LEFT JOIN proxy_assignments pxa
 		  ON pxa.tenant_id = pa.tenant_id AND pxa.provider_account_id = pa.id
 		LEFT JOIN proxy_endpoints pe
 		  ON pe.id = pxa.proxy_endpoint_id AND pe.tenant_id = pa.tenant_id
+		LEFT JOIN proxy_poison pp
+		  ON pp.tenant_id = pa.tenant_id
+		 AND pp.provider_id = pa.provider_id
+		 AND pp.proxy_endpoint_id = pe.id
+		 AND pp.banned_until > now()
 		WHERE pa.tenant_id = $1 AND pa.provider_id = $2::uuid
 		ORDER BY pa.priority, pa.name
 	`, tenantID, providerID)
@@ -200,14 +213,19 @@ func (s *ProviderService) accounts(ctx context.Context, tenantID, providerID str
 		var port *int
 		var valid *bool
 		var quarantinedUntil *time.Time
+		var bannedUntil *time.Time
 		if err := rows.Scan(
 			&account.ID, &account.Name, &account.Status, &account.BaseURL, &account.Priority,
 			&account.Weight, &account.CooldownUntil, &account.ProxyMode,
-			&endpointID, &label, &address, &port, &country, &city, &valid, &quarantinedUntil,
+			&endpointID, &label, &address, &port, &country, &city, &valid, &quarantinedUntil, &bannedUntil,
 		); err != nil {
 			return nil, fmt.Errorf("scan provider account: %w", err)
 		}
 		if endpointID != nil {
+			health := proxyHealth(derefBool(valid), quarantinedUntil)
+			if bannedUntil != nil && bannedUntil.After(time.Now()) {
+				health = "quarantined"
+			}
 			account.Proxy = &AccountProxy{
 				ID:               *endpointID,
 				Label:            deref(label),
@@ -215,7 +233,7 @@ func (s *ProviderService) accounts(ctx context.Context, tenantID, providerID str
 				Port:             derefInt(port),
 				CountryCode:      deref(country),
 				CityName:         deref(city),
-				Health:           proxyHealth(derefBool(valid), quarantinedUntil),
+				Health:           health,
 				QuarantinedUntil: quarantinedUntil,
 			}
 		}
@@ -335,6 +353,24 @@ func (s *ProviderService) SetProxyMode(ctx context.Context, tenantID, providerID
 	return string(mode), nil
 }
 
+// SetProxyAuto enables or disables the provider proxy default (ADR-024).
+func (s *ProviderService) SetProxyAuto(ctx context.Context, tenantID, providerID string, enabled bool) (bool, error) {
+	if !isUUID(providerID) {
+		return false, ErrNotFound
+	}
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE providers SET proxy_auto = $3
+		WHERE tenant_id = $1 AND id = $2::uuid
+	`, tenantID, providerID, enabled)
+	if err != nil {
+		return false, fmt.Errorf("update proxy_auto: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return false, ErrNotFound
+	}
+	return enabled, nil
+}
+
 // RenameAccount changes only the account name; the provider name is immutable.
 func (s *ProviderService) RenameAccount(ctx context.Context, tenantID, providerID, accountID, name string) error {
 	name = strings.TrimSpace(name)
@@ -411,6 +447,7 @@ func (s *ProviderService) AddAccount(ctx context.Context, tenantID, providerID s
 		SELECT $1, p.id, $3, $4,
 		       COALESCE(
 		           NULLIF($5, ''),
+		           CASE WHEN p.kind = 'agentrouter' THEN NULLIF($8, '') END,
 		           (SELECT pc.default_base_url FROM provider_catalog pc WHERE pc.slug = p.catalog_slug),
 		           (SELECT peer.base_url FROM provider_accounts peer
 		            WHERE peer.provider_id = p.id AND peer.tenant_id = p.tenant_id AND peer.base_url <> ''
@@ -421,7 +458,7 @@ func (s *ProviderService) AddAccount(ctx context.Context, tenantID, providerID s
 		FROM providers p
 		WHERE p.id = $2::uuid AND p.tenant_id = $1
 		RETURNING id::text, name, status, base_url, priority, weight, cooldown_until, proxy_mode
-	`, tenantID, providerID, input.Name, ciphertext, input.BaseURL, input.Priority, input.Weight).Scan(
+	`, tenantID, providerID, input.Name, ciphertext, input.BaseURL, input.Priority, input.Weight, s.agentRouterRelayURL).Scan(
 		&account.ID, &account.Name, &account.Status, &account.BaseURL, &account.Priority, &account.Weight, &account.CooldownUntil, &account.ProxyMode,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -499,6 +536,9 @@ func (s *ProviderService) Create(ctx context.Context, tenantID string, input Cre
 	}
 	if input.ModelName == "" {
 		input.ModelName = input.ModelID
+	}
+	if input.Kind == "agentrouter" && input.BaseURL == "" && s.agentRouterRelayURL != "" {
+		input.BaseURL = s.agentRouterRelayURL
 	}
 	if s.box == nil {
 		return Provider{}, fmt.Errorf("credential box is not configured")

@@ -6,12 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/platform/secret"
 	"github.com/alltomatos/dontstop/gateway/internal/webshare"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 var ErrSyncInProgress = errors.New("webshare sync already running")
@@ -65,15 +70,62 @@ type WebshareSyncResult struct {
 
 // WebshareService manages the encrypted Webshare credential and sync.
 type WebshareService struct {
-	pool   *pgxpool.Pool
-	box    *secret.Box
-	client WebshareAPI
-	now    func() time.Time
+	pool           *pgxpool.Pool
+	box            *secret.Box
+	client         WebshareAPI
+	redis          redis.UniversalClient
+	now            func() time.Time
+	refreshMu      sync.Mutex
+	lastRefresh    map[string]time.Time
+	refreshCounter metric.Int64Counter
 }
 
+// refreshDebounce bounds failure-driven re-syncs per tenant (ADR-024).
+const refreshDebounce = 30 * time.Second
+
 // NewWebshareService creates a Webshare admin service.
-func NewWebshareService(pool *pgxpool.Pool, box *secret.Box, client WebshareAPI) *WebshareService {
-	return &WebshareService{pool: pool, box: box, client: client, now: time.Now}
+func NewWebshareService(pool *pgxpool.Pool, box *secret.Box, client WebshareAPI, redisClient redis.UniversalClient) *WebshareService {
+	meter := otel.Meter("dontstop/gateway/webshare")
+	refresh, _ := meter.Int64Counter("proxy.refresh")
+	return &WebshareService{
+		pool: pool, box: box, client: client, redis: redisClient,
+		now: time.Now, lastRefresh: map[string]time.Time{}, refreshCounter: refresh,
+	}
+}
+
+// RefreshPool re-syncs the pool after a proxy failure. It is debounced per
+// tenant (in-process and, when available, via Redis) and is a no-op when the
+// integration is not configured.
+func (s *WebshareService) RefreshPool(ctx context.Context, tenantID string) error {
+	now := s.now()
+	s.refreshMu.Lock()
+	if last, ok := s.lastRefresh[tenantID]; ok && now.Sub(last) < refreshDebounce {
+		s.refreshMu.Unlock()
+		return nil
+	}
+	s.lastRefresh[tenantID] = now
+	s.refreshMu.Unlock()
+
+	if s.redis != nil {
+		key := fmt.Sprintf("t:%s:proxy:refresh", tenantID)
+		acquired, err := s.redis.SetNX(ctx, key, "1", refreshDebounce).Result()
+		if err == nil && !acquired {
+			return nil
+		}
+	}
+	_, err := s.Sync(ctx, tenantID, "failure")
+	if errors.Is(err, ErrInvalidInput) || errors.Is(err, ErrSyncInProgress) {
+		return nil
+	}
+	status := "succeeded"
+	if err != nil {
+		status = "failed"
+	}
+	s.refreshCounter.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("dontstop.tenant_id", tenantID),
+		attribute.String("proxy.refresh_status", status),
+	))
+	return err
 }
 
 // Status returns the sanitized integration state.

@@ -198,6 +198,15 @@ Os gateways auditados mostram que o padrão funciona: um endpoint OpenAI-compati
 | FR-72 | Guia versionado por página/modal, mesmo slug em seis idiomas, com imagem, `alt`, passos, campos e erros | P0 | 100% do inventário coberto; índices e manifest atualizados |
 | FR-73 | Link **Ajuda** contextual com URL por locale/slug e fallback inglês → índice | P0 | Link abre em nova aba; href muda ao trocar idioma |
 
+### Épico E14 - Combos
+
+| ID | Requisito | Pri. | Critério de aceite |
+|---|---|---|---|
+| FR-74 | CRUD de combos por tenant com slug imutável, status draft/active/inactive, revision, membros provider/model e validação contra o catálogo ativo | P0 | Combo ativo aparece em `/v1/models` como `combo/<slug>`; combo draft/inactive não aparece |
+| FR-75 | Estratégias `priority`, `round_robin` e `priority_round_robin`, pesos por tier e failover na mesma requisição | P0 | Falha retryable de membro tenta o próximo antes do primeiro chunk; `400` é terminal; cursores/rate limit em Redis |
+| FR-76 | Criação assistida por IA com ferramentas read-only sobre o catálogo real, rascunho revisável e aceite explícito | P0 | IA nunca inventa modelo nem ativa/salva combo; rascunho inválido não pode ser ativado |
+| FR-77 | Auditoria, uso/custo e tracing por combo/membro, sem PII ou credenciais | P0 | Create/update/activate/delete e aceite de rascunho auditados; headers `X-Donstop-Combo*` sem segredo |
+
 ## 7. Requisitos não funcionais
 
 | ID | Categoria | Meta mensurável | Como medir |
@@ -224,6 +233,7 @@ Os gateways auditados mostram que o padrão funciona: um endpoint OpenAI-compati
 | NFR-20 | Performance de UI | LCP ≤ 2,5 s; INP ≤ 200 ms; CLS ≤ 0,1; bundle inicial ≤ 250 KB gzip | Lighthouse/Web Vitals + bundle analyzer |
 | NFR-21 | Lazy loading | nenhum módulo opcional no primeiro paint; init sob demanda ≤ 50 ms no caminho quente | Teste de cold start + tracing |
 | NFR-22 | Observabilidade corporativa | sem PII em labels; cardinalidade controlada; retenção configurável | Auditoria de labels + política do backend |
+| NFR-23 | Combos | resolução de membro p95 ≤ 5 ms; sem chamada upstream extra; limite de 8 membros tentados | Histograma OTel `combo.select` e teste de concorrência |
 
 ## 8. SLAs e SLOs
 
@@ -312,6 +322,7 @@ Os gateways auditados mostram que o padrão funciona: um endpoint OpenAI-compati
 | E11 Endpoints/API Manager | Escopo mínimo por endpoint/modelo ativo; falha fechada antes do upstream; sem dono na UI do P0 |
 | E12 MCP | Desligado por padrão; transporte/ferramentas persistem; sem túnel e sem segredo em log |
 | E13 i18n/guia | Seis locales com fallback; onboarding e Settings persistem; guia completo com links contextuais |
+| E14 Combos | Combo ativo funciona em `/v1/chat/completions`; failover na mesma requisição; IA cria apenas rascunho revisável; sem segredo em log |
 
 ## 13. Premissas, lacunas e decisões pendentes
 

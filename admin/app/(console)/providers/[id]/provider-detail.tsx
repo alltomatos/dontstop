@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Download, ExternalLink, LoaderCircle, Pencil, Play, Plus, Power, RefreshCw, Settings2, Trash2, X } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, LoaderCircle, Network, Pencil, Play, Plus, Power, RefreshCw, Settings2, Trash2, X } from "lucide-react";
 import { Breadcrumbs } from "@/components/console/page";
 import { OriginChips, StatusChip } from "@/components/console/origin-chips";
 import { useI18n } from "@/components/console/i18n-provider";
@@ -82,6 +82,9 @@ export function ProviderDetail({
   const [syncing, setSyncing] = useState(false);
   const [testRun, setTestRun] = useState<ModelTestRun | null>(latestRun);
   const runActive = testRun?.status === "queued" || testRun?.status === "running";
+  const [proxyAuto, setProxyAuto] = useState<boolean>(provider.proxyAuto ?? false);
+  const [proxyAutoBusy, setProxyAutoBusy] = useState(false);
+  const [proxyAutoError, setProxyAutoError] = useState("");
   const [modelQueryFilter, setModelQueryFilter] = useState("");
   const [priceFilter, setPriceFilter] = useState<"all" | "free" | "paid" | "unknown">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -285,8 +288,31 @@ export function ProviderDetail({
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState("");
 
-  async function testAccount(account: ProviderAccount) {
-    if (!account.id || testingAccountId) return;
+  async function toggleProxyAuto() {
+    if (proxyAutoBusy) return;
+    const next = !proxyAuto;
+    setProxyAutoBusy(true);
+    setProxyAutoError("");
+    try {
+      const response = await fetch(`/api/admin/providers/${encodeURIComponent(provider.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proxy_auto: next })
+      });
+      if (!response.ok) {
+        setProxyAutoError(t("providers.proxyAutoFailed"));
+        return;
+      }
+      setProxyAuto(next);
+      router.refresh();
+    } catch {
+      setProxyAutoError(t("providers.proxyAutoFailed"));
+    } finally {
+      setProxyAutoBusy(false);
+    }
+  }
+
+  async function testAccount(account: ProviderAccount) {    if (!account.id || testingAccountId) return;
     setTestingAccountId(account.id);
     setAccountMessages(current => ({ ...current, [account.id!]: "" }));
     try {
@@ -727,6 +753,17 @@ export function ProviderDetail({
                 <Plus aria-hidden="true" size={16} />
                 {t("providers.addAccount")}
               </button>
+              <button
+                className={`btn ${proxyAuto ? "primary" : ""}`}
+                type="button"
+                onClick={toggleProxyAuto}
+                disabled={proxyAutoBusy}
+                aria-pressed={proxyAuto}
+                title={t("providers.proxyAutoHint")}
+              >
+                {proxyAutoBusy ? <LoaderCircle aria-hidden="true" size={16} className="spin" /> : <Network aria-hidden="true" size={16} />}
+                {t("providers.proxyAutoDefault")}
+              </button>
             </>
           ) : (
             <Link className="btn primary" href={configurePath(provider.id)}>
@@ -738,6 +775,7 @@ export function ProviderDetail({
       </div>
 
       {testMessage ? <p className="small" role="status" style={{ marginBottom: 12 }}>{testMessage}</p> : null}
+      {proxyAutoError ? <p className="small" role="alert" style={{ color: "var(--danger)", marginBottom: 12 }}>{proxyAutoError}</p> : null}
 
       <div className="detail-grid">
         <div className="card">
@@ -776,6 +814,7 @@ export function ProviderDetail({
                     {accountMessages[account.id ?? ""] ? (
                       <div className="meta" role="status">{accountMessages[account.id ?? ""]}</div>
                     ) : null}
+                    <AccountProxyControl providerId={provider.id} account={account} onUpdated={() => router.refresh()} />
                   </div>
                   <div className="actions">
                     <StatusChip status={account.status} label={t(account.statusKey)} />

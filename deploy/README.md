@@ -75,3 +75,23 @@ O `restart_policy` usa `condition: any`, `delay: 0s` e tentativas ilimitadas; se
 - Traefik faz TLS no entrypoint `websecure`; em produção configure certificado/ACME conforme o ambiente.
 - O healthcheck do gateway usa `/app/gateway healthcheck` → `/readyz`.
 - Não use `docker-compose` em produção.
+
+## 8. AgentRouter relay (ADR-025)
+
+O AgentRouter exige o SDK Python `anthropic` síncrono para passar o WAF de fingerprint. O stack roda
+um sidecar **vendorizado** (`vendor/agentrouter-relay`, MIT) na rede interna `app`, **sem porta
+publicada** e sem segredo em `environment`; a chave é repassada por requisição via `x-api-key` pelo
+gateway (cifrada em repouso no Postgres).
+
+```bash
+docker build -t registry.example/dontstop-agentrouter-relay:<tag> vendor/agentrouter-relay
+docker push registry.example/dontstop-agentrouter-relay:<tag>
+export AGENTROUTER_RELAY_IMAGE=registry.example/dontstop-agentrouter-relay:<tag>
+```
+
+O gateway usa `AGENTROUTER_RELAY_URL=http://agentrouter-relay:7187` (já no `stack.yml`). Teste local:
+
+```bash
+docker run --rm -p 7187:7187 registry.example/dontstop-agentrouter-relay:<tag>
+curl -fsS http://127.0.0.1:7187/health
+```

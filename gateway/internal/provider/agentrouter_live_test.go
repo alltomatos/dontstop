@@ -31,7 +31,7 @@ func TestAgentRouterLive(t *testing.T) {
 		Model:     model,
 		MaxTokens: 16,
 		Messages: []provider.ChatMessage{
-			{Role: "user", Content: "Ol?"},
+			{Role: "user", Content: "Reply with the single word: ok"},
 		},
 	})
 	if err != nil {

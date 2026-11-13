@@ -28,6 +28,7 @@ type Config struct {
 	RedisURL             string
 	MasterKey            string
 	NATSURL              string
+	AgentRouterRelayURL  string
 	WebshareSyncInterval time.Duration
 }
 
@@ -39,6 +40,7 @@ func Load() (Config, error) {
 		RedisURL:             secretValue("REDIS_URL"),
 		MasterKey:            secretValue("MASTER_KEY"),
 		NATSURL:              secretValue("NATS_URL"),
+		AgentRouterRelayURL:  strings.TrimSpace(secretValue("AGENTROUTER_RELAY_URL")),
 		WebshareSyncInterval: time.Hour,
 	}
 	if raw := os.Getenv("WEBSHARE_SYNC_INTERVAL"); raw != "" {

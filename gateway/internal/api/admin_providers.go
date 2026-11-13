@@ -18,6 +18,7 @@ type AdminProviderService interface {
 	AddAccount(ctx context.Context, tenantID, providerID string, input admin.AccountInput) (admin.Account, error)
 	DeleteAccount(ctx context.Context, tenantID, providerID, accountID string) (bool, error)
 	SetProxyMode(ctx context.Context, tenantID, providerID, accountID, raw string) (string, error)
+	SetProxyAuto(ctx context.Context, tenantID, providerID string, enabled bool) (bool, error)
 	RenameAccount(ctx context.Context, tenantID, providerID, accountID, name string) error
 	TestAccount(ctx context.Context, tenantID, providerID, accountID string) (admin.AccountTestResult, error)
 	AccountSummary(ctx context.Context, tenantID, providerID, accountID string) (admin.AccountSummaryResult, error)
@@ -241,5 +242,33 @@ func adminProviderImportModels(service AdminProviderService) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_ = json.NewEncoder(w).Encode(map[string]any{"imported": imported})
+	}
+}
+
+func adminProviderSetProxyAuto(service AdminProviderService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		request.Body = http.MaxBytesReader(w, request.Body, 1<<20)
+		var input struct {
+			ProxyAuto *bool `json:"proxy_auto"`
+		}
+		if err := json.NewDecoder(request.Body).Decode(&input); err != nil || input.ProxyAuto == nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "proxy_auto is required")
+			return
+		}
+		enabled, err := service.SetProxyAuto(request.Context(), principal.TenantID, request.PathValue("id"), *input.ProxyAuto)
+		if errors.Is(err, admin.ErrNotFound) {
+			writeAPIError(w, http.StatusNotFound, "not_found", "provider not found")
+			return
+		}
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to update proxy_auto")
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"proxy_auto": enabled})
 	}
 }

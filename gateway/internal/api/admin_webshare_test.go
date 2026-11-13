@@ -93,3 +93,37 @@ func TestWebshareSyncConflict(t *testing.T) {
 		t.Fatalf("expected 409, got %d: %s", response.Code, response.Body.String())
 	}
 }
+
+func (f fakeAdminWebshare) RefreshPool(context.Context, string) error { return nil }
+
+func TestAdminWebshareRefresh(t *testing.T) {
+	verifier, key := testVerifier(t, []string{"manage"})
+	router := api.NewRouter(api.Dependencies{
+		Readiness:     health.NewRegistry(0),
+		Verifier:      verifier,
+		AdminWebshare: fakeAdminWebshare{},
+	})
+	request := httptest.NewRequest(http.MethodPost, "/admin/v1/proxies/webshare/refresh", nil)
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestAdminWebshareRefreshRequiresManageScope(t *testing.T) {
+	verifier, key := testVerifier(t, []string{"chat:write"})
+	router := api.NewRouter(api.Dependencies{
+		Readiness:     health.NewRegistry(0),
+		Verifier:      verifier,
+		AdminWebshare: fakeAdminWebshare{},
+	})
+	request := httptest.NewRequest(http.MethodPost, "/admin/v1/proxies/webshare/refresh", nil)
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 without manage scope, got %d", response.Code)
+	}
+}

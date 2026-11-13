@@ -61,6 +61,17 @@ Lista provedores configurados do tenant autenticado.
 
 Retorna o provedor com `accounts` (sem credencial).
 
+### `PATCH /admin/v1/providers/{id}`
+
+Liga/desliga o default de proxy do provedor (`proxy_auto`). Contas com `proxy_mode=inherit` seguem
+esse default: `auto` quando ligado, `off` quando desligado (ADR-024).
+
+```json
+{ "proxy_auto": true }
+```
+
+Retorna `{ "proxy_auto": true }`. Campo ausente retorna `400`; provedor inexistente retorna `404`.
+
 ### `POST /admin/v1/providers/{id}/accounts`
 
 Cria uma conta. A credencial é cifrada com AES-256-GCM antes do INSERT e nunca é retornada.
@@ -91,13 +102,15 @@ redireciona para `/providers` quando `provider_deleted` é `true`.
 
 ### `PATCH /admin/v1/providers/{id}/accounts/{accountId}`
 
-Atualiza o modo de proxy da conta (`off`, `preferred` ou `required`).
+Atualiza o modo de proxy da conta (`inherit`, `off`, `manual`, `auto`; `preferred` e `required` são
+aceitos como legado e normalizados para `manual`). `manual` e `auto` são fail-closed (sem fallback
+direto) e `auto` é gerenciado pelo gateway com IPs do Webshare (ADR-024).
 
 ```json
-{ "proxy_mode": "preferred" }
+{ "proxy_mode": "manual" }
 ```
 
-Retorna `{ "proxy_mode": "preferred" }`. Valor inválido retorna `400`.
+Retorna `{ "proxy_mode": "manual" }`. Valor inválido retorna `400`.
 
 ### `GET /admin/v1/proxies`
 
@@ -188,6 +201,11 @@ Retorna o mesmo status sanitizado de `GET`. A operação é auditada em `audit_o
 Importa/sincroniza os proxies `direct` do plano, aplicando diff idempotente. Proxies ausentes ficam
 `valid=false`, mas atribuições em uso não são removidas. Retorna
 `{ imported, total, status }`. Retorna `409 sync_in_progress` quando outro worker está sincronizando.
+
+### `POST /admin/v1/proxies/webshare/refresh`
+
+Re-sincroniza após uma falha de IP, com debounce de 30 s por tenant (ADR-024). É no-op quando o
+Webshare não está configurado. Retorna `{ "ok": true }`.
 
 ### `GET /admin/v1/providers/{id}`
 
@@ -498,3 +516,9 @@ Cat?logo est?tico versionado de endpoints p?blicos, com categoria, path, modelos
 Pol?tica padr?o: auth obrigat?ria, 120 RPM, cache e DLP habilitados, proxy desligado, body de 1 MiB e timeout de 60 s.
 
 O console usa o cat?logo da Admin API com fallback local.
+
+## Combos (planejado)
+
+O contrato completo de combos — CRUD, membros, ativação, validação, teste e criação assistida por
+IA — está em [`COMBOS.md`](COMBOS.md). A Admin API de combos segue o mesmo padrão de autenticação,
+`tenant_id` derivado do principal e erros sanitizados descrito neste documento.

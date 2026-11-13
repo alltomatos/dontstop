@@ -99,6 +99,16 @@
         "de"
       ]
     },
+    "combos": {
+      "locales": [
+        "en",
+        "pt-PT",
+        "pt-BR",
+        "es",
+        "fr",
+        "de"
+      ]
+    },
     "settings": {
       "locales": [
         "en",

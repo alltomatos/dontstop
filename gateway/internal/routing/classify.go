@@ -17,7 +17,8 @@ func ClassifyProviderError(err error) FailureKind {
 		return FailureQuota
 	case errors.Is(err, provider.ErrProviderRateLimited):
 		return FailureRateLimit
-	case errors.Is(err, provider.ErrProxyRequired):
+	case errors.Is(err, provider.ErrProxyRequired), errors.Is(err, provider.ErrProxyFailure),
+		errors.Is(err, provider.ErrProxyAuth), errors.Is(err, provider.ErrProxyBanned):
 		return FailureProxy
 	case errors.Is(err, provider.ErrProviderUnavailable):
 		return FailureServer

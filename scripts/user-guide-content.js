@@ -279,6 +279,26 @@ const GUIDES = [
     }
   },
   {
+    slug: 'combos', pageKey: 'page.combos', related: ['providers', 'endpoints', 'cost'],
+    fields: ['common.status', 'common.edit', 'common.test', 'common.close'],
+    what: {
+      en: 'Creates and operates virtual models made of provider models, with priority, failover, limits and AI-assisted drafting.',
+      'pt-BR': 'Cria e opera modelos virtuais compostos por modelos de provedores, com prioridade, failover, limites e rascunho assistido por IA.',
+      'pt-PT': 'Cria e opera modelos virtuais compostos por modelos de fornecedores, com prioridade, failover, limites e rascunho assistido por IA.',
+      es: 'Crea y opera modelos virtuales compuestos por modelos de proveedores, con prioridad, failover, límites y borrador asistido por IA.',
+      fr: 'Crée et exploite des modèles virtuels composés de modèles de fournisseurs, avec priorité, failover, limites et brouillon assisté par IA.',
+      de: 'Erstellt und betreibt virtuelle Modelle aus Anbietermodellen mit Priorität, Failover, Limits und KI-gestütztem Entwurf.'
+    },
+    step: {
+      en: 'Create manually or with AI, review members and warnings, validate, then save and activate explicitly.',
+      'pt-BR': 'Crie manualmente ou com IA, revise membros e avisos, valide e só então salve e ative explicitamente.',
+      'pt-PT': 'Crie manualmente ou com IA, reveja membros e avisos, valide e só então guarde e ative explicitamente.',
+      es: 'Cree manualmente o con IA, revise miembros y avisos, valide y solo entonces guarde y active explícitamente.',
+      fr: 'Créez manuellement ou avec l’IA, révisez les membres et avertissements, validez, puis enregistrez et activez explicitement.',
+      de: 'Manuell oder mit KI erstellen, Mitglieder und Warnungen prüfen, validieren und erst dann speichern und explizit aktivieren.'
+    }
+  },
+  {
     slug: 'settings', pageKey: 'page.settings', related: ['onboarding', 'api-manager', 'mcp'],
     fields: ['settings.language', 'settings.preference', 'settings.storageKey', 'settings.fallbackNote', 'settings.openGuide'],
     what: {

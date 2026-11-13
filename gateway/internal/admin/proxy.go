@@ -16,15 +16,19 @@ import (
 // ErrProxyLimit is returned when a proxy already serves the maximum accounts.
 var ErrProxyLimit = errors.New("proxy account limit reached")
 
-const maxAccountsPerProxy = 3
+// maxAccountsPerProxyPerProvider enforces ADR-024: one account per IP per
+// provider. Cross-provider reuse is allowed, so this is not a global cap.
+const maxAccountsPerProxyPerProvider = 1
 
 // ProxyEndpointAccount is a sanitized account assigned to a proxy.
 type ProxyEndpointAccount struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	ProviderID   string `json:"provider_id"`
-	ProviderName string `json:"provider_name"`
-	ProxyMode    string `json:"proxy_mode"`
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	ProviderID   string     `json:"provider_id"`
+	ProviderName string     `json:"provider_name"`
+	ProxyMode    string     `json:"proxy_mode"`
+	BannedUntil  *time.Time `json:"banned_until,omitempty"`
+	BanReason    string     `json:"ban_reason,omitempty"`
 }
 
 // ProxyEndpoint is the admin representation of a proxy in the pool.
@@ -119,12 +123,17 @@ func (s *ProxyService) List(ctx context.Context, tenantID string) ([]ProxyEndpoi
 		index[endpoint.ID] = position
 	}
 	assigned, err := s.pool.Query(ctx, `
-		SELECT pxa.proxy_endpoint_id::text, pa.id::text, pa.name, p.id::text, p.name, pa.proxy_mode
+		SELECT pxa.proxy_endpoint_id::text, pa.id::text, pa.name, p.id::text, p.name, pa.proxy_mode,
+		       pp.banned_until, coalesce(pp.reason, '')
 		FROM proxy_assignments pxa
 		JOIN provider_accounts pa
 		  ON pa.id = pxa.provider_account_id AND pa.tenant_id = pxa.tenant_id
 		JOIN providers p
 		  ON p.id = pa.provider_id AND p.tenant_id = pa.tenant_id
+		LEFT JOIN proxy_poison pp
+		  ON pp.tenant_id = pxa.tenant_id
+		 AND pp.provider_id = pa.provider_id
+		 AND pp.proxy_endpoint_id = pxa.proxy_endpoint_id
 		WHERE pxa.tenant_id = $1
 		ORDER BY p.name, pa.name
 	`, tenantID)
@@ -135,7 +144,7 @@ func (s *ProxyService) List(ctx context.Context, tenantID string) ([]ProxyEndpoi
 	for assigned.Next() {
 		var endpointID string
 		var account ProxyEndpointAccount
-		if err := assigned.Scan(&endpointID, &account.ID, &account.Name, &account.ProviderID, &account.ProviderName, &account.ProxyMode); err != nil {
+		if err := assigned.Scan(&endpointID, &account.ID, &account.Name, &account.ProviderID, &account.ProviderName, &account.ProxyMode, &account.BannedUntil, &account.BanReason); err != nil {
 			return nil, fmt.Errorf("scan proxy assignment: %w", err)
 		}
 		if position, ok := index[endpointID]; ok {
@@ -238,21 +247,32 @@ func (s *ProxyService) Assign(ctx context.Context, tenantID, providerID, account
 
 	var assigned int
 	if err := tx.QueryRow(ctx, `
-		SELECT count(*) FROM proxy_assignments
-		WHERE tenant_id = $1 AND proxy_endpoint_id = $2::uuid AND provider_account_id <> $3::uuid
-	`, tenantID, endpointID, accountID).Scan(&assigned); err != nil {
+		SELECT count(*)
+		FROM proxy_assignments pxa
+		JOIN provider_accounts pa
+		  ON pa.id = pxa.provider_account_id AND pa.tenant_id = pxa.tenant_id
+		WHERE pxa.tenant_id = $1
+		  AND pxa.proxy_endpoint_id = $2::uuid
+		  AND pa.provider_id = $3::uuid
+		  AND pxa.provider_account_id <> $4::uuid
+	`, tenantID, endpointID, providerID, accountID).Scan(&assigned); err != nil {
 		return fmt.Errorf("count proxy assignments: %w", err)
 	}
-	if assigned >= maxAccountsPerProxy {
+	if assigned >= maxAccountsPerProxyPerProvider {
 		return ErrProxyLimit
 	}
 
 	if _, err := tx.Exec(ctx, `
-		INSERT INTO proxy_assignments (tenant_id, provider_account_id, proxy_endpoint_id)
-		VALUES ($1, $2::uuid, $3::uuid)
+		INSERT INTO proxy_assignments (tenant_id, provider_id, provider_account_id, proxy_endpoint_id)
+		VALUES ($1, $2::uuid, $3::uuid, $4::uuid)
 		ON CONFLICT (tenant_id, provider_account_id)
-		DO UPDATE SET proxy_endpoint_id = excluded.proxy_endpoint_id, updated_at = now()
-	`, tenantID, accountID, endpointID); err != nil {
+		DO UPDATE SET provider_id = excluded.provider_id,
+		              proxy_endpoint_id = excluded.proxy_endpoint_id,
+		              updated_at = now()
+	`, tenantID, providerID, accountID, endpointID); err != nil {
+		if isUniqueViolation(err) {
+			return ErrProxyLimit
+		}
 		return fmt.Errorf("assign proxy endpoint: %w", err)
 	}
 	if err := tx.Commit(ctx); err != nil {

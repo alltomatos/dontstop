@@ -36,7 +36,7 @@ admin/locales/
 └─ de.json
 ```
 
-- Chaves semânticas e planas com namespace por página/feature: `nav.*`, `common.*`, `dashboard.*`, `providers.*`, `endpoints.*`, `api.*`, `mcp.*`, `cache.*`, `dlp.*`, `observability.*`, `cost.*`, `newKey.*`, `settings.*`, `onboarding.*`, `models.*`.
+- Chaves semânticas e planas com namespace por página/feature: `nav.*`, `common.*`, `dashboard.*`, `providers.*`, `combos.*`, `endpoints.*`, `api.*`, `mcp.*`, `cache.*`, `dlp.*`, `observability.*`, `cost.*`, `newKey.*`, `settings.*`, `onboarding.*`, `models.*`.
 - Interpolação usa `{name}` (ex.: `models.footer` → `{shown} of {total} models`).
 - Pluralização usa `Intl.PluralRules` com chaves `.one` / `.other` (ex.: `providers.connected.one`).
 - Datas, números e moeda usam `Intl.DateTimeFormat`, `Intl.NumberFormat` e `Intl.RelativeTimeFormat` no runtime.
@@ -92,6 +92,7 @@ docs/user-guide/
 |---|---|
 | `dashboard` | Página Dashboard |
 | `providers` | Página Provedores |
+| `combos` | Página Combos |
 | `endpoints` | Página Endpoints |
 | `api-manager` | Página Gerenciador de API |
 | `mcp` | Página MCP |
@@ -102,6 +103,7 @@ docs/user-guide/
 | `settings` | Página Configurações |
 | `new-api-key` | Modal Nova chave de API |
 | `onboarding` | Modal de primeiro acesso |
+| `provider-setup` | Guia de configuração de provedores |
 
 O slug é estável, minúsculo e igual em todos os idiomas. Ao criar, renomear ou remover uma página/modal, atualize `scripts/user-guide-content.js`, rode `node scripts/generate-user-guide.js` e atualize os índices (o gerador já reescreve `README.md` global, os seis índices e `manifest.json`).
 
@@ -116,6 +118,7 @@ O slug é estável, minúsculo e igual em todos os idiomas. Ao criar, renomear o
 - Uma imagem por idioma; o idioma é aplicado via `?lang=<code>` antes da captura.
 - Script: `node scripts/capture-user-guide.js` (requer Chrome em `CHROME_PATH` ou no caminho padrão).
 - `alt` traduzido em cada guia; se uma captura não puder ser refeita no idioma, registre a exceção no topo do arquivo localizado.
+- Enquanto a página `/combos` não existe no console, a imagem de `combos` é capturada do mockup dedicado (`design-system/mockups/combos.html`). Ao implementar a página, substitua as seis capturas pelo console real sem mudar o slug.
 
 ### Link contextual de ajuda
 

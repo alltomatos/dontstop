@@ -86,6 +86,7 @@ func run(logger *slog.Logger) error {
 	var pool *pgxpool.Pool
 	var providerService *admin.ProviderService
 	var webshareService *admin.WebshareService
+	var comboService *admin.ComboService
 	var usageRecorder *usage.Recorder
 	var outbox *usage.OutboxPublisher
 	if cfg.DatabaseURL != "" {
@@ -124,9 +125,10 @@ func run(logger *slog.Logger) error {
 			return fmt.Errorf("load master key: %w", err)
 		}
 		providerService = admin.NewProviderService(pool, box)
+		providerService.SetAgentRouterRelayURL(cfg.AgentRouterRelayURL)
 		deps.Admin = providerService
 		deps.AdminProxy = admin.NewProxyService(pool, box)
-		webshareService = admin.NewWebshareService(pool, box, webshare.NewClient(nil))
+		webshareService = admin.NewWebshareService(pool, box, webshare.NewClient(nil), redisConn)
 		deps.AdminWebshare = webshareService
 		deps.AdminCatalog = providerService
 		deps.AdminKeys = admin.NewAPIKeyService(pool)
@@ -134,12 +136,17 @@ func run(logger *slog.Logger) error {
 		deps.AdminMCP = admin.NewMCPService(pool)
 		deps.AdminCache = admin.NewCacheService(pool)
 		deps.AdminDLP = admin.NewDLPService(pool)
+		comboService = admin.NewComboService(pool)
+		deps.AdminCombos = comboService
+		deps.AdminComboAI = admin.NewComboAIService(pool, providerService, comboService)
 		deps.AdminEndpoints = admin.NewEndpointService()
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		coordinator := proxycoord.NewCoordinator(proxycoord.NewPostgresRepository(pool), proxycoord.NewRedisState(redisConn), box)
+		coordinator.SetPoolRefresher(webshareService)
 		chatService := chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)
 		chatService.SetProxyResolver(coordinator)
+		chatService.SetComboResolver(routing.NewComboRepository(pool))
 		deps.Chat = chatService
 	} else if cfg.DatabaseURL != "" {
 		logger.Warn("chat completions disabled", "reason", "DATABASE_URL, REDIS_URL and MASTER_KEY are required")

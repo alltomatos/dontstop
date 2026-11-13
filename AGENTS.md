@@ -132,6 +132,7 @@ node scripts/build-guide-html.js         # gera admin/public/guide/*.html (links
 
 # Docker Swarm (produção/homologação)
 docker stack deploy -c deploy/stack.yml dontstop
+docker build -t registry/dontstop-agentrouter-relay:latest vendor/agentrouter-relay
 docker service ls
 docker service logs -f dontstop_gateway
 docker service scale dontstop_gateway=8
@@ -188,6 +189,7 @@ k6 run tests/load/chat.js
 ## 8. Regras específicas de provedores
 
 - **Sem gateways de refer?ncia em runtime:** 9Router, OmniRoute e AllCode s?o apenas estudo. Proibido relay, upstream, import de SDK ou `base_url` apontando para esses sistemas.
+- **Exceção AgentRouter (ADR-025):** o AgentRouter pode usar o relay **vendorizado** em `vendor/agentrouter-relay` como **sidecar interno** (rede `app`, sem porta pública, sem túnel, sem dependência do app AllCode e sem instalar SDK em runtime). A chave é repassada pelo gateway via `x-api-key` (cofre cifrado, `tenant_id`, auth e políticas do Endpoint Registry); a tradução fail-closed fica no gateway. Nenhum outro provider usa relay.
 
 - **Catálogo é fonte de verdade:** provider, modelo, capabilities, preço e protocolo vêm do catálogo versionado; nada hardcoded em handler.
 - **Um adaptador por protocolo/provider:** OpenAI, Anthropic, Gemini, Azure, Bedrock e OpenAI-compatible. Protocolos proprietários exigem adaptador explícito e testes gravados.
@@ -277,7 +279,7 @@ k6 run tests/load/chat.js
 
 ## 14. O que NÃO fazer
 
-- N?o usar 9Router, OmniRoute ou AllCode como canal, relay, upstream, cat?logo ou depend?ncia de execu??o; s?o apenas refer?ncias conceituais.
+- N?o usar 9Router, OmniRoute ou AllCode como canal, relay, upstream, cat?logo ou depend?ncia de execu??o; s?o apenas refer?ncias conceituais. Exceção única: o relay vendorizado do AgentRouter (ADR-025), nas condições do §8.
 
 - Não criar Kubernetes, Helm, CRDs, operators ou manifests K8s.
 - Não adicionar Prometheus, Grafana, Loki, Tempo ou stack OSS de observabilidade; usar OTel + backend gerenciado.
@@ -299,3 +301,11 @@ k6 run tests/load/chat.js
 - `docs/` — PRD, DER, UML, análise de stack, ADRs, roadmap e backlog.
 - `design-system/` — tokens, specs de página e mockup do console (gerado com `/ui-ux-pro-max`).
 - `[MAP-9R]`, `[MAP-OMNI]`, `[MAP-ALLCODE]` — mapeamentos locais (gitignored).
+
+## 16. Agent skills e governança
+
+- Skills instaladas em `~/.opencode/skills`, `~/.claude/skills` e `~/.agents/skills` (framework `alltomatos/skills`).
+- Fluxo: `/architect` → `/roadmap` → `/to-issues` → `/developer` (loop TDD) → `/qa-analyst` + `/secure-e2e` → PR.
+- Contexto de domínio: [`CONTEXT.md`](CONTEXT.md); governança: [`docs/agents/`](docs/agents/); ADRs: [`docs/05-ADRS.md`](docs/05-ADRS.md) (índice em [`docs/adr/`](docs/adr/README.md)).
+- GitHub é o tracker oficial; branches e commits seguem [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
+- Verificações: `go test ./...`, `go vet ./...`, `golangci-lint run`, `govulncheck ./...`, `npm test`, `npm run typecheck`, `npm run lint`.

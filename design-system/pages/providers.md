@@ -139,21 +139,28 @@ Mock: [`provider-account-proxy.svg`](../mockups/provider-account-proxy.svg) (blo
 
 Cada conta em `/providers/{id}` exibe:
 
-1. **Modo de proxy** (`off` | `preferred` | `required`), padrão `off`, com helper:
+1. **Modo de proxy** (`inherit` | `off` | `manual` | `auto`), com helper:
+   - `inherit`: segue o default do provedor (`proxy_auto`);
    - `off`: ignora o proxy e conecta direto;
-   - `preferred`: usa o proxy e cai para direto em falha/quarentena;
-   - `required`: exige proxy saudável; sem ele a chamada falha antes do upstream.
+   - `manual`: usa o proxy fixo atribuído, **fail-closed** (sem fallback direto);
+   - `auto`: o gateway gerencia IPs do Webshare (1 por conta do provedor) e rotaciona na falha.
 2. **Proxy atribuído**: `endpoint:porta`, região (cidade/país) e chip de saúde
-   (`Saudável`, `Em quarentena`, `Indisponível`). Sem atribuição mostra “Sem proxy atribuído”.
+   (`Saudável`, `Em quarentena`, `Banido`, `Indisponível`). Sem atribuição mostra “Sem proxy atribuído”.
 3. **Ações**: `Atribuir proxy` / `Reatribuir` (modal com o pool e seleção única) e
    `Remover atribuição`. O modal permite cadastrar um proxy manual (endereço, porta, região,
-   rótulo, usuário e senha) quando o pool está vazio.
+   rótulo, usuário e senha) quando o pool está vazio. No modo `auto`, a atribuição é gerenciada
+   pelo gateway (botão desabilitado, com badge `Auto`).
+4. **Default do provedor**: toggle **Proxy auto** no cabeçalho do provedor, aplicado às contas em `inherit`.
+
+Regra de alocação (ADR-024): **1 conta por IP por provedor**; o mesmo IP pode ser reutilizado por
+contas de **provedores diferentes**. O modal de atribuição exibe “em uso por outra conta deste
+provedor” e desabilita o item (contagem por provedor). Poison é por `(provedor, endpoint)`.
 
 Estados do bloco/modal: carregando (skeleton no modo e spinner na lista), vazio
-(“Nenhum proxy cadastrado”), erro de carregamento/salvamento com `Tentar novamente`, limite de
-**3 contas por proxy** (item desabilitado com contagem), e sucesso reflete via `router.refresh`.
+(“Nenhum proxy cadastrado”), erro de carregamento/salvamento com `Tentar novamente`, item em uso
+pelo mesmo provedor desabilitado com contagem, e sucesso reflete via `router.refresh`.
 
-APIs: `PATCH /admin/v1/providers/{id}/accounts/{accountId}` (`proxy_mode`),
+APIs: `PATCH /admin/v1/providers/{id}` (`proxy_auto`), `PATCH /admin/v1/providers/{id}/accounts/{accountId}` (`proxy_mode`),
 `GET|POST /admin/v1/proxies`, `PUT|DELETE /admin/v1/providers/{id}/accounts/{accountId}/proxy`.
 Credenciais do proxy nunca voltam ao cliente (somente `id`, `label`, `address`, `port`, região e saúde).
 

@@ -20,6 +20,8 @@ var (
 	ErrProviderResponse       = errors.New("invalid provider response")
 	ErrProviderInvalidRequest = errors.New("invalid provider request")
 	ErrProxyFailure           = errors.New("proxy transport failure")
+	ErrProxyAuth              = errors.New("proxy authentication failed")
+	ErrProxyBanned            = errors.New("upstream banned the proxy ip")
 )
 
 const maxProviderResponseBytes = 4 << 20
@@ -134,15 +136,25 @@ func doProviderRequest(ctx context.Context, client *http.Client, url string, hea
 
 	response, err := client.Do(request)
 	if err != nil {
+		if proxyEnabled {
+			return nil, fmt.Errorf("%w: %v", ErrProxyFailure, err)
+		}
 		return nil, fmt.Errorf("%w: %v", ErrProviderUnavailable, err)
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, maxProviderResponseBytes))
+		snippet, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
 		_ = response.Body.Close()
 		switch {
 		case response.StatusCode == http.StatusBadRequest || response.StatusCode == http.StatusRequestEntityTooLarge || response.StatusCode == http.StatusUnprocessableEntity:
 			return nil, fmt.Errorf("%w: status %d", ErrProviderInvalidRequest, response.StatusCode)
-		case response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden:
+		case response.StatusCode == http.StatusProxyAuthRequired && proxyEnabled:
+			return nil, fmt.Errorf("%w: status %d", ErrProxyAuth, response.StatusCode)
+		case response.StatusCode == http.StatusUnauthorized:
+			return nil, ErrProviderAuth
+		case response.StatusCode == http.StatusForbidden:
+			if proxyEnabled && looksLikeBan(snippet) {
+				return nil, fmt.Errorf("%w: status %d", ErrProxyBanned, response.StatusCode)
+			}
 			return nil, ErrProviderAuth
 		case response.StatusCode == http.StatusPaymentRequired:
 			return nil, ErrProviderQuota
@@ -155,4 +167,15 @@ func doProviderRequest(ctx context.Context, client *http.Client, url string, hea
 		}
 	}
 	return response, nil
+}
+
+// looksLikeBan reports whether a 403 body carries an IP/region ban signal.
+func looksLikeBan(body []byte) bool {
+	text := strings.ToLower(string(body))
+	for _, signal := range []string{"banned", "blocked", "not allowed", "suspicious", "abuse", "suspended", "ip address"} {
+		if strings.Contains(text, signal) {
+			return true
+		}
+	}
+	return false
 }

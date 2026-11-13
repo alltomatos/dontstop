@@ -6,6 +6,7 @@
 ## Epics
 
 - [**[E1] P0-α — Gateway vertical slice (chat + models)**](https://github.com/alltomatos/dontstop/issues/1) - `in_progress`
+- **[E2] Isolamento de proxy por provedor (ADR-024)** - `in_progress`
 
 ## E1 — P0-α Gateway vertical slice
 
@@ -49,3 +50,32 @@
 - Migrações idempotentes e índices revisados.
 - Documentação e contrato atualizados.
 - `go test ./...`, `go vet`, `golangci-lint`, `govulncheck`, lint/test/build do admin verdes.
+
+## E2 — Isolamento de proxy por provedor (ADR-024)
+
+**Objetivo:** isolar o IP de cada conta do provedor (1 conta/IP por provedor), reutilizar IPs entre provedores diferentes, introduzir o modo `auto` gerenciado pelo Webshare e rotacionar com poison persistente + re-sync, sem banimento cruzado.
+
+**Escopo:** schema/DB, data plane Go (modo efetivo, alocação, classificação de falha, poison, re-sync), Admin API, console (detalhe do provedor e `/proxies`), testes de segurança e observabilidade. Fora de escopo: túneis e proxies fora do Webshare/manual.
+
+**Critérios de sucesso:**
+- [ ] Duas contas do mesmo provedor nunca compartilham IP; provedores diferentes reutilizam.
+- [ ] Modo `auto` distribui IPs distintos por conta e rotaciona na falha.
+- [ ] Falha de IP envenena só o provedor afetado e dispara re-sync do Webshare.
+- [ ] Rotação transparente antes do primeiro chunk; sem fallback direto silencioso.
+- [ ] Credenciais nunca em resposta/log; isolamento por tenant comprovado.
+
+## E2 — Slices
+
+| ID | Slice | Estado | Issue | Blocked by |
+|---|---|---|---|---|
+| E2.1 | Schema de isolamento (0020), `proxy_poison`, ban columns | `done` | [#53](https://github.com/alltomatos/dontstop/issues/53) | — |
+| E2.2 | Modo efetivo e alocação 1 conta/IP por provedor | `done` | [#54](https://github.com/alltomatos/dontstop/issues/54) | E2.1 |
+| E2.3 | Classificação de falha e poison persistente | `done` | [#55](https://github.com/alltomatos/dontstop/issues/55) | E2.1 |
+| E2.4 | Re-sync Webshare automático (debounce) | `done` | [#56](https://github.com/alltomatos/dontstop/issues/56) | E2.3 |
+| E2.5 | Admin API: `proxy_auto` e modos `inherit/off/manual/auto` | `done` | [#57](https://github.com/alltomatos/dontstop/issues/57) | E2.2, E2.3 |
+| E2.6 | Console: proxy por conta e modo auto | `done` | [#58](https://github.com/alltomatos/dontstop/issues/58) | E2.5 |
+| E2.7 | Console: rede de proxy 1:1 + poison | `done` | [#59](https://github.com/alltomatos/dontstop/issues/59) | E2.5 |
+| E2.8 | Segurança e testes negativos | `done` | [#60](https://github.com/alltomatos/dontstop/issues/60) | E2.2, E2.3, E2.4 |
+| E2.9 | Observabilidade, guia e runbook | `done` | [#61](https://github.com/alltomatos/dontstop/issues/61) | E2.4 |
+
+> E2.1 implementado no working tree (migração `0020`, `provider_id` + unique por provedor, dedup, `proxy_poison`, `Candidates` provider-aware). Pendente de commit/PR por decisão explícita.

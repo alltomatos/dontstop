@@ -9,6 +9,7 @@ services:
       REDIS_URL_FILE: /run/secrets/redis_url
       MASTER_KEY_FILE: /run/secrets/master_key
       NATS_URL_FILE: /run/secrets/nats_url
+      AGENTROUTER_RELAY_URL: http://agentrouter-relay:7187
     secrets:
       - database_url
       - redis_url
@@ -42,6 +43,28 @@ services:
         condition: any
         delay: 0s
         max_attempts: 0
+
+  agentrouter-relay:
+    image: ${AGENTROUTER_RELAY_IMAGE:-registry/dontstop-agentrouter-relay:latest}
+    environment:
+      AGENTROUTER_PORT: "7187"
+      AGENTROUTER_BIND: "0.0.0.0"
+      AGENTROUTER_UPSTREAM: https://agentrouter.org
+    networks:
+      - dontstop
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7187/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
 
 networks:
   dontstop:

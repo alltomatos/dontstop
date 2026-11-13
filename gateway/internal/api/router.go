@@ -31,6 +31,8 @@ type Dependencies struct {
 	AdminMCP       AdminMCPService
 	AdminCache     AdminCacheService
 	AdminDLP       AdminDLPService
+	AdminCombos    AdminComboService
+	AdminComboAI   AdminComboAIService
 	AdminEndpoints AdminEndpointService
 	AdminAuth      AdminAuthService
 	Redis          *redis.Client
@@ -65,6 +67,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("GET /admin/v1/providers", adminMiddleware(adminProvidersList(deps.Admin)))
 		mux.Handle("GET /admin/v1/providers/{id}", adminMiddleware(adminProviderGet(deps.Admin)))
 		mux.Handle("POST /admin/v1/providers/{id}/accounts", adminMiddleware(adminProviderAddAccount(deps.Admin)))
+		mux.Handle("PATCH /admin/v1/providers/{id}", adminMiddleware(adminProviderSetProxyAuto(deps.Admin)))
 		mux.Handle("DELETE /admin/v1/providers/{id}/accounts/{accountId}", adminMiddleware(adminProviderDeleteAccount(deps.Admin)))
 		mux.Handle("PATCH /admin/v1/providers/{id}/accounts/{accountId}", adminMiddleware(adminProviderSetProxyMode(deps.Admin)))
 		mux.Handle("POST /admin/v1/providers/{id}/accounts/{accountId}/test", adminMiddleware(adminProviderTestAccount(deps.Admin)))
@@ -87,6 +90,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("POST /admin/v1/proxies/webshare/test", adminMiddleware(adminWebshareTest(deps.AdminWebshare)))
 		mux.Handle("PUT /admin/v1/proxies/webshare", adminMiddleware(adminWebshareSave(deps.AdminWebshare)))
 		mux.Handle("POST /admin/v1/proxies/webshare/sync", adminMiddleware(adminWebshareSync(deps.AdminWebshare)))
+		mux.Handle("POST /admin/v1/proxies/webshare/refresh", adminMiddleware(adminWebshareRefresh(deps.AdminWebshare)))
 	}
 	if deps.Verifier != nil && deps.AdminProxy != nil {
 		mux.Handle("PUT /admin/v1/providers/{id}/accounts/{accountId}/proxy", adminMiddleware(adminProviderAssignProxy(deps.AdminProxy)))
@@ -121,6 +125,19 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("POST /admin/v1/dlp/rules", adminMiddleware(adminDLPCreateRule(deps.AdminDLP)))
 		mux.Handle("PATCH /admin/v1/dlp/rules/{id}", adminMiddleware(adminDLPSetRule(deps.AdminDLP)))
 		mux.Handle("GET /admin/v1/dlp/events", adminMiddleware(adminDLPEvents(deps.AdminDLP)))
+	}
+	if deps.Verifier != nil && deps.AdminCombos != nil {
+		mux.Handle("GET /admin/v1/combos", adminMiddleware(adminCombosList(deps.AdminCombos)))
+		mux.Handle("GET /admin/v1/combos/catalog", adminMiddleware(adminComboCatalog(deps.AdminCombos)))
+		mux.Handle("POST /admin/v1/combos", adminMiddleware(adminComboCreate(deps.AdminCombos)))
+		mux.Handle("GET /admin/v1/combos/{id}", adminMiddleware(adminComboGet(deps.AdminCombos)))
+		mux.Handle("PATCH /admin/v1/combos/{id}", adminMiddleware(adminComboUpdate(deps.AdminCombos)))
+		mux.Handle("POST /admin/v1/combos/{id}/activate", adminMiddleware(adminComboStatus(deps.AdminCombos, "active")))
+		mux.Handle("POST /admin/v1/combos/{id}/deactivate", adminMiddleware(adminComboStatus(deps.AdminCombos, "inactive")))
+		mux.Handle("DELETE /admin/v1/combos/{id}", adminMiddleware(adminComboDelete(deps.AdminCombos)))
+	}
+	if deps.Verifier != nil && deps.AdminComboAI != nil {
+		mux.Handle("POST /admin/v1/combos/ai/draft", adminMiddleware(adminComboAIDraft(deps.AdminComboAI)))
 	}
 	if deps.Verifier != nil && deps.AdminEndpoints != nil {
 		mux.Handle("GET /admin/v1/endpoints", adminMiddleware(adminEndpointsList(deps.AdminEndpoints)))

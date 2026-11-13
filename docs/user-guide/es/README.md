@@ -8,6 +8,7 @@ Una guía por página, modal y funcionalidad de la consola. Las capturas se real
 |---|---|
 | `dashboard` | Panel | [Panel](dashboard.md) | [PNG](../assets/es/dashboard.png) |
 | `providers` | Proveedores | [Proveedores](providers.md) | [PNG](../assets/es/providers.png) |
+| `combos` | Combos | [Combos](combos.md) | [PNG](../assets/es/combos.png) |
 | `endpoints` | Endpoints | [Endpoints](endpoints.md) | [PNG](../assets/es/endpoints.png) |
 | `api-manager` | Gestor de API | [Gestor de API](api-manager.md) | [PNG](../assets/es/api-manager.png) |
 | `mcp` | MCP | [MCP](mcp.md) | [PNG](../assets/es/mcp.png) |

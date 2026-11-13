@@ -59,7 +59,7 @@ services:
         condition: on-failure
 
   migrate:
-    image: ronaldodavi/dontstop-gateway:deploy-20261112
+    image: ronaldodavi/dontstop-gateway:combos-20261112
     entrypoint: ["/app/migrate"]
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
@@ -75,12 +75,13 @@ services:
         max_attempts: 20
 
   gateway:
-    image: ronaldodavi/dontstop-gateway:deploy-20261112
+    image: ronaldodavi/dontstop-gateway:combos-20261112
     environment:
       PORT: "8080"
       DATABASE_URL_FILE: /run/secrets/database_url
       REDIS_URL_FILE: /run/secrets/redis_url
       MASTER_KEY_FILE: /run/secrets/master_key
+      AGENTROUTER_RELAY_URL: http://agentrouter-relay:7187
     secrets:
       - database_url
       - redis_url
@@ -114,7 +115,7 @@ services:
         max_attempts: 5
 
   admin:
-    image: ronaldodavi/dontstop-admin:deploy-20261112
+    image: ronaldodavi/dontstop-admin:combos-20261112
     environment:
       DONTSTOP_GATEWAY_URL: http://gateway:8080
       DONTSTOP_PUBLIC_BASE_URL: https://dontstop.alltomatos.dev.br
@@ -134,6 +135,30 @@ services:
       update_config:
         parallelism: 1
         delay: 5s
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+
+  agentrouter-relay:
+    image: ${AGENTROUTER_RELAY_IMAGE:-registry/dontstop-agentrouter-relay:latest}
+    environment:
+      AGENTROUTER_PORT: "7187"
+      AGENTROUTER_BIND: "0.0.0.0"
+      AGENTROUTER_UPSTREAM: https://agentrouter.org
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7187/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    deploy:
+      replicas: 1
+      update_config:
         order: start-first
         failure_action: rollback
       restart_policy:

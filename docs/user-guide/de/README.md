@@ -8,6 +8,7 @@ Ein Leitfaden pro Seite, Modal und Funktion der Konsole. Screenshots werden in d
 |---|---|
 | `dashboard` | Übersicht | [Übersicht](dashboard.md) | [PNG](../assets/de/dashboard.png) |
 | `providers` | Anbieter | [Anbieter](providers.md) | [PNG](../assets/de/providers.png) |
+| `combos` | Combos | [Combos](combos.md) | [PNG](../assets/de/combos.png) |
 | `endpoints` | Endpunkte | [Endpunkte](endpoints.md) | [PNG](../assets/de/endpoints.png) |
 | `api-manager` | API-Verwaltung | [API-Verwaltung](api-manager.md) | [PNG](../assets/de/api-manager.png) |
 | `mcp` | MCP | [MCP](mcp.md) | [PNG](../assets/de/mcp.png) |

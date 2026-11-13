@@ -82,12 +82,16 @@ flowchart TB
         OT[OTel Collector]
         DD[Datadog / Azure Monitor]
     end
+    subgraph Sidecars
+        RELAY[AgentRouter relay<br/>Python + anthropic]
+    end
 
     U[Clientes] --> T --> GW
     A[Admin] --> T --> ADM
     GW --> AUTH --> RL --> CACHE --> DLP --> ROUTER --> PROXY
     ROUTER --> P[Provedores]
     PROXY --> W[Webshare] --> P
+    GW --> RELAY --> AR[AgentRouter]
     GW --> USAGE --> NAT
     GW --> PG & RD & QD
     ADM --> PG
@@ -102,6 +106,7 @@ flowchart TB
 | Cache semântico | Embedding → ANN no Qdrant → validação de metadados → resposta | [03-UML §3](../03-UML.md) |
 | Failover | Circuit breaker → cooldown → próxima conta do mesmo provedor → próximo provider; 400 do cliente é terminal; SSE só antes do primeiro chunk | [03-UML §4](../03-UML.md), [ADR-022](../05-ADRS.md) |
 | Proxy Webshare | Acquire → health/score → CONNECT → report/quarentena | [03-UML §5](../03-UML.md) |
+| AgentRouter (relay) | Gateway → relay sidecar interno → AgentRouter; WAF de fingerprint só passa pelo SDK Python; tradução fail-closed no gateway | ADR-025 |
 | Lazy loading do console | Shell SSR → skeleton → chunk sob demanda → dados com SWR | [03-UML §6.1](../03-UML.md) |
 | Endpoint + API key | Resolve endpoint/política + escopo da chave → limites → roteamento | [03-UML §6.2](../03-UML.md) |
 | DLP | Scan → decisão (allow/redact/block/audit) → auditoria | [03-UML §6](../03-UML.md) |
@@ -160,6 +165,81 @@ sequenceDiagram
     Note over G,C: Falha depois do primeiro token → encerrar stream com erro SSE, sem retry cego
 ```
 
+### 6.3 Sequência — combo em `/v1/chat/completions`
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Cliente
+    participant G as Gateway
+    participant A as Auth + Endpoint Policy
+    participant K as Cache exato
+    participant CS as Combo Resolver
+    participant S as Router/Failover
+    participant P as Provider upstream
+
+    C->>G: POST /v1/chat/completions (model=combo/<slug>)
+    G->>A: autenticar + validar modelo do endpoint
+    A-->>G: tenant + escopos
+    G->>K: lookup sha256(tenant|combo@revision|mensagens)
+    alt cache hit
+        K-->>G: resposta
+        G-->>C: JSON/SSE + X-Donstop-Combo-Cache
+    else cache miss
+        G->>CS: resolver membros elegíveis do tenant
+        CS-->>G: membros ordenados (tier, posição, peso)
+        loop até max_attempts ou primeiro chunk
+            G->>S: tentar contas do membro/provider
+            S->>P: upstream
+            P-->>G: resposta / erro
+            alt erro retryable antes do primeiro chunk
+                G->>CS: próximo membro
+            else sucesso
+                G-->>C: JSON/SSE + X-Donstop-Combo*
+            end
+        end
+    end
+```
+
+> O combo é resolvido depois da autenticação/cache e antes do router de contas. `400/413/422` são terminais; depois do primeiro chunk não há troca de membro. Ver [COMBOS.md](../reference/COMBOS.md) e ADR-023.
+
+### 6.4 Sequência — isolamento de IP, modo `auto` e rotação
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Cliente
+    participant G as Gateway
+    participant S as Router/Failover
+    participant PC as Proxy Coordinator
+    participant PG as PostgreSQL
+    participant RD as Redis
+    participant P as Provider upstream
+    participant W as Webshare
+
+    C->>G: POST /v1/chat/completions
+    G->>S: selecionar conta (modo efetivo)
+    S->>PC: Resolve(conta, modo)
+    PC->>PG: assignment atual + health
+    PG-->>PC: endpoint fixo (sticky)
+    PC-->>G: lease IP-X
+    G->>P: upstream via IP-X
+    P-->>G: falha (connect/407/403-ban)
+    G->>PC: Rotate(conta, IP-X)
+    PC->>PG: poison(IP-X, provedor, TTL por classe)
+    PC->>RD: debounce t:{tenant}:proxy:refresh
+    PC->>PG: Candidates(webshare, mesmo provedor, não poisoned)
+    PG-->>PC: IP-Y livre
+    PC->>PG: Assign(conta, IP-Y)
+    PC-->>G: lease IP-Y
+    G->>P: retry na mesma request (antes do 1º chunk)
+    P-->>G: resposta
+    G-->>C: JSON/SSE
+    Note over PC,W: assíncrono: refresh re-lista IPs, importa substitutos
+```
+
+Regras: 1 conta por IP **por provedor** (reuso cross-provider permitido); `manual` é fixo e fail-closed; `auto` escolhe só `source='webshare'` e re-sincroniza ao falhar; poison por `(provedor, endpoint)` com TTL por classe de falha. Ver ADR-024.
+
 ## 7. Stack e decisões
 
 | Camada | Decisão | ADR |
@@ -172,7 +252,9 @@ sequenceDiagram
 | Eventos | NATS JetStream | ADR-005 |
 | Observabilidade | OTel + backend gerenciado (Datadog/Azure Monitor) | ADR-006 |
 | Tenancy | `tenant_id` + RLS | ADR-007 |
-| Proxy | Webshare | ADR-008 |
+| Proxy | Webshare | ADR-008, ADR-021 |
+| Proxy por provedor | 1 conta/IP por provedor, modo `auto`, poison persistente + re-sync | ADR-024 |
+| AgentRouter relay | Sidecar Python vendorizado (MIT), rede interna, sem porta pública, sem pip em runtime | ADR-025 |
 | DLP | Regex + Presidio | ADR-009 |
 | Orquestração | **Docker Swarm** | ADR-010 |
 | Segredos | AES-256-GCM + envelope | ADR-011 |
@@ -180,6 +262,7 @@ sequenceDiagram
 | Contrato público | OpenAPI 3.1 em `docs/contracts/openapi-v1.yaml` | ADR-012, ADR-018 |
 | Envelope P0-α | 50 RPS, 150 burst, 500 SSE, 3 réplicas, 2 providers | ADR-018 |
 | Endpoints/API Manager | Registry + políticas + escopos de chave | ADR-015 |
+| Combos | Modelo virtual por tenant, PostgreSQL + Redis, failover na mesma requisição e IA com rascunho | ADR-023 |
 | MCP | Desligado por padrão; stdio/SSE/Streamable HTTP; ferramentas com escopo; sem túneis | ADR-016 |
 | i18n/guia | Catálogos JSON, fallback en, onboarding/Settings e guia versionado por slug | ADR-017 |
 | Lazy loading/cache em camadas | Route-level + init sob demanda + L1/L2/semântico | ADR-013 |
@@ -187,13 +270,15 @@ sequenceDiagram
 
 ## 8. Persistência e dados
 
-- **System of record:** PostgreSQL (tenants, providers, contas, credenciais cifradas, rotas, políticas, quotas, auditoria).
+- **System of record:** PostgreSQL (tenants, providers, contas, credenciais cifradas, combos, políticas, quotas, auditoria).
+- **Combos:** `combos` + `combo_members`; cursores de round-robin e rate limit no Redis; sessões/rascunhos de IA em `combo_ai_*` com retenção curta.
 - **Cache exato:** Redis (payload) + metadados no Postgres para invalidação/estatística.
 - **Cache semântico:** vetores no Qdrant; metadados no Postgres.
 - **Eventos:** NATS JetStream (`usage`, `audit`, `webhooks`, `dlp`).
 - **Outbox:** `usage_outbox`/`audit_outbox` no Postgres garantem que evento e resposta transacional não se percam; publicação no NATS ocorre após commit, com idempotência por `event_id`.
 - **Retenção:** metadados 90 d/1 ano; auditoria 1 ano; payload off por padrão.
 - **Detalhe:** [02-DER.md](../02-DER.md).
+- **Proxy:** `proxy_endpoints` (Webshare), `proxy_assignments` (`provider_id`, 1:1 por provedor) e `proxy_poison` (ban por provedor/endpoint); modo efetivo por conta com default no provedor (`providers.proxy_auto`). Credenciais cifradas e nunca retornadas. Ver ADR-024.
 
 ## 9. Segurança
 
@@ -204,6 +289,7 @@ sequenceDiagram
 - DLP com decisão auditada; fail-closed para segredos de alta confiança.
 - Auditoria append-only com hash encadeado.
 - Supply chain: lockfile, SBOM, `govulncheck`, gitleaks, Trivy, CodeQL, imagens assinadas.
+- AgentRouter: relay interno sem porta pública/túnel; a chave chega por `x-api-key` (cofre cifrado no gateway); payload/chave nunca logados; o relay recusa chamadas sem chave.
 
 ## 10. Observabilidade e SLOs
 
@@ -246,6 +332,9 @@ sequenceDiagram
 | Sem código/benchmark local | Validar com k6/ghz antes do GA |
 | Swarm sem autoscaling nativo | Controlador externo ou scale manual com alertas |
 | Banda Webshare | Rotear só quando necessário; medir TB/mês |
+| Isolamento de IP por provedor | 1 conta/IP por provedor; poison + re-sync Webshare na falha (ADR-024) |
+| Fallback direto em proxy | Removido: `manual` fail-closed; evita expor o IP real do gateway |
+| WAF/fingerprint do AgentRouter | Relay vendorizado (ADR-025); indisponibilidade/budget são dinâmicos (402/503) |
 | Cache semântico errar | Threshold alto, TTL curto, feature flag |
 | Time sem Go | Fallback TypeScript documentado (ADR-001) |
 | Plano Webshare/cloud/compliance | Decisões pendentes em [06-ROADMAP-RISCOS](../06-ROADMAP-RISCOS.md) |

@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>dontstop — Combos (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--primary:#1E3A8A;--on-primary:#fff;--secondary:#0F766E;--accent:#0EA5E9;--bg:#F8FAFC;--surface:#fff;--fg:#0F172A;--muted:#F1F5F9;--muted-fg:#475569;--border:#E2E8F0;--danger:#DC2626;--success:#059669;--warning:#D97706;--info:#0284C7;--ring:#1E3A8A;--radius:12px;--shadow:0 4px 6px rgba(15,23,42,.06)}
+*{box-sizing:border-box}html,body{margin:0;height:100%}body{font-family:"Fira Sans",system-ui,sans-serif;background:var(--bg);color:var(--fg);font-size:16px;line-height:1.5}code,.mono,.num{font-family:"Fira Code",monospace;font-variant-numeric:tabular-nums}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.sidebar{background:var(--primary);color:#e2e8f0;padding:16px 12px;display:flex;flex-direction:column;gap:4px}.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 20px;font-weight:700;color:#fff}.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.nav{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:#cbd5e1;font:inherit;cursor:pointer;text-align:left}.nav:hover{background:rgba(255,255,255,.08);color:#fff}.nav[aria-current="page"]{background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 3px 0 0 var(--accent)}.nav svg{width:18px;height:18px;flex:0 0 18px}.sidebar .foot{margin-top:auto;font-size:12px;color:#94a3b8;padding:12px}
+.main{min-width:0;display:flex;flex-direction:column}.topbar{height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}.search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;background:var(--muted);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--muted-fg)}.search kbd{margin-left:auto;font:12px "Fira Code";background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px}.who{display:flex;align-items:center;gap:12px;color:var(--muted-fg);font-size:14px}.avatar{width:32px;height:32px;border-radius:50%;background:var(--secondary);color:#fff;display:grid;place-items:center;font-weight:600}
+.content{padding:24px;max-width:1440px;width:100%;margin:0 auto}h1{font-size:24px;line-height:1.2;margin:0 0 4px}h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 8px}.sub{color:var(--muted-fg);font-size:14px;margin:0 0 20px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.grid{display:grid;gap:16px}.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.kpi .label{color:var(--muted-fg);font-size:12px;text-transform:uppercase;letter-spacing:.06em}.kpi .value{font-size:26px;font-weight:600;margin:6px 0 2px}.kpi .delta{font-size:12px;color:var(--success)}.kpi .delta.warn{color:var(--warning)}.kpi .delta.bad{color:var(--danger)}
+.toolbar{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:8px;align-items:center}.input,.select{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:9px 11px;font:inherit;color:var(--fg);min-height:40px}.input:focus,.select:focus,.btn:focus-visible,.nav:focus-visible,.icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.filter-chips{display:flex;flex-wrap:wrap;gap:8px}.filter-chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 10px;font:inherit;font-size:12px;color:var(--muted-fg);cursor:pointer}.filter-chip.active{border-color:var(--primary);color:var(--primary);background:#eef2ff}.filter-chip .count{font-family:"Fira Code";font-size:11px;margin-left:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);padding:8px 12px;border-radius:8px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;min-height:40px}.btn:hover{background:var(--muted)}.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}.btn.primary:hover{filter:brightness(1.08)}.btn.danger{color:var(--danger);border-color:#fecaca;background:#fef2f2}.btn.ghost{background:transparent}.btn[disabled]{opacity:.55;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--muted-fg);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}td{padding:11px 10px;border-bottom:1px solid var(--border);vertical-align:middle}tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--muted)}.num{text-align:right}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:var(--muted);color:var(--muted-fg);white-space:nowrap}.chip.ok{color:var(--success);border-color:#a7f3d0;background:#ecfdf5}.chip.warn{color:var(--warning);border-color:#fde68a;background:#fffbeb}.chip.bad{color:var(--danger);border-color:#fecaca;background:#fef2f2}.chip.info{color:var(--info);border-color:#bae6fd;background:#f0f9ff}.chip.ai{color:var(--primary);border-color:#c7d2fe;background:#eef2ff}.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:currentColor}.muted{color:var(--muted-fg)}.right{text-align:right}.name-cell strong{display:block;font-weight:600}.name-cell > span{display:block;font-size:11px;color:var(--muted-fg);margin-top:2px}.provider-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.provider-chips .chip{font-size:11px;padding:1px 6px}
+.icon-btn{width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:8px;display:inline-grid;place-items:center;cursor:pointer;color:var(--muted-fg)}.icon-btn:hover{background:var(--muted);color:var(--fg)}.icon-btn.danger:hover{color:var(--danger);border-color:#fecaca;background:#fef2f2}.icon-btn svg{width:16px;height:16px}
+.empty-state{background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);padding:40px 20px;text-align:center;display:grid;justify-items:center;gap:6px}.empty-state .empty-icon{width:48px;height:48px;border-radius:50%;background:#eef2ff;color:var(--primary);display:grid;place-items:center;margin-bottom:4px}.empty-state p{margin:0 0 12px;color:var(--muted-fg);font-size:14px;max-width:480px}
+.banner{border-left:3px solid var(--warning);background:#fffbeb;color:#78350f;padding:12px 14px;border-radius:8px;display:flex;justify-content:space-between;gap:12px;align-items:center}.banner.error{border-left-color:var(--danger);background:#fef2f2;color:#7f1d1d}.skeleton{background:linear-gradient(90deg,var(--muted),#fff,var(--muted));background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:6px;height:14px}@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.modal-backdrop,.drawer-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;justify-content:flex-end;z-index:1000}.modal-backdrop{align-items:center;justify-content:center;padding:16px}.modal{width:min(880px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.28);padding:20px}.drawer{width:min(1000px,100%);background:var(--surface);border-left:1px solid var(--border);box-shadow:-16px 0 40px rgba(15,23,42,.18);display:flex;flex-direction:column;max-height:100vh}
+.modal-head,.drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--border)}.modal-body,.drawer-body{padding:20px;overflow:auto}.modal-foot,.drawer-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.modal-close{border:1px solid var(--border);background:var(--surface);color:var(--muted-fg);width:32px;height:32px;border-radius:8px;cursor:pointer;display:grid;place-items:center}.modal-close:hover{background:var(--muted)}
+.stepper{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.step{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted-fg);padding:6px 9px;border:1px solid var(--border);border-radius:999px}.step.active{color:var(--primary);border-color:var(--primary);background:#eef2ff}.step.done{color:var(--success);border-color:#a7f3d0;background:#ecfdf5}
+.field{display:grid;gap:5px;margin-bottom:14px}.field label{font-size:12px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.05em;font-weight:600}.field .hint{font-size:12px;color:var(--muted-fg)}.field .error{font-size:12px;color:var(--danger)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-grid .full{grid-column:1/-1}
+.radio-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.radio-card{border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;background:var(--surface);display:grid;gap:5px}.radio-card:has(input:checked){border-color:var(--primary);background:#eef2ff;box-shadow:inset 0 0 0 1px var(--primary)}.radio-card strong{font-size:14px}.radio-card span{font-size:12px;color:var(--muted-fg)}.radio-card input{accent-color:var(--primary)}
+.members{display:flex;flex-direction:column;gap:10px}.member{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--surface)}.member-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.member-fields{display:grid;grid-template-columns:1.4fr 1.4fr .7fr .7fr;gap:10px;margin-top:10px}.tier-label{font-size:11px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.06em;margin:8px 0;font-weight:600}.review-box{background:var(--muted);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}.review-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}.review-list li{display:flex;justify-content:space-between;gap:12px;font-size:13px}.warn-list{margin:10px 0 0;padding-left:18px;color:#92400e;font-size:13px}
+.ai-layout{display:grid;grid-template-columns:1.05fr .95fr;min-height:0;flex:1}.chat{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0}.chat-log{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px;flex:1}.bubble{max-width:92%;padding:10px 12px;border-radius:12px;font-size:13px;background:var(--muted)}.bubble.user{align-self:flex-end;background:#e0e7ff;color:#1e3a8a}.bubble.ai{align-self:flex-start}.bubble .who{font-size:11px;color:var(--muted-fg);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}.suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 18px 10px}.suggestion{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;color:var(--primary)}.tool-log{display:flex;flex-wrap:wrap;gap:6px;padding:0 18px 10px}.tool{display:inline-flex;align-items:center;gap:5px;font-size:11px;border:1px solid var(--border);border-radius:999px;padding:3px 8px;color:var(--muted-fg);background:var(--surface)}.tool.done{color:var(--success);border-color:#a7f3d0;background:#ecfdf5}.composer{border-top:1px solid var(--border);padding:12px 16px;display:grid;grid-template-columns:1fr auto;gap:8px}.composer textarea{min-height:44px;max-height:110px;resize:vertical}
+.draft{padding:16px 18px;overflow:auto;background:#fcfdff}.draft-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}.draft-members{display:flex;flex-direction:column;gap:8px}.draft-member{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px}.draft-member .top{display:flex;justify-content:space-between;gap:8px}.draft-member .meta{font-size:11px;color:var(--muted-fg);margin-top:3px}.rationale{font-size:12px;color:var(--muted-fg);margin-top:6px}
+.detail-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding:0 20px;overflow:auto}.detail-tab{border:0;background:transparent;padding:10px 8px;font:inherit;font-size:13px;color:var(--muted-fg);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.detail-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}.detail-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:16px}.timeline{display:flex;flex-direction:column;gap:10px}.timeline-item{border-left:2px solid var(--border);padding-left:12px}.timeline-item strong{display:block;font-size:13px}.timeline-item span{font-size:12px;color:var(--muted-fg)}.danger-box{border:1px solid #fecaca;background:#fef2f2;border-radius:10px;padding:12px;color:#7f1d1d;font-size:13px}
+.toast{position:fixed;right:20px;bottom:20px;z-index:2000;background:#0f172a;color:#fff;border-radius:10px;padding:11px 14px;box-shadow:0 12px 30px rgba(15,23,42,.25);font-size:13px;max-width:min(420px,calc(100vw - 40px))}.toast.ok{border-left:3px solid var(--success)}.toast.bad{border-left:3px solid var(--danger)}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.hidden{display:none!important}.locale-select{border:1px solid var(--border);background:var(--surface);color:var(--fg);border-radius:8px;padding:6px 8px;font:inherit;font-size:12px;cursor:pointer}.btn.help{padding:5px 10px;font-size:12px;text-decoration:none}.demo-note{font-size:11px;color:var(--muted-fg);margin-top:8px}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.toolbar{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.app{grid-template-columns:1fr}.sidebar{display:flex;flex-direction:row;align-items:center;gap:4px;padding:8px 12px;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:30}.sidebar::-webkit-scrollbar{display:none}.sidebar .brand{padding:0 12px 0 4px;flex:0 0 auto}.sidebar .foot{display:none}.nav{width:auto;flex:0 0 auto;white-space:nowrap}.nav[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--accent)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:16px}.topbar{padding:0 16px;top:60px}.search{display:none}.who>span:not(.avatar){display:none}.card{overflow-x:auto}.detail-grid,.ai-layout,.form-grid,.member-fields,.radio-grid{grid-template-columns:1fr}.chat{border-right:0;border-bottom:1px solid var(--border)}}
+@media(max-width:560px){.kpis{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.content{padding:12px}.who{gap:6px}}
+td .actions{flex-wrap:nowrap;gap:4px}td .icon-btn{width:28px;height:28px}.num{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" aria-label="Navegação principal">
+<div class="brand"><span class="dot"></span> DonStop IA</div>
+<button class="nav" data-nav="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span data-i18n="nav.dashboard">Dashboard</span></button>
+<button class="nav" data-nav="providers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/></svg><span data-i18n="nav.providers">Provedores</span></button>
+<button class="nav" data-nav="combos" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4-8 4-8-4 8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg><span data-i18n="nav.combos">Combos</span></button>
+<button class="nav" data-nav="endpoints"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h6a3 3 0 0 1 3 3v4a3 3 0 0 0 3 3h4"/><circle cx="4" cy="7" r="2"/><circle cx="20" cy="17" r="2"/></svg><span data-i18n="nav.endpoints">Endpoints</span></button>
+<button class="nav" data-nav="api"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="15" r="4"/><path d="M11 12l7-7 3 3-3 3-2-2-2 2"/></svg><span data-i18n="nav.api">Gerenciador de API</span></button>
+<button class="nav" data-nav="mcp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3v6M15 3v6M6 9h12v4a6 6 0 0 1-12 0V9z"/><path d="M12 19v2"/></svg><span data-i18n="nav.mcp">MCP</span></button>
+<button class="nav" data-nav="cache"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span data-i18n="nav.cache">Cache</span></button>
+<button class="nav" data-nav="dlp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg><span data-i18n="nav.dlp">DLP</span></button>
+<button class="nav" data-nav="observability"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg><span data-i18n="nav.observability">Observabilidade</span></button>
+<button class="nav" data-nav="cost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18"/><path d="M17 7.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 2 2.7 5 3.3 5 1.4 5 3.2-2.2 3-5 3-5-1.1-5-3"/></svg><span data-i18n="nav.cost">Custo</span></button>
+<button class="nav" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.4 2.4-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21h-3.4v-.5a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L5.6 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H4v-3.4h.5a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L5.6 7.6 8 5.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h3.4v.5a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.4 2.4-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.5v3.4h-.5a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-i18n="nav.settings">Configurações</span></button>
+<div class="foot">dontstop · v0.1</div>
+</aside>
+<div class="main">
+<header class="topbar">
+<div class="search" role="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span data-i18n="top.search">Buscar combo, provedor, modelo…</span><kbd>⌘K</kbd></div>
+<div class="who"><select id="locale-select" class="locale-select" aria-label="Idioma"></select><a id="context-help" class="btn help" href="https://github.com/alltomatos/dontstop/blob/main/docs/user-guide/en/combos.md" target="_blank" rel="noopener noreferrer" data-i18n="top.help">Ajuda</a><span data-i18n="top.tenant">Tenant padrão</span><span class="chip" data-i18n="top.prod">produção</span><span class="avatar">AD</span></div>
+<div id="locale-live" class="sr-only" role="status" aria-live="polite"></div>
+</header>
+<main class="content">
+<div class="row"><div><h1 data-i18n="page.title">Combos</h1><p class="sub" data-i18n="page.subtitle">Modelos virtuais com prioridade, failover, limites e criação assistida por IA.</p></div><div class="actions"><button class="btn" id="open-ai" data-i18n="actions.ai">Criar com IA</button><button class="btn primary" id="open-manual" data-i18n="actions.new">+ Novo combo</button></div></div>
+<div class="grid kpis" id="kpis">
+<div class="card kpi"><div class="label" data-i18n="kpi.active">Ativos</div><div class="value num" id="kpi-active">6</div><div class="delta" data-i18n="kpi.activeDelta">2 com fallback de provider</div></div>
+<div class="card kpi"><div class="label" data-i18n="kpi.drafts">Rascunhos</div><div class="value num" id="kpi-drafts">2</div><div class="delta warn" data-i18n="kpi.draftsDelta">1 aguardando revisão</div></div>
+<div class="card kpi"><div class="label" data-i18n="kpi.success">Taxa de sucesso 24h</div><div class="value num">99,4%</div><div class="delta" data-i18n="kpi.successDelta">+0,3 pp</div></div>
+<div class="card kpi"><div class="label" data-i18n="kpi.requests">Uso 24h</div><div class="value num">18,2k</div><div class="delta" data-i18n="kpi.requestsDelta">4,1k via combo</div></div>
+<div class="card kpi"><div class="label" data-i18n="kpi.cost">Custo 24h</div><div class="value num">US$ 42,18</div><div class="delta" data-i18n="kpi.costDelta">-8% vs. baseline</div></div>
+<div class="card kpi"><div class="label" data-i18n="kpi.exhausted">Exhausted</div><div class="value num">3</div><div class="delta bad" data-i18n="kpi.exhaustedDelta">1 combo em atenção</div></div>
+</div>
+<div class="card" style="margin-top:16px">
+<div class="toolbar" style="margin-bottom:12px">
+<input class="input" id="search" type="search" data-i18n-placeholder="filter.search" placeholder="Buscar combos por nome, slug, provedor ou modelo…" aria-label="Buscar combos" />
+<select class="select" id="filter-status" aria-label="Status"><option value="all" data-i18n="filter.allStatuses">Todos os status</option><option value="active" data-i18n="status.active">Ativo</option><option value="inactive" data-i18n="status.inactive">Inativo</option><option value="draft" data-i18n="status.draft">Rascunho</option></select>
+<select class="select" id="filter-strategy" aria-label="Estratégia"><option value="all" data-i18n="filter.allStrategies">Todas as estratégias</option><option value="priority" data-i18n="strategy.priority">Priority</option><option value="round_robin" data-i18n="strategy.rr">Round-robin</option><option value="priority_round_robin" data-i18n="strategy.prr">Priority + round-robin</option></select>
+<select class="select" id="demo-state" aria-label="Estado de demonstração"><option value="default" data-i18n="demo.default">Estado: padrão</option><option value="empty" data-i18n="demo.empty">Estado: vazio</option><option value="loading" data-i18n="demo.loading">Estado: carregando</option><option value="error" data-i18n="demo.error">Estado: erro</option><option value="success" data-i18n="demo.success">Estado: sucesso</option></select>
+</div>
+<div class="filter-chips" style="margin-bottom:12px" id="quick-filters"><button class="filter-chip active" data-quick="all" data-i18n="filter.all">Todos</button><button class="filter-chip" data-quick="active" data-i18n="filter.active">Ativos <span class="count">6</span></button><button class="filter-chip" data-quick="inactive" data-i18n="filter.inactive">Inativos <span class="count">1</span></button><button class="filter-chip" data-quick="draft" data-i18n="filter.drafts">Rascunhos <span class="count">2</span></button></div>
+<div id="list-region" aria-live="polite"></div>
+<div class="demo-note" data-i18n="demo.note">Mockup estático: use os seletores para validar estados; nenhuma chamada real é feita.</div>
+</div>
+</main>
+</div>
+</div>
+<div id="overlay-root"></div>
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function(){
+const LOCALES=['en','pt-PT','pt-BR','es','fr','de'];
+const LOCALE_NAMES={en:'English','pt-PT':'Português (Portugal)','pt-BR':'Português (Brasil)',es:'Español',fr:'Français',de:'Deutsch'};
+const EN={
+'nav.dashboard':'Dashboard','nav.providers':'Providers','nav.combos':'Combos','nav.endpoints':'Endpoints','nav.api':'API Manager','nav.mcp':'MCP','nav.cache':'Cache','nav.dlp':'DLP','nav.observability':'Observability','nav.cost':'Cost','nav.settings':'Settings',
+'top.search':'Search combo, provider, model…','top.help':'Help','top.tenant':'Default tenant','top.prod':'production',
+'page.title':'Combos','page.subtitle':'Virtual models with priority, failover, limits and AI-assisted creation.',
+'actions.ai':'Create with AI','actions.new':'+ New combo','actions.cancel':'Cancel','actions.back':'Back','actions.next':'Next','actions.saveDraft':'Save draft','actions.saveActivate':'Save and activate','actions.close':'Close','actions.open':'Open','actions.edit':'Edit','actions.delete':'Delete','actions.activate':'Activate','actions.deactivate':'Deactivate','actions.up':'Move up','actions.down':'Move down','actions.remove':'Remove','actions.addMember':'+ Add member','actions.apply':'Apply to form','actions.validate':'Validate again','actions.discard':'Discard','actions.send':'Send','actions.retry':'Try again','actions.save':'Save',
+'kpi.active':'Active','kpi.activeDelta':'2 with provider fallback','kpi.drafts':'Drafts','kpi.draftsDelta':'1 awaiting review','kpi.success':'Success rate 24h','kpi.successDelta':'+0.3 pp','kpi.requests':'Usage 24h','kpi.requestsDelta':'4.1k through combos','kpi.cost':'Cost 24h','kpi.costDelta':'-8% vs. baseline','kpi.exhausted':'Exhausted','kpi.exhaustedDelta':'1 combo needs attention',
+'filter.search':'Search combos by name, slug, provider or model…','filter.all':'All','filter.allStatuses':'All statuses','filter.allStrategies':'All strategies','filter.active':'Active','filter.inactive':'Inactive','filter.drafts':'Drafts','filter.status':'Status','filter.strategy':'Strategy',
+'table.name':'Name / slug','table.status':'Status','table.strategy':'Strategy','table.members':'Members','table.health':'Health','table.usage':'Usage 24h','table.updated':'Updated','table.actions':'Actions',
+'status.active':'Active','status.inactive':'Inactive','status.draft':'Draft','status.degraded':'Degraded','status.ok':'OK','status.warn':'Warning','status.exhausted':'Exhausted',
+'strategy.priority':'Priority','strategy.rr':'Round-robin','strategy.prr':'Priority + round-robin','strategy.priority.help':'Always tries the lowest tier first.','strategy.rr.help':'Rotates across eligible members to spread load.','strategy.prr.help':'Prioritises tiers and rotates inside each tier. Recommended.',
+'source.ai':'AI','demo.default':'State: default','demo.empty':'State: empty','demo.loading':'State: loading','demo.error':'State: error','demo.success':'State: success','demo.note':'Static mockup: use the selectors to validate states; no real calls are made.',
+'empty.title':'No combos yet','empty.body':'Create a virtual model manually or describe your goal and let the AI assemble a draft from the real catalog.','empty.new':'Create combo','empty.ai':'Create with AI',
+'error.title':'Could not load combos','error.body':'The gateway did not respond. Retry or check provider status.','loading':'Loading combos…',
+'toast.activated':'Combo activated','toast.deactivated':'Combo deactivated','toast.deleted':'Combo deleted','toast.saved':'Combo saved','toast.aiSaved':'AI draft saved as a combo draft',
+'manual.title':'New combo','manual.step1':'Identity','manual.step2':'Strategy','manual.step3':'Members','manual.step4':'Review','manual.name':'Name','manual.slug':'Slug','manual.description':'Description','manual.name.ph':'e.g. Fast coding','manual.slug.hint':'Immutable after saving. Used as combo/<slug>.','manual.desc.ph':'What is this combo for?','manual.strategyTitle':'Selection strategy','manual.failover':'Failover inside the combo','manual.failoverHint':'If a member fails before the first chunk, try the next member.','manual.rpm':'RPM limit','manual.tpm':'TPM limit','manual.maxAttempts':'Max member attempts','manual.membersTitle':'Members','manual.searchModel':'Search model…','manual.provider':'Provider','manual.model':'Model','manual.tier':'Tier','manual.weight':'Weight','manual.tierHint':'Lower tier runs first. Same tier rotates by weight.','manual.review':'Review','manual.required':'Name and at least one member are required.','manual.invalidSlug':'Use lowercase letters, numbers and hyphens.','manual.duplicate':'This provider/model is already in the combo.','manual.membersCount':'{count} members · {providers} providers · {tiers} tiers',
+'ai.title':'Create with AI','ai.subtitle':'Describe the goal. The assistant reads the real catalog and proposes a reviewable draft.','ai.assistant':'Assistant model','ai.placeholder':'Describe the combo goal…','ai.hint':'The AI never saves or activates a combo.','ai.thinking':'Analyzing catalog…','ai.toolCatalog':'Reading catalog','ai.toolCost':'Comparing cost','ai.toolValidate':'Validating availability','ai.draftTitle':'Live draft','ai.rationale':'Why this member','ai.warnings':'Warnings','ai.limit':'Session limit: 12 tools · 50k input tokens · 90 s','ai.errorTools':'This assistant does not support tools. Choose another model in Providers.','ai.limitError':'Analysis limit reached. Save the draft or continue later.','ai.fallbackWarning':'1 member is in cooldown and will be skipped until it recovers.',
+'detail.tabs.members':'Members','detail.tabs.validation':'Validation','detail.tabs.usage':'Usage','detail.tabs.audit':'Audit','detail.revision':'revision','detail.activateHint':'Activation is audited and invalidates the combo cache.','detail.use':'Use','detail.inUse':'This combo is used by 2 API keys. Prefer deactivating it.','detail.members':'Members','detail.validation':'Validation','detail.usage':'Usage','detail.audit':'Audit','detail.created':'Created','detail.updated':'Updated','detail.by':'by','detail.memberHealthy':'Healthy','detail.memberCooldown':'Cooldown','detail.memberNoAccount':'No active account',
+'delete.title':'Delete combo?','delete.body':'This removes the virtual model from /v1/models. Requests using it will fail with combo_not_found.','delete.confirm':'I understand this cannot be undone','delete.action':'Delete combo',
+'help':'Help','lang':'Language'
+};
+const PTBR={
+'nav.providers':'Provedores','nav.api':'Gerenciador de API','nav.observability':'Observabilidade','nav.cost':'Custo','nav.settings':'Configurações',
+'top.search':'Buscar combo, provedor, modelo…','top.help':'Ajuda','top.tenant':'Tenant padrão','top.prod':'produção',
+'page.subtitle':'Modelos virtuais com prioridade, failover, limites e criação assistida por IA.',
+'actions.ai':'Criar com IA','actions.new':'+ Novo combo','actions.cancel':'Cancelar','actions.back':'Voltar','actions.next':'Avançar','actions.saveDraft':'Salvar rascunho','actions.saveActivate':'Salvar e ativar','actions.close':'Fechar','actions.open':'Abrir','actions.edit':'Editar','actions.delete':'Excluir','actions.activate':'Ativar','actions.deactivate':'Desativar','actions.up':'Mover para cima','actions.down':'Mover para baixo','actions.remove':'Remover','actions.addMember':'+ Adicionar membro','actions.apply':'Aplicar ao formulário','actions.validate':'Validar novamente','actions.discard':'Descartar','actions.send':'Enviar','actions.retry':'Tentar novamente','actions.save':'Salvar',
+'kpi.active':'Ativos','kpi.activeDelta':'2 com fallback de provider','kpi.drafts':'Rascunhos','kpi.draftsDelta':'1 aguardando revisão','kpi.success':'Taxa de sucesso 24h','kpi.successDelta':'+0,3 pp','kpi.requests':'Uso 24h','kpi.requestsDelta':'4,1k via combos','kpi.cost':'Custo 24h','kpi.costDelta':'-8% vs. baseline','kpi.exhaustedDelta':'1 combo em atenção',
+'filter.search':'Buscar combos por nome, slug, provedor ou modelo…','filter.all':'Todos','filter.allStatuses':'Todos os status','filter.allStrategies':'Todas as estratégias','filter.active':'Ativos','filter.inactive':'Inativos','filter.drafts':'Rascunhos','filter.status':'Status','filter.strategy':'Estratégia',
+'table.name':'Nome / slug','table.status':'Status','table.strategy':'Estratégia','table.members':'Membros','table.health':'Saúde','table.usage':'Uso 24h','table.updated':'Atualização','table.actions':'Ações',
+'status.active':'Ativo','status.inactive':'Inativo','status.draft':'Rascunho','status.degraded':'Degradado','status.warn':'Atenção',
+'strategy.priority.help':'Sempre tenta o menor tier primeiro.','strategy.rr.help':'Rotaciona entre os membros elegíveis para distribuir a carga.','strategy.prr.help':'Prioriza tiers e rotaciona dentro de cada tier. Recomendado.',
+'source.ai':'IA','demo.default':'Estado: padrão','demo.empty':'Estado: vazio','demo.loading':'Estado: carregando','demo.error':'Estado: erro','demo.success':'Estado: sucesso','demo.note':'Mockup estático: use os seletores para validar estados; nenhuma chamada real é feita.',
+'empty.title':'Nenhum combo ainda','empty.body':'Crie um modelo virtual manualmente ou descreva o objetivo e peça à IA para montar um rascunho a partir do catálogo real.','empty.new':'Criar combo','empty.ai':'Criar com IA',
+'error.title':'Não foi possível carregar os combos','error.body':'O gateway não respondeu. Tente novamente ou verifique o status dos provedores.','loading':'Carregando combos…',
+'toast.activated':'Combo ativado','toast.deactivated':'Combo desativado','toast.deleted':'Combo excluído','toast.saved':'Combo salvo','toast.aiSaved':'Rascunho da IA salvo como combo draft',
+'manual.title':'Novo combo','manual.step1':'Identidade','manual.step2':'Estratégia','manual.step3':'Membros','manual.step4':'Revisão','manual.name':'Nome','manual.slug':'Slug','manual.description':'Descrição','manual.name.ph':'ex.: Fast coding','manual.slug.hint':'Imutável após salvar. Usado como combo/<slug>.','manual.desc.ph':'Para que serve este combo?','manual.strategyTitle':'Estratégia de seleção','manual.failover':'Failover dentro do combo','manual.failoverHint':'Se um membro falhar antes do primeiro chunk, tente o próximo membro.','manual.rpm':'Limite RPM','manual.tpm':'Limite TPM','manual.maxAttempts':'Máx. de membros tentados','manual.membersTitle':'Membros','manual.searchModel':'Buscar modelo…','manual.provider':'Provedor','manual.model':'Modelo','manual.tier':'Tier','manual.weight':'Peso','manual.tierHint':'Menor tier roda primeiro. No mesmo tier, o peso distribui as tentativas.','manual.review':'Revisão','manual.required':'Nome e ao menos um membro são obrigatórios.','manual.invalidSlug':'Use letras minúsculas, números e hífens.','manual.duplicate':'Este provedor/modelo já está no combo.','manual.membersCount':'{count} membros · {providers} provedores · {tiers} tiers',
+'ai.title':'Criar com IA','ai.subtitle':'Descreva o objetivo. O assistente lê o catálogo real e propõe um rascunho revisável.','ai.assistant':'Modelo assistente','ai.placeholder':'Descreva o objetivo do combo…','ai.hint':'A IA nunca salva nem ativa um combo.','ai.thinking':'Analisando catálogo…','ai.toolCatalog':'Lendo catálogo','ai.toolCost':'Comparando custo','ai.toolValidate':'Validando disponibilidade','ai.draftTitle':'Rascunho ao vivo','ai.rationale':'Por que este membro','ai.warnings':'Avisos','ai.limit':'Limite da sessão: 12 ferramentas · 50k tokens de entrada · 90 s','ai.errorTools':'Este assistente não suporta ferramentas. Escolha outro modelo em Provedores.','ai.limitError':'Limite de análise atingido. Salve o rascunho ou continue depois.','ai.fallbackWarning':'1 membro está em cooldown e será ignorado até recuperar.',
+'detail.tabs.members':'Membros','detail.tabs.validation':'Validação','detail.tabs.usage':'Uso','detail.tabs.audit':'Auditoria','detail.revision':'revisão','detail.activateHint':'A ativação é auditada e invalida o cache do combo.','detail.use':'Uso','detail.inUse':'Este combo é usado por 2 API keys. Prefira desativá-lo.','detail.members':'Membros','detail.validation':'Validação','detail.usage':'Uso','detail.audit':'Auditoria','detail.created':'Criado','detail.updated':'Atualizado','detail.by':'por','detail.memberHealthy':'Saudável','detail.memberCooldown':'Cooldown','detail.memberNoAccount':'Sem conta ativa',
+'delete.title':'Excluir combo?','delete.body':'Isto remove o modelo virtual de /v1/models. Requisições que o usam falharão com combo_not_found.','delete.confirm':'Entendo que isto não pode ser desfeito','delete.action':'Excluir combo','help':'Ajuda','lang':'Idioma'
+};
+const PTPT={
+'nav.providers':'Fornecedores','nav.api':'Gestor de API','nav.settings':'Configurações','top.search':'Procurar combo, fornecedor, modelo…','top.help':'Ajuda','top.tenant':'Tenant padrão','top.prod':'produção','page.subtitle':'Modelos virtuais com prioridade, failover, limites e criação assistida por IA.',
+'actions.ai':'Criar com IA','actions.new':'+ Novo combo','actions.cancel':'Cancelar','actions.back':'Voltar','actions.next':'Avançar','actions.saveDraft':'Guardar rascunho','actions.saveActivate':'Guardar e ativar','actions.close':'Fechar','actions.open':'Abrir','actions.edit':'Editar','actions.delete':'Eliminar','actions.activate':'Ativar','actions.deactivate':'Desativar','actions.up':'Mover para cima','actions.down':'Mover para baixo','actions.remove':'Remover','actions.addMember':'+ Adicionar membro','actions.apply':'Aplicar ao formulário','actions.validate':'Validar novamente','actions.discard':'Descartar','actions.send':'Enviar','actions.retry':'Tentar novamente','actions.save':'Guardar',
+'kpi.active':'Ativos','kpi.activeDelta':'2 com fallback de fornecedor','kpi.drafts':'Rascunhos','kpi.draftsDelta':'1 à espera de revisão','kpi.requests':'Utilização 24h','kpi.cost':'Custo 24h','kpi.costDelta':'-8% vs. base','kpi.exhaustedDelta':'1 combo em atenção',
+'filter.search':'Procurar combos por nome, slug, fornecedor ou modelo…','filter.all':'Todos','filter.allStatuses':'Todos os estados','filter.allStrategies':'Todas as estratégias','filter.active':'Ativos','filter.inactive':'Inativos','filter.drafts':'Rascunhos','filter.status':'Estado','filter.strategy':'Estratégia','table.name':'Nome / slug','table.status':'Estado','table.strategy':'Estratégia','table.members':'Membros','table.health':'Saúde','table.usage':'Utilização 24h','table.updated':'Atualização','table.actions':'Ações',
+'status.active':'Ativo','status.inactive':'Inativo','status.draft':'Rascunho','status.degraded':'Degradado','status.warn':'Atenção','strategy.priority.help':'Tenta sempre o tier mais baixo primeiro.','strategy.rr.help':'Rotaciona entre membros elegíveis para distribuir a carga.','strategy.prr.help':'Prioriza tiers e rotaciona dentro de cada tier. Recomendado.','source.ai':'IA','demo.default':'Estado: padrão','demo.empty':'Estado: vazio','demo.loading':'Estado: a carregar','demo.error':'Estado: erro','demo.success':'Estado: sucesso','demo.note':'Mockup estático: use os seletores para validar estados; nenhuma chamada real é feita.',
+'empty.title':'Ainda não há combos','empty.body':'Crie um modelo virtual manualmente ou descreva o objetivo e peça à IA para montar um rascunho a partir do catálogo real.','empty.new':'Criar combo','empty.ai':'Criar com IA','error.title':'Não foi possível carregar os combos','error.body':'O gateway não respondeu. Tente novamente ou verifique o estado dos fornecedores.','loading':'A carregar combos…','toast.activated':'Combo ativado','toast.deactivated':'Combo desativado','toast.deleted':'Combo eliminado','toast.saved':'Combo guardado','toast.aiSaved':'Rascunho da IA guardado como combo draft',
+'manual.title':'Novo combo','manual.step1':'Identidade','manual.step2':'Estratégia','manual.step3':'Membros','manual.step4':'Revisão','manual.name':'Nome','manual.slug':'Slug','manual.description':'Descrição','manual.name.ph':'ex.: Fast coding','manual.slug.hint':'Imutável após guardar. Usado como combo/<slug>.','manual.desc.ph':'Para que serve este combo?','manual.strategyTitle':'Estratégia de seleção','manual.failover':'Failover dentro do combo','manual.failoverHint':'Se um membro falhar antes do primeiro chunk, tente o próximo membro.','manual.rpm':'Limite RPM','manual.tpm':'Limite TPM','manual.maxAttempts':'Máx. de membros tentados','manual.membersTitle':'Membros','manual.searchModel':'Procurar modelo…','manual.provider':'Fornecedor','manual.model':'Modelo','manual.tier':'Tier','manual.weight':'Peso','manual.tierHint':'O tier mais baixo corre primeiro. No mesmo tier, o peso distribui as tentativas.','manual.review':'Revisão','manual.required':'Nome e pelo menos um membro são obrigatórios.','manual.invalidSlug':'Use letras minúsculas, números e hífenes.','manual.duplicate':'Este fornecedor/modelo já está no combo.','manual.membersCount':'{count} membros · {providers} fornecedores · {tiers} tiers',
+'ai.title':'Criar com IA','ai.subtitle':'Descreva o objetivo. O assistente lê o catálogo real e propõe um rascunho revisável.','ai.assistant':'Modelo assistente','ai.placeholder':'Descreva o objetivo do combo…','ai.hint':'A IA nunca guarda nem ativa um combo.','ai.thinking':'A analisar catálogo…','ai.toolCatalog':'A ler catálogo','ai.toolCost':'A comparar custo','ai.toolValidate':'A validar disponibilidade','ai.draftTitle':'Rascunho ao vivo','ai.rationale':'Porque este membro','ai.warnings':'Avisos','ai.limit':'Limite da sessão: 12 ferramentas · 50k tokens de entrada · 90 s','ai.errorTools':'Este assistente não suporta ferramentas. Escolha outro modelo em Fornecedores.','ai.limitError':'Limite de análise atingido. Guarde o rascunho ou continue depois.','ai.fallbackWarning':'1 membro está em cooldown e será ignorado até recuperar.',
+'detail.tabs.members':'Membros','detail.tabs.validation':'Validação','detail.tabs.usage':'Utilização','detail.tabs.audit':'Auditoria','detail.revision':'revisão','detail.activateHint':'A ativação é auditada e invalida a cache do combo.','detail.use':'Utilização','detail.inUse':'Este combo é usado por 2 chaves de API. Prefira desativá-lo.','detail.members':'Membros','detail.validation':'Validação','detail.usage':'Utilização','detail.audit':'Auditoria','detail.created':'Criado','detail.updated':'Atualizado','detail.by':'por','detail.memberHealthy':'Saudável','detail.memberCooldown':'Cooldown','detail.memberNoAccount':'Sem conta ativa','delete.title':'Eliminar combo?','delete.body':'Isto remove o modelo virtual de /v1/models. Os pedidos que o usam falharão com combo_not_found.','delete.confirm':'Compreendo que isto não pode ser desfeito','delete.action':'Eliminar combo','help':'Ajuda','lang':'Idioma'
+};
+const ES={
+'nav.providers':'Proveedores','nav.api':'Gestor de API','nav.cache':'Caché','nav.observability':'Observabilidad','nav.cost':'Coste','nav.settings':'Ajustes','top.search':'Buscar combo, proveedor, modelo…','top.help':'Ayuda','top.tenant':'Tenant predeterminado','top.prod':'producción','page.subtitle':'Modelos virtuales con prioridad, failover, límites y creación asistida por IA.',
+'actions.ai':'Crear con IA','actions.new':'+ Nuevo combo','actions.cancel':'Cancelar','actions.back':'Volver','actions.next':'Siguiente','actions.saveDraft':'Guardar borrador','actions.saveActivate':'Guardar y activar','actions.close':'Cerrar','actions.open':'Abrir','actions.edit':'Editar','actions.delete':'Eliminar','actions.activate':'Activar','actions.deactivate':'Desactivar','actions.up':'Mover arriba','actions.down':'Mover abajo','actions.remove':'Quitar','actions.addMember':'+ Añadir miembro','actions.apply':'Aplicar al formulario','actions.validate':'Validar de nuevo','actions.discard':'Descartar','actions.send':'Enviar','actions.retry':'Reintentar','actions.save':'Guardar',
+'kpi.active':'Activos','kpi.activeDelta':'2 con fallback de proveedor','kpi.drafts':'Borradores','kpi.draftsDelta':'1 pendiente de revisión','kpi.success':'Tasa de éxito 24h','kpi.requests':'Uso 24h','kpi.requestsDelta':'4,1k vía combos','kpi.cost':'Coste 24h','kpi.costDelta':'-8% vs. base','kpi.exhaustedDelta':'1 combo requiere atención',
+'filter.search':'Buscar combos por nombre, slug, proveedor o modelo…','filter.all':'Todos','filter.allStatuses':'Todos los estados','filter.allStrategies':'Todas las estrategias','filter.active':'Activos','filter.inactive':'Inactivos','filter.drafts':'Borradores','filter.status':'Estado','filter.strategy':'Estrategia','table.name':'Nombre / slug','table.status':'Estado','table.strategy':'Estrategia','table.members':'Miembros','table.health':'Salud','table.usage':'Uso 24h','table.updated':'Actualización','table.actions':'Acciones',
+'status.active':'Activo','status.inactive':'Inactivo','status.draft':'Borrador','status.degraded':'Degradado','status.warn':'Atención','strategy.priority.help':'Siempre intenta el tier más bajo primero.','strategy.rr.help':'Rota entre miembros elegibles para repartir la carga.','strategy.prr.help':'Prioriza tiers y rota dentro de cada tier. Recomendado.','source.ai':'IA','demo.default':'Estado: predeterminado','demo.empty':'Estado: vacío','demo.loading':'Estado: cargando','demo.error':'Estado: error','demo.success':'Estado: éxito','demo.note':'Mockup estático: use los selectores para validar estados; no se hacen llamadas reales.',
+'empty.title':'Aún no hay combos','empty.body':'Cree un modelo virtual manualmente o describa el objetivo y deje que la IA monte un borrador desde el catálogo real.','empty.new':'Crear combo','empty.ai':'Crear con IA','error.title':'No se pudieron cargar los combos','error.body':'El gateway no respondió. Reintente o revise el estado de los proveedores.','loading':'Cargando combos…','toast.activated':'Combo activado','toast.deactivated':'Combo desactivado','toast.deleted':'Combo eliminado','toast.saved':'Combo guardado','toast.aiSaved':'Borrador de IA guardado como combo draft',
+'manual.title':'Nuevo combo','manual.step1':'Identidad','manual.step2':'Estrategia','manual.step3':'Miembros','manual.step4':'Revisión','manual.name':'Nombre','manual.slug':'Slug','manual.description':'Descripción','manual.name.ph':'p. ej. Fast coding','manual.slug.hint':'Inmutable al guardar. Se usa como combo/<slug>.','manual.desc.ph':'¿Para qué sirve este combo?','manual.strategyTitle':'Estrategia de selección','manual.failover':'Failover dentro del combo','manual.failoverHint':'Si un miembro falla antes del primer chunk, prueba el siguiente.','manual.rpm':'Límite RPM','manual.tpm':'Límite TPM','manual.maxAttempts':'Máx. de miembros intentados','manual.membersTitle':'Miembros','manual.searchModel':'Buscar modelo…','manual.provider':'Proveedor','manual.model':'Modelo','manual.tier':'Tier','manual.weight':'Peso','manual.tierHint':'El tier más bajo se ejecuta primero. En el mismo tier, el peso reparte los intentos.','manual.review':'Revisión','manual.required':'Se requieren nombre y al menos un miembro.','manual.invalidSlug':'Use letras minúsculas, números y guiones.','manual.duplicate':'Este proveedor/modelo ya está en el combo.','manual.membersCount':'{count} miembros · {providers} proveedores · {tiers} tiers',
+'ai.title':'Crear con IA','ai.subtitle':'Describa el objetivo. El asistente lee el catálogo real y propone un borrador revisable.','ai.assistant':'Modelo asistente','ai.placeholder':'Describa el objetivo del combo…','ai.hint':'La IA nunca guarda ni activa un combo.','ai.thinking':'Analizando catálogo…','ai.toolCatalog':'Leyendo catálogo','ai.toolCost':'Comparando coste','ai.toolValidate':'Validando disponibilidad','ai.draftTitle':'Borrador en vivo','ai.rationale':'Por qué este miembro','ai.warnings':'Avisos','ai.limit':'Límite de sesión: 12 herramientas · 50k tokens de entrada · 90 s','ai.errorTools':'Este asistente no soporta herramientas. Elija otro modelo en Proveedores.','ai.limitError':'Límite de análisis alcanzado. Guarde el borrador o continúe después.','ai.fallbackWarning':'1 miembro está en cooldown y se omitirá hasta que se recupere.',
+'detail.tabs.members':'Miembros','detail.tabs.validation':'Validación','detail.tabs.usage':'Uso','detail.tabs.audit':'Auditoría','detail.revision':'revisión','detail.activateHint':'La activación se audita e invalida la caché del combo.','detail.use':'Uso','detail.inUse':'Este combo lo usan 2 claves de API. Prefiera desactivarlo.','detail.members':'Miembros','detail.validation':'Validación','detail.usage':'Uso','detail.audit':'Auditoría','detail.created':'Creado','detail.updated':'Actualizado','detail.by':'por','detail.memberHealthy':'Saludable','detail.memberCooldown':'Cooldown','detail.memberNoAccount':'Sin cuenta activa','delete.title':'¿Eliminar combo?','delete.body':'Esto elimina el modelo virtual de /v1/models. Las solicitudes que lo usan fallarán con combo_not_found.','delete.confirm':'Entiendo que esto no se puede deshacer','delete.action':'Eliminar combo','help':'Ayuda','lang':'Idioma'
+};
+const FR={
+'nav.providers':'Fournisseurs','nav.api':'Gestion API','nav.observability':'Observabilité','nav.cost':'Coût','nav.settings':'Paramètres','top.search':'Rechercher un combo, fournisseur, modèle…','top.help':'Aide','top.tenant':'Tenant par défaut','top.prod':'production','page.subtitle':'Modèles virtuels avec priorité, failover, limites et création assistée par IA.',
+'actions.ai':'Créer avec IA','actions.new':'+ Nouveau combo','actions.cancel':'Annuler','actions.back':'Retour','actions.next':'Suivant','actions.saveDraft':'Enregistrer le brouillon','actions.saveActivate':'Enregistrer et activer','actions.close':'Fermer','actions.open':'Ouvrir','actions.edit':'Modifier','actions.delete':'Supprimer','actions.activate':'Activer','actions.deactivate':'Désactiver','actions.up':'Monter','actions.down':'Descendre','actions.remove':'Retirer','actions.addMember':'+ Ajouter un membre','actions.apply':'Appliquer au formulaire','actions.validate':'Valider à nouveau','actions.discard':'Abandonner','actions.send':'Envoyer','actions.retry':'Réessayer','actions.save':'Enregistrer',
+'kpi.active':'Actifs','kpi.activeDelta':'2 avec fallback fournisseur','kpi.drafts':'Brouillons','kpi.draftsDelta':'1 en attente de revue','kpi.success':'Taux de succès 24h','kpi.requests':'Usage 24h','kpi.requestsDelta':'4,1k via combos','kpi.cost':'Coût 24h','kpi.costDelta':'-8% vs. base','kpi.exhaustedDelta':'1 combo à surveiller',
+'filter.search':'Rechercher des combos par nom, slug, fournisseur ou modèle…','filter.all':'Tous','filter.allStatuses':'Tous les états','filter.allStrategies':'Toutes les stratégies','filter.active':'Actifs','filter.inactive':'Inactifs','filter.drafts':'Brouillons','filter.status':'État','filter.strategy':'Stratégie','table.name':'Nom / slug','table.status':'État','table.strategy':'Stratégie','table.members':'Membres','table.health':'Santé','table.usage':'Usage 24h','table.updated':'Mise à jour','table.actions':'Actions',
+'status.active':'Actif','status.inactive':'Inactif','status.draft':'Brouillon','status.degraded':'Dégradé','status.warn':'Attention','strategy.priority.help':'Essaie toujours le tier le plus bas en premier.','strategy.rr.help':'Alterne entre les membres éligibles pour répartir la charge.','strategy.prr.help':'Priorise les tiers et alterne dans chaque tier. Recommandé.','source.ai':'IA','demo.default':'État : défaut','demo.empty':'État : vide','demo.loading':'État : chargement','demo.error':'État : erreur','demo.success':'État : succès','demo.note':'Mockup statique : utilisez les sélecteurs pour valider les états ; aucun appel réel.',
+'empty.title':'Aucun combo pour le moment','empty.body':'Créez un modèle virtuel manuellement ou décrivez l’objectif et laissez l’IA proposer un brouillon depuis le catalogue réel.','empty.new':'Créer un combo','empty.ai':'Créer avec IA','error.title':'Impossible de charger les combos','error.body':'La passerelle ne répond pas. Réessayez ou vérifiez l’état des fournisseurs.','loading':'Chargement des combos…','toast.activated':'Combo activé','toast.deactivated':'Combo désactivé','toast.deleted':'Combo supprimé','toast.saved':'Combo enregistré','toast.aiSaved':'Brouillon IA enregistré comme combo draft',
+'manual.title':'Nouveau combo','manual.step1':'Identité','manual.step2':'Stratégie','manual.step3':'Membres','manual.step4':'Revue','manual.name':'Nom','manual.slug':'Slug','manual.description':'Description','manual.name.ph':'ex. Fast coding','manual.slug.hint':'Immuable après enregistrement. Utilisé comme combo/<slug>.','manual.desc.ph':'À quoi sert ce combo ?','manual.strategyTitle':'Stratégie de sélection','manual.failover':'Failover dans le combo','manual.failoverHint':'Si un membre échoue avant le premier chunk, essayez le suivant.','manual.rpm':'Limite RPM','manual.tpm':'Limite TPM','manual.maxAttempts':'Max. de membres essayés','manual.membersTitle':'Membres','manual.searchModel':'Rechercher un modèle…','manual.provider':'Fournisseur','manual.model':'Modèle','manual.tier':'Tier','manual.weight':'Poids','manual.tierHint':'Le tier le plus bas passe en premier. Dans un même tier, le poids répartit les essais.','manual.review':'Revue','manual.required':'Le nom et au moins un membre sont requis.','manual.invalidSlug':'Utilisez des minuscules, chiffres et tirets.','manual.duplicate':'Ce fournisseur/modèle est déjà dans le combo.','manual.membersCount':'{count} membres · {providers} fournisseurs · {tiers} tiers',
+'ai.title':'Créer avec IA','ai.subtitle':'Décrivez l’objectif. L’assistant lit le catalogue réel et propose un brouillon révisable.','ai.assistant':'Modèle assistant','ai.placeholder':'Décrivez l’objectif du combo…','ai.hint':'L’IA n’enregistre ni n’active jamais un combo.','ai.thinking':'Analyse du catalogue…','ai.toolCatalog':'Lecture du catalogue','ai.toolCost':'Comparaison des coûts','ai.toolValidate':'Validation de la disponibilité','ai.draftTitle':'Brouillon en direct','ai.rationale':'Pourquoi ce membre','ai.warnings':'Avertissements','ai.limit':'Limite de session : 12 outils · 50k tokens d’entrée · 90 s','ai.errorTools':'Cet assistant ne prend pas en charge les outils. Choisissez un autre modèle dans Fournisseurs.','ai.limitError':'Limite d’analyse atteinte. Enregistrez le brouillon ou continuez plus tard.','ai.fallbackWarning':'1 membre est en cooldown et sera ignoré jusqu’à son rétablissement.',
+'detail.tabs.members':'Membres','detail.tabs.validation':'Validation','detail.tabs.usage':'Usage','detail.tabs.audit':'Audit','detail.revision':'révision','detail.activateHint':'L’activation est auditée et invalide le cache du combo.','detail.use':'Usage','detail.inUse':'Ce combo est utilisé par 2 clés API. Préférez le désactiver.','detail.members':'Membres','detail.validation':'Validation','detail.usage':'Usage','detail.audit':'Audit','detail.created':'Créé','detail.updated':'Mis à jour','detail.by':'par','detail.memberHealthy':'Sain','detail.memberCooldown':'Cooldown','detail.memberNoAccount':'Aucun compte actif','delete.title':'Supprimer le combo ?','delete.body':'Cela retire le modèle virtuel de /v1/models. Les requêtes qui l’utilisent échoueront avec combo_not_found.','delete.confirm':'Je comprends que cette action est irréversible','delete.action':'Supprimer le combo','help':'Aide','lang':'Langue'
+};
+const DE={
+'nav.providers':'Anbieter','nav.api':'API-Manager','nav.observability':'Observability','nav.cost':'Kosten','nav.settings':'Einstellungen','top.search':'Combo, Anbieter, Modell suchen…','top.help':'Hilfe','top.tenant':'Standard-Tenant','top.prod':'Produktion','page.subtitle':'Virtuelle Modelle mit Priorität, Failover, Limits und KI-gestützter Erstellung.',
+'actions.ai':'Mit KI erstellen','actions.new':'+ Neuer Combo','actions.cancel':'Abbrechen','actions.back':'Zurück','actions.next':'Weiter','actions.saveDraft':'Entwurf speichern','actions.saveActivate':'Speichern und aktivieren','actions.close':'Schließen','actions.open':'Öffnen','actions.edit':'Bearbeiten','actions.delete':'Löschen','actions.activate':'Aktivieren','actions.deactivate':'Deaktivieren','actions.up':'Nach oben','actions.down':'Nach unten','actions.remove':'Entfernen','actions.addMember':'+ Mitglied hinzufügen','actions.apply':'Auf Formular anwenden','actions.validate':'Erneut prüfen','actions.discard':'Verwerfen','actions.send':'Senden','actions.retry':'Erneut versuchen','actions.save':'Speichern',
+'kpi.active':'Aktiv','kpi.activeDelta':'2 mit Anbieter-Fallback','kpi.drafts':'Entwürfe','kpi.draftsDelta':'1 wartet auf Prüfung','kpi.success':'Erfolgsrate 24h','kpi.requests':'Nutzung 24h','kpi.requestsDelta':'4,1k über Combos','kpi.cost':'Kosten 24h','kpi.costDelta':'-8% vs. Basis','kpi.exhaustedDelta':'1 Combo benötigt Aufmerksamkeit',
+'filter.search':'Combos nach Name, Slug, Anbieter oder Modell suchen…','filter.all':'Alle','filter.allStatuses':'Alle Status','filter.allStrategies':'Alle Strategien','filter.active':'Aktiv','filter.inactive':'Inaktiv','filter.drafts':'Entwürfe','filter.status':'Status','filter.strategy':'Strategie','table.name':'Name / Slug','table.status':'Status','table.strategy':'Strategie','table.members':'Mitglieder','table.health':'Zustand','table.usage':'Nutzung 24h','table.updated':'Aktualisiert','table.actions':'Aktionen',
+'status.active':'Aktiv','status.inactive':'Inaktiv','status.draft':'Entwurf','status.degraded':'Degradiert','status.warn':'Warnung','strategy.priority.help':'Versucht immer zuerst die niedrigste Stufe.','strategy.rr.help':'Rotiert über geeignete Mitglieder zur Lastverteilung.','strategy.prr.help':'Priorisiert Stufen und rotiert innerhalb jeder Stufe. Empfohlen.','source.ai':'KI','demo.default':'Status: Standard','demo.empty':'Status: leer','demo.loading':'Status: Laden','demo.error':'Status: Fehler','demo.success':'Status: Erfolg','demo.note':'Statischer Mockup: Status über die Auswahl prüfen; keine echten Aufrufe.',
+'empty.title':'Noch keine Combos','empty.body':'Erstellen Sie ein virtuelles Modell manuell oder beschreiben Sie das Ziel und lassen Sie die KI einen Entwurf aus dem echten Katalog bauen.','empty.new':'Combo erstellen','empty.ai':'Mit KI erstellen','error.title':'Combos konnten nicht geladen werden','error.body':'Das Gateway antwortet nicht. Erneut versuchen oder Anbieterstatus prüfen.','loading':'Combos werden geladen…','toast.activated':'Combo aktiviert','toast.deactivated':'Combo deaktiviert','toast.deleted':'Combo gelöscht','toast.saved':'Combo gespeichert','toast.aiSaved':'KI-Entwurf als Combo-Entwurf gespeichert',
+'manual.title':'Neuer Combo','manual.step1':'Identität','manual.step2':'Strategie','manual.step3':'Mitglieder','manual.step4':'Prüfung','manual.name':'Name','manual.slug':'Slug','manual.description':'Beschreibung','manual.name.ph':'z. B. Fast coding','manual.slug.hint':'Nach dem Speichern unveränderlich. Verwendet als combo/<slug>.','manual.desc.ph':'Wofür ist dieser Combo?','manual.strategyTitle':'Auswahlstrategie','manual.failover':'Failover im Combo','manual.failoverHint':'Wenn ein Mitglied vor dem ersten Chunk fehlschlägt, das nächste versuchen.','manual.rpm':'RPM-Limit','manual.tpm':'TPM-Limit','manual.maxAttempts':'Max. versuchte Mitglieder','manual.membersTitle':'Mitglieder','manual.searchModel':'Modell suchen…','manual.provider':'Anbieter','manual.model':'Modell','manual.tier':'Stufe','manual.weight':'Gewicht','manual.tierHint':'Niedrigere Stufe zuerst. In derselben Stufe verteilt das Gewicht die Versuche.','manual.review':'Prüfung','manual.required':'Name und mindestens ein Mitglied sind erforderlich.','manual.invalidSlug':'Kleinbuchstaben, Zahlen und Bindestriche verwenden.','manual.duplicate':'Dieser Anbieter/Modell ist bereits im Combo.','manual.membersCount':'{count} Mitglieder · {providers} Anbieter · {tiers} Stufen',
+'ai.title':'Mit KI erstellen','ai.subtitle':'Ziel beschreiben. Der Assistent liest den echten Katalog und schlägt einen prüfbaren Entwurf vor.','ai.assistant':'Assistenzmodell','ai.placeholder':'Combo-Ziel beschreiben…','ai.hint':'Die KI speichert oder aktiviert niemals einen Combo.','ai.thinking':'Katalog wird analysiert…','ai.toolCatalog':'Katalog lesen','ai.toolCost':'Kosten vergleichen','ai.toolValidate':'Verfügbarkeit prüfen','ai.draftTitle':'Live-Entwurf','ai.rationale':'Warum dieses Mitglied','ai.warnings':'Warnungen','ai.limit':'Sitzungslimit: 12 Tools · 50k Eingabe-Tokens · 90 s','ai.errorTools':'Dieser Assistent unterstützt keine Tools. Wählen Sie ein anderes Modell unter Anbieter.','ai.limitError':'Analyselimit erreicht. Entwurf speichern oder später fortsetzen.','ai.fallbackWarning':'1 Mitglied ist im Cooldown und wird bis zur Erholung übersprungen.',
+'detail.tabs.members':'Mitglieder','detail.tabs.validation':'Validierung','detail.tabs.usage':'Nutzung','detail.tabs.audit':'Audit','detail.revision':'Revision','detail.activateHint':'Aktivierung wird auditiert und invalidiert den Combo-Cache.','detail.use':'Nutzung','detail.inUse':'Dieser Combo wird von 2 API-Schlüsseln genutzt. Deaktivieren bevorzugen.','detail.members':'Mitglieder','detail.validation':'Validierung','detail.usage':'Nutzung','detail.audit':'Audit','detail.created':'Erstellt','detail.updated':'Aktualisiert','detail.by':'von','detail.memberHealthy':'Gesund','detail.memberCooldown':'Cooldown','detail.memberNoAccount':'Kein aktives Konto','delete.title':'Combo löschen?','delete.body':'Dies entfernt das virtuelle Modell aus /v1/models. Anfragen schlagen mit combo_not_found fehl.','delete.confirm':'Ich verstehe, dass dies nicht rückgängig gemacht werden kann','delete.action':'Combo löschen','help':'Hilfe','lang':'Sprache'
+};
+const T={'pt-BR':PTBR,'pt-PT':PTPT,es:ES,fr:FR,de:DE};
+
+const LOCALE_KEY='dontstop.locale';
+const params=new URLSearchParams(location.search);
+let locale=params.get('locale')||localStorage.getItem(LOCALE_KEY)||'pt-BR';
+if(!LOCALES.includes(locale))locale='pt-BR';
+let demoState=params.get('state')||'default';
+let view=params.get('view')||'list';
+let currentComboId=null,detailTab='members',manual=null,aiDraft=null,aiBusy=false,toastTimer=null;
+
+function tr(key,vars){
+  const dict={...EN,...(T[locale]||{})};
+  let v=dict[key]??EN[key]??key;
+  if(vars)Object.keys(vars).forEach(k=>{v=v.replaceAll('{'+k+'}',vars[k]);});
+  return v;
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function statusChip(status){
+  const map={active:['ok','status.active'],inactive:['','status.inactive'],draft:['info','status.draft'],degraded:['warn','status.degraded']};
+  const [cls,key]=map[status]||['','status.inactive'];
+  return `<span class="chip ${cls}"><span class="dot"></span>${esc(tr(key))}</span>`;
+}
+function healthChip(health){
+  const map={ok:['ok','status.ok'],healthy:['ok','detail.memberHealthy'],warn:['warn','status.warn'],cooldown:['warn','detail.memberCooldown'],exhausted:['bad','status.exhausted'],noaccount:['bad','detail.memberNoAccount']};
+  const [cls,key]=map[health]||['','status.ok'];
+  return `<span class="chip ${cls}">${esc(tr(key))}</span>`;
+}
+function strategyLabel(s){return tr(s==='priority'?'strategy.priority':s==='round_robin'?'strategy.rr':'strategy.prr');}
+function providerBadges(members){
+  const ps=[...new Set(members.map(m=>m.provider))];
+  return `<div class="provider-chips">${ps.slice(0,3).map(p=>`<span class="chip">${esc(p)}</span>`).join('')}${ps.length>3?`<span class="chip">+${ps.length-3}</span>`:''}</div>`;
+}
+function icon(name){
+  const icons={
+    open:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+    edit:'<path d="M4 20h4l10-10-4-4L4 16v4z"/><path d="M13 6l4 4"/>',
+    power:'<path d="M12 3v9"/><path d="M6.5 6.5a8 8 0 1 0 11 0"/>',
+    trash:'<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/>'
+  };
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${icons[name]}</svg>`;
+}
+const MODELS=[
+  {provider:'OpenAI',providerId:'openai',model:'gpt-5-mini',caps:['stream','tools'],context:'128k',input:'0.25',output:'1.00',health:'healthy'},
+  {provider:'OpenAI',providerId:'openai',model:'gpt-5',caps:['stream','tools','vision'],context:'400k',input:'1.25',output:'10.00',health:'healthy'},
+  {provider:'Anthropic',providerId:'anthropic',model:'claude-sonnet-4.5',caps:['stream','tools','vision'],context:'200k',input:'3.00',output:'15.00',health:'healthy'},
+  {provider:'Anthropic',providerId:'anthropic',model:'claude-haiku-4',caps:['stream','tools'],context:'200k',input:'0.80',output:'4.00',health:'healthy'},
+  {provider:'Google',providerId:'google',model:'gemini-3-flash',caps:['stream','tools','vision'],context:'1M',input:'0.10',output:'0.40',health:'healthy'},
+  {provider:'Google',providerId:'google',model:'gemini-3-pro',caps:['stream','tools','vision','reasoning'],context:'1M',input:'1.25',output:'10.00',health:'cooldown'},
+  {provider:'Groq',providerId:'groq',model:'llama-4-scout',caps:['stream','tools'],context:'128k',input:'0.11',output:'0.34',health:'healthy'},
+  {provider:'Mistral',providerId:'mistral',model:'mistral-large',caps:['stream','tools'],context:'128k',input:'2.00',output:'6.00',health:'healthy'}
+];
+let combos=[
+  {id:'c1',slug:'fast-coding',name:'Fast coding',description:'Baixa latência para tarefas de código.',status:'active',strategy:'priority_round_robin',revision:3,source:'manual',updated:'2 min',usage:'12,4k',cost:'US$ 31,10',health:'ok',failover:true,rpm:300,tpm:200000,maxAttempts:5,members:[
+    {provider:'OpenAI',providerId:'openai',model:'gpt-5-mini',tier:0,weight:60,caps:['stream','tools'],context:'128k',input:'0.25',output:'1.00',health:'healthy'},
+    {provider:'Anthropic',providerId:'anthropic',model:'claude-haiku-4',tier:0,weight:40,caps:['stream','tools'],context:'200k',input:'0.80',output:'4.00',health:'healthy'},
+    {provider:'Google',providerId:'google',model:'gemini-3-flash',tier:1,weight:100,caps:['stream','tools','vision'],context:'1M',input:'0.10',output:'0.40',health:'healthy'}
+  ]},
+  {id:'c2',slug:'long-context',name:'Long context',description:'Documentos longos com fallback.',status:'active',strategy:'priority',revision:5,source:'ai',updated:'1 h',usage:'4,1k',cost:'US$ 9,80',health:'warn',failover:true,rpm:120,tpm:600000,maxAttempts:4,members:[
+    {provider:'Google',providerId:'google',model:'gemini-3-pro',tier:0,weight:100,caps:['stream','tools','vision','reasoning'],context:'1M',input:'1.25',output:'10.00',health:'cooldown'},
+    {provider:'Anthropic',providerId:'anthropic',model:'claude-sonnet-4.5',tier:1,weight:100,caps:['stream','tools','vision'],context:'200k',input:'3.00',output:'15.00',health:'healthy'}
+  ]},
+  {id:'c3',slug:'support-vision',name:'Support vision',description:'Triagem de imagens e notas fiscais.',status:'inactive',strategy:'priority',revision:2,source:'manual',updated:'3 d',usage:'—',cost:'—',health:'ok',failover:true,rpm:60,tpm:120000,maxAttempts:3,members:[
+    {provider:'OpenAI',providerId:'openai',model:'gpt-5',tier:0,weight:100,caps:['stream','tools','vision'],context:'400k',input:'1.25',output:'10.00',health:'healthy'}
+  ]},
+  {id:'c4',slug:'cheap-summaries',name:'Cheap summaries',description:'Resumos de baixo custo.',status:'draft',strategy:'priority_round_robin',revision:1,source:'ai',updated:'agora',usage:'—',cost:'—',health:'ok',failover:true,rpm:200,tpm:150000,maxAttempts:4,members:[
+    {provider:'Google',providerId:'google',model:'gemini-3-flash',tier:0,weight:70,caps:['stream','tools','vision'],context:'1M',input:'0.10',output:'0.40',health:'healthy'},
+    {provider:'Groq',providerId:'groq',model:'llama-4-scout',tier:0,weight:30,caps:['stream','tools'],context:'128k',input:'0.11',output:'0.34',health:'healthy'}
+  ]}
+];
+
+function applyI18n(){
+  document.documentElement.lang=locale;
+  document.querySelectorAll('[data-i18n]').forEach(n=>n.textContent=tr(n.dataset.i18n));
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(n=>n.placeholder=tr(n.dataset.i18nPlaceholder));
+  const help=document.getElementById('context-help');
+  help.href=`https://github.com/alltomatos/dontstop/blob/main/docs/user-guide/${locale}/combos.md`;
+  help.setAttribute('aria-label',tr('top.help'));help.title=tr('top.help');
+  document.getElementById('locale-live').textContent=`${tr('lang')}: ${LOCALE_NAMES[locale]}`;
+  renderLocaleSelect();renderList();
+}
+function renderLocaleSelect(){
+  document.getElementById('locale-select').innerHTML=LOCALES.map(c=>`<option value="${c}" ${c===locale?'selected':''}>${LOCALE_NAMES[c]}</option>`).join('');
+}
+function toast(msg,kind){
+  const root=document.getElementById('toast-root');
+  root.innerHTML=`<div class="toast ${kind||'ok'}" role="status">${esc(msg)}</div>`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>root.innerHTML='',3600);
+}
+function setDemoState(s){
+  demoState=s;const el=document.getElementById('demo-state');if(el)el.value=s;
+  if(s==='success')toast(tr('toast.saved'),'ok');renderList();
+}
+function filteredCombos(){
+  const q=(document.getElementById('search')?.value||'').trim().toLowerCase();
+  const st=document.getElementById('filter-status')?.value||'all';
+  const sg=document.getElementById('filter-strategy')?.value||'all';
+  return combos.filter(c=>{
+    if(st!=='all'&&c.status!==st)return false;
+    if(sg!=='all'&&c.strategy!==sg)return false;
+    if(!q)return true;
+    return [c.name,c.slug,c.strategy,...c.members.map(m=>`${m.provider} ${m.model}`)].join(' ').toLowerCase().includes(q);
+  });
+}
+function renderList(){
+  const region=document.getElementById('list-region');if(!region)return;
+  const ka=document.getElementById('kpi-active'),kd=document.getElementById('kpi-drafts');
+  if(ka)ka.textContent=String(combos.filter(c=>c.status==='active').length+3);
+  if(kd)kd.textContent=String(combos.filter(c=>c.status==='draft').length);
+  if(demoState==='loading'){
+    region.innerHTML=`<div style="display:grid;gap:10px;padding:12px 0">${Array.from({length:6}).map(()=>'<div class="skeleton" style="height:44px"></div>').join('')}</div><p class="muted" role="status">${esc(tr('loading'))}</p>`;return;
+  }
+  if(demoState==='error'){
+    region.innerHTML=`<div class="banner error" role="alert"><div><strong>${esc(tr('error.title'))}</strong><div>${esc(tr('error.body'))}</div></div><button class="btn" data-action="retry">${esc(tr('actions.retry'))}</button></div>`;return;
+  }
+  if(demoState==='empty'){
+    region.innerHTML=emptyState();return;
+  }
+  const rows=filteredCombos();
+  if(!rows.length){region.innerHTML=emptyState();return;}
+  region.innerHTML=`<table><thead><tr><th>${esc(tr('table.name'))}</th><th>${esc(tr('table.status'))}</th><th>${esc(tr('table.strategy'))}</th><th>${esc(tr('table.members'))}</th><th>${esc(tr('table.health'))}</th><th class="num">${esc(tr('table.usage'))}</th><th>${esc(tr('table.updated'))}</th><th class="right">${esc(tr('table.actions'))}</th></tr></thead><tbody>${rows.map(c=>`<tr>
+    <td class="name-cell"><strong>${esc(c.name)} ${c.source==='ai'?'<span class="chip ai">'+esc(tr('source.ai'))+'</span>':''}</strong><span class="mono">combo/${esc(c.slug)}</span></td>
+    <td>${statusChip(c.status)}</td><td>${esc(strategyLabel(c.strategy))}</td>
+    <td><strong class="num">${c.members.length}</strong>${providerBadges(c.members)}</td>
+    <td>${healthChip(c.health)} <span class="muted">${c.health==='warn'?'1 cooldown':c.health==='ok'?'99,6%':''}</span></td>
+    <td class="num"><strong>${esc(c.usage)}</strong><div class="muted" style="font-size:12px">${esc(c.cost)}</div></td>
+    <td class="muted">${esc(c.updated)}<div style="font-size:11px">rev. ${c.revision}</div></td>
+    <td class="right"><div class="actions" style="justify-content:flex-end">
+      <button class="icon-btn" data-action="detail" data-id="${c.id}" aria-label="${esc(tr('actions.open'))} ${esc(c.name)}" title="${esc(tr('actions.open'))}">${icon('open')}</button>
+      <button class="icon-btn" data-action="edit" data-id="${c.id}" aria-label="${esc(tr('actions.edit'))} ${esc(c.name)}" title="${esc(tr('actions.edit'))}">${icon('edit')}</button>
+      <button class="icon-btn" data-action="toggle" data-id="${c.id}" aria-label="${esc(c.status==='active'?tr('actions.deactivate'):tr('actions.activate'))} ${esc(c.name)}" title="${esc(c.status==='active'?tr('actions.deactivate'):tr('actions.activate'))}">${icon('power')}</button>
+      <button class="icon-btn danger" data-action="delete" data-id="${c.id}" aria-label="${esc(tr('actions.delete'))} ${esc(c.name)}" title="${esc(tr('actions.delete'))}">${icon('trash')}</button>
+    </div></td></tr>`).join('')}</tbody></table>`;
+}
+function emptyState(){
+  return `<div class="empty-state"><div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4-8 4-8-4 8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg></div><h2>${esc(tr('empty.title'))}</h2><p>${esc(tr('empty.body'))}</p><div class="actions"><button class="btn primary" data-action="new">${esc(tr('empty.new'))}</button><button class="btn" data-action="ai">${esc(tr('empty.ai'))}</button></div></div>`;
+}
+function openOverlay(html,kind){
+  document.getElementById('overlay-root').innerHTML=`<div class="${kind||'drawer-backdrop'}" data-overlay="1">${html}</div>`;
+  const dialog=document.querySelector('[data-dialog]');
+  if(dialog){const f=dialog.querySelector('input,select,textarea,button');setTimeout(()=>f?.focus(),30);}
+}
+function closeOverlay(){document.getElementById('overlay-root').innerHTML='';}
+function findCombo(id){return combos.find(c=>c.id===id);}
+
+function openManual(combo,seed){
+  const base=combo||seed;
+  manual=base?JSON.parse(JSON.stringify(base)):{id:'c'+Date.now(),slug:'',name:'',description:'',status:'draft',strategy:'priority_round_robin',revision:1,source:'manual',updated:'agora',usage:'—',cost:'—',health:'ok',failover:true,rpm:'',tpm:'',maxAttempts:5,members:[]};
+  manual._editing=!!combo;manual._step=1;renderManual();
+}
+function manualValid(){
+  if(!manual||!manual.name.trim()||!manual.members.length)return false;
+  if(!/^[a-z][a-z0-9-]{1,62}$/.test(manual.slug||''))return false;
+  return !manual.members.some((m,i)=>manual.members.findIndex(x=>x.providerId===m.providerId&&x.model===m.model)!==i);
+}
+function renderManual(){
+  const step=manual._step||1;
+  const steps=[1,2,3,4].map(n=>`<span class="step ${n===step?'active':n<step?'done':''}"><span class="mono">${n}</span> ${esc(tr('manual.step'+n))}</span>`).join('');
+  let body='';
+  if(step===1){
+    body=`<div class="form-grid"><div class="field"><label for="m-name">${esc(tr('manual.name'))}</label><input class="input" id="m-name" value="${esc(manual.name)}" placeholder="${esc(tr('manual.name.ph'))}" /></div><div class="field"><label for="m-slug">${esc(tr('manual.slug'))}</label><input class="input mono" id="m-slug" value="${esc(manual.slug)}" placeholder="fast-coding" /><span class="hint">${esc(tr('manual.slug.hint'))}</span></div><div class="field full"><label for="m-desc">${esc(tr('manual.description'))}</label><textarea class="input" id="m-desc" rows="3" placeholder="${esc(tr('manual.desc.ph'))}">${esc(manual.description)}</textarea></div></div>`;
+  }
+  if(step===2){
+    const opts=[['priority','strategy.priority','strategy.priority.help'],['round_robin','strategy.rr','strategy.rr.help'],['priority_round_robin','strategy.prr','strategy.prr.help']];
+    body=`<div class="field"><label>${esc(tr('manual.strategyTitle'))}</label><div class="radio-grid">${opts.map(([v,l,h])=>`<label class="radio-card"><span style="display:flex;gap:8px;align-items:center"><input type="radio" name="m-strategy" value="${v}" ${manual.strategy===v?'checked':''}/><strong>${esc(tr(l))}</strong></span><span>${esc(tr(h))}</span></label>`).join('')}</div></div><div class="review-box"><label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="m-failover" ${manual.failover?'checked':''}/><span><strong>${esc(tr('manual.failover'))}</strong><br><span class="muted" style="font-size:12px">${esc(tr('manual.failoverHint'))}</span></span></label></div><div class="form-grid"><div class="field"><label for="m-rpm">${esc(tr('manual.rpm'))}</label><input class="input mono" id="m-rpm" type="number" min="1" value="${esc(manual.rpm)}" placeholder="300" /></div><div class="field"><label for="m-tpm">${esc(tr('manual.tpm'))}</label><input class="input mono" id="m-tpm" type="number" min="1" value="${esc(manual.tpm)}" placeholder="200000" /></div><div class="field"><label for="m-attempts">${esc(tr('manual.maxAttempts'))}</label><input class="input mono" id="m-attempts" type="number" min="1" max="8" value="${esc(manual.maxAttempts)}" /></div></div>`;
+  }
+  if(step===3){
+    const tiers=[...new Set(manual.members.map(m=>m.tier))].sort((a,b)=>a-b);
+    body=`<div class="row" style="margin-bottom:10px"><div><strong>${esc(tr('manual.membersTitle'))}</strong><div class="muted" style="font-size:12px">${esc(tr('manual.tierHint'))}</div></div><button class="btn" data-action="add-member">${esc(tr('actions.addMember'))}</button></div><div class="members">${tiers.length?tiers.map(tier=>`<div><div class="tier-label">Tier ${tier}${tier===0?' · first':' · fallback'}</div>${manual.members.filter(m=>m.tier===tier).map(m=>{const idx=manual.members.indexOf(m);return `<div class="member"><div class="member-head"><div><strong>${esc(m.model)}</strong> <span class="chip">${esc(m.provider)}</span> <span class="muted">${m.context} · US$ ${m.input}/${m.output}</span></div><div class="actions"><button class="icon-btn" data-action="member-up" data-index="${idx}" aria-label="${esc(tr('actions.up'))}" title="${esc(tr('actions.up'))}">↑</button><button class="icon-btn" data-action="member-down" data-index="${idx}" aria-label="${esc(tr('actions.down'))}" title="${esc(tr('actions.down'))}">↓</button><button class="icon-btn danger" data-action="member-remove" data-index="${idx}" aria-label="${esc(tr('actions.remove'))}" title="${esc(tr('actions.remove'))}">×</button></div></div><div class="member-fields"><div class="field" style="margin:0"><label>${esc(tr('manual.provider'))}</label><select class="select" data-member-field="providerId" data-index="${idx}">${[...new Set(MODELS.map(x=>x.providerId))].map(pid=>`<option value="${pid}" ${m.providerId===pid?'selected':''}>${esc(MODELS.find(x=>x.providerId===pid).provider)}</option>`).join('')}</select></div><div class="field" style="margin:0"><label>${esc(tr('manual.model'))}</label><select class="select" data-member-field="model" data-index="${idx}">${MODELS.filter(x=>x.providerId===m.providerId).map(x=>`<option value="${x.model}" ${m.model===x.model?'selected':''}>${esc(x.model)}</option>`).join('')}</select></div><div class="field" style="margin:0"><label>${esc(tr('manual.tier'))}</label><input class="input mono" type="number" min="0" max="100" value="${m.tier}" data-member-field="tier" data-index="${idx}" /></div><div class="field" style="margin:0"><label>${esc(tr('manual.weight'))}</label><input class="input mono" type="number" min="1" max="100" value="${m.weight}" data-member-field="weight" data-index="${idx}" /></div></div></div>`;}).join('')}</div>`).join(''):`<div class="empty-state"><p>${esc(tr('manual.required'))}</p></div>`}</div><div class="row" style="margin-top:12px"><span class="muted" style="font-size:12px">${esc(tr('manual.membersCount',{count:manual.members.length,providers:new Set(manual.members.map(m=>m.providerId)).size,tiers:new Set(manual.members.map(m=>m.tier)).size}))}</span><span class="chip ${manualValid()?'ok':'warn'}">${manualValid()?'OK':esc(tr('manual.required'))}</span></div>`;
+  }
+  if(step===4){
+    const valid=manualValid();
+    body=`<div class="review-box"><ul class="review-list"><li><span>${esc(tr('manual.name'))}</span><strong>${esc(manual.name||'—')}</strong></li><li><span>${esc(tr('manual.slug'))}</span><strong class="mono">combo/${esc(manual.slug||'—')}</strong></li><li><span>${esc(tr('manual.strategyTitle'))}</span><strong>${esc(strategyLabel(manual.strategy))}</strong></li><li><span>${esc(tr('manual.membersTitle'))}</span><strong>${manual.members.length}</strong></li><li><span>${esc(tr('manual.failover'))}</span><strong>${manual.failover?'ON':'OFF'}</strong></li></ul></div><div class="${valid?'':'danger-box'}">${valid?esc(tr('detail.activateHint')):esc(tr('manual.required'))}</div>${manual.members.some(m=>m.health==='cooldown')?`<ul class="warn-list"><li>${esc(tr('ai.fallbackWarning'))}</li></ul>`:''}`;
+  }
+  openOverlay(`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="manual-title" data-dialog><div class="modal-head"><div><h2 id="manual-title">${esc(tr('manual.title'))}${manual._editing?' · '+esc(manual.name):''}</h2><div class="stepper">${steps}</div></div><button class="modal-close" data-action="close" aria-label="${esc(tr('actions.close'))}">×</button></div><div class="modal-body">${body}</div><div class="modal-foot"><button class="btn" data-action="close">${esc(tr('actions.cancel'))}</button>${manual._step>1?`<button class="btn" data-action="manual-back">${esc(tr('actions.back'))}</button>`:''}${manual._step<4?`<button class="btn primary" data-action="manual-next">${esc(tr('actions.next'))}</button>`:`<button class="btn" data-action="manual-save-draft">${esc(tr('actions.saveDraft'))}</button><button class="btn primary" data-action="manual-save-active" ${manualValid()?'':'disabled'}>${esc(tr('actions.saveActivate'))}</button>`}</div></div>`,'modal-backdrop');
+}
+function collectManualStep(){
+  if(!manual)return;
+  if(manual._step===1){
+    manual.name=document.getElementById('m-name')?.value||manual.name;
+    manual.slug=(document.getElementById('m-slug')?.value||manual.slug).trim().toLowerCase();
+    manual.description=document.getElementById('m-desc')?.value||manual.description;
+  }
+  if(manual._step===2){
+    manual.strategy=document.querySelector('input[name="m-strategy"]:checked')?.value||manual.strategy;
+    manual.failover=!!document.getElementById('m-failover')?.checked;
+    manual.rpm=document.getElementById('m-rpm')?.value||'';
+    manual.tpm=document.getElementById('m-tpm')?.value||'';
+    manual.maxAttempts=Number(document.getElementById('m-attempts')?.value||5);
+  }
+  if(manual._step===3){
+    document.querySelectorAll('[data-member-field]').forEach(el=>{
+      const idx=Number(el.dataset.index),field=el.dataset.memberField;
+      if(!manual.members[idx])return;
+      if(field==='providerId'){
+        manual.members[idx].providerId=el.value;
+        const model=MODELS.find(m=>m.providerId===el.value);
+        if(model){manual.members[idx].provider=model.provider;manual.members[idx].model=model.model;manual.members[idx].caps=model.caps;manual.members[idx].context=model.context;manual.members[idx].input=model.input;manual.members[idx].output=model.output;manual.members[idx].health=model.health;}
+      }else if(field==='model'){
+        const model=MODELS.find(m=>m.providerId===manual.members[idx].providerId&&m.model===el.value);
+        if(model){manual.members[idx].model=model.model;manual.members[idx].caps=model.caps;manual.members[idx].context=model.context;manual.members[idx].input=model.input;manual.members[idx].output=model.output;manual.members[idx].health=model.health;}
+      }else if(field==='tier')manual.members[idx].tier=Number(el.value||0);
+      else if(field==='weight')manual.members[idx].weight=Number(el.value||1);
+    });
+  }
+}
+function changeManualMember(action,index){
+  collectManualStep();
+  if(action==='member-up'&&index>0)[manual.members[index-1],manual.members[index]]=[manual.members[index],manual.members[index-1]];
+  if(action==='member-down'&&index<manual.members.length-1)[manual.members[index+1],manual.members[index]]=[manual.members[index],manual.members[index+1]];
+  if(action==='member-remove')manual.members.splice(index,1);
+  if(action==='add-member')manual.members.push({provider:'OpenAI',providerId:'openai',model:'gpt-5-mini',tier:Math.max(0,...manual.members.map(m=>m.tier)),weight:100,caps:['stream','tools'],context:'128k',input:'0.25',output:'1.00',health:'healthy'});
+  renderManual();
+}
+function saveManual(active){
+  collectManualStep();if(!manualValid())return;
+  const next={...manual,status:active?'active':'draft',updated:'agora',revision:manual._editing?(manual.revision||1)+1:1,source:manual.source||'manual'};
+  delete next._editing;delete next._step;
+  const idx=combos.findIndex(c=>c.id===next.id);
+  if(idx>=0)combos[idx]=next;else combos.unshift(next);
+  closeOverlay();renderList();toast(tr(active?'toast.activated':'toast.saved'),'ok');
+}
+function openDetail(id){
+  const c=findCombo(id);if(!c)return;
+  currentComboId=id;detailTab='members';renderDetail();
+}
+function membersTable(c){
+  return `<table><thead><tr><th>#</th><th>${esc(tr('manual.provider'))} / ${esc(tr('manual.model'))}</th><th>${esc(tr('manual.tier'))}</th><th>${esc(tr('manual.weight'))}</th><th>${esc(tr('table.health'))}</th><th class="right">${esc(tr('table.actions'))}</th></tr></thead><tbody>${c.members.map((m,i)=>`<tr><td class="mono">${i+1}</td><td><strong>${esc(m.model)}</strong><div class="muted" style="font-size:12px">${esc(m.provider)} · ${m.context} · ${m.caps.join(' · ')}</div></td><td class="num">${m.tier}</td><td class="num">${m.weight}</td><td>${healthChip(m.health)}</td><td class="right"><div class="actions" style="justify-content:flex-end"><button class="icon-btn" data-action="detail-member-up" data-id="${c.id}" data-index="${i}" aria-label="${esc(tr('actions.up'))}">↑</button><button class="icon-btn" data-action="detail-member-down" data-id="${c.id}" data-index="${i}" aria-label="${esc(tr('actions.down'))}">↓</button></div></td></tr>`).join('')}</tbody></table>`;
+}
+function renderDetail(){
+  const c=findCombo(currentComboId);if(!c)return;
+  const tabs=[['members','detail.tabs.members'],['validation','detail.tabs.validation'],['usage','detail.tabs.usage'],['audit','detail.tabs.audit']];
+  let content='';
+  if(detailTab==='members')content=membersTable(c);
+  if(detailTab==='validation')content=`<div class="banner" style="margin-bottom:12px"><div><strong>${esc(tr('status.warn'))}</strong><div>${esc(tr('ai.fallbackWarning'))}</div></div><button class="btn" data-action="validate">${esc(tr('actions.validate'))}</button></div>${membersTable(c)}`;
+  if(detailTab==='usage')content=`<div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div class="card kpi"><div class="label">${esc(tr('kpi.requests'))}</div><div class="value">${esc(c.usage)}</div><div class="delta">+12%</div></div><div class="card kpi"><div class="label">${esc(tr('kpi.cost'))}</div><div class="value">${esc(c.cost)}</div><div class="delta">-4%</div></div><div class="card kpi"><div class="label">${esc(tr('kpi.success'))}</div><div class="value">99,6%</div><div class="delta">+0,2 pp</div></div><div class="card kpi"><div class="label">Cache hit</div><div class="value">31%</div><div class="delta">+3 pp</div></div></div><div class="card" style="margin-top:12px"><h3>${esc(tr('detail.tabs.usage'))}</h3><div class="timeline"><div class="timeline-item"><strong>gpt-5-mini · OpenAI</strong><span>8,4k requests · US$ 14,20 · 99,8% success</span></div><div class="timeline-item"><strong>claude-haiku-4 · Anthropic</strong><span>3,1k requests · US$ 9,60 · 99,5% success</span></div><div class="timeline-item"><strong>gemini-3-flash · Google</strong><span>900 requests · US$ 7,30 · 99,1% success</span></div></div></div>`;
+  if(detailTab==='audit')content=`<div class="timeline"><div class="timeline-item"><strong>${esc(tr('actions.activate'))} · revision ${c.revision}</strong><span>${esc(tr('detail.by'))} Ronaldo · ${esc(tr('detail.updated'))} ${esc(c.updated)}</span></div><div class="timeline-item"><strong>${esc(tr('actions.edit'))} · members</strong><span>${esc(tr('detail.by'))} Ronaldo · 2 h</span></div><div class="timeline-item"><strong>${esc(tr('toast.saved'))} · ${c.source==='ai'?'AI':'manual'}</strong><span>${esc(tr('detail.created'))} · 3 d</span></div></div>`;
+  openOverlay(`<div class="drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title" data-dialog><div class="drawer-head"><div><div class="muted" style="font-size:12px">${esc(tr('nav.combos'))} / ${esc(c.name)}</div><h2 id="detail-title">${esc(c.name)} ${statusChip(c.status)}</h2><div class="muted"><span class="mono">combo/${esc(c.slug)}</span> · ${esc(strategyLabel(c.strategy))} · ${esc(tr('detail.revision'))} ${c.revision}</div></div><button class="modal-close" data-action="close" aria-label="${esc(tr('actions.close'))}">×</button></div><div class="detail-tabs" role="tablist">${tabs.map(([key,label])=>`<button class="detail-tab ${detailTab===key?'active':''}" data-detail-tab="${key}" role="tab" aria-selected="${detailTab===key}">${esc(tr(label))}</button>`).join('')}</div><div class="drawer-body"><div class="detail-grid"><div>${content}</div><div class="card" style="box-shadow:none"><h3>${esc(tr('detail.activateHint'))}</h3><div class="muted" style="font-size:13px">${c.status==='active'?'Ativo · '+c.members.length+' membros · '+new Set(c.members.map(m=>m.provider)).size+' providers':'Inativo'}</div><div class="actions" style="margin-top:12px"><button class="btn" data-action="edit" data-id="${c.id}">${esc(tr('actions.edit'))}</button><button class="btn ${c.status==='active'?'':'primary'}" data-action="toggle" data-id="${c.id}">${esc(c.status==='active'?tr('actions.deactivate'):tr('actions.activate'))}</button><button class="btn danger" data-action="delete" data-id="${c.id}">${esc(tr('actions.delete'))}</button></div><div class="banner" style="margin-top:12px"><div>${esc(tr('detail.inUse'))}</div></div></div></div></div><div class="drawer-foot"><button class="btn" data-action="close">${esc(tr('actions.close'))}</button></div></div>`);
+}
+function openDelete(id){
+  const c=findCombo(id);if(!c)return;
+  openOverlay(`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title" data-dialog><div class="modal-head"><div><h2 id="delete-title">${esc(tr('delete.title'))}</h2><div class="muted">${esc(c.name)} · <span class="mono">combo/${esc(c.slug)}</span></div></div><button class="modal-close" data-action="close" aria-label="${esc(tr('actions.close'))}">×</button></div><div class="modal-body"><div class="danger-box">${esc(tr('delete.body'))}</div><label style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" id="delete-confirm"/><span>${esc(tr('delete.confirm'))}</span></label></div><div class="modal-foot"><button class="btn" data-action="close">${esc(tr('actions.cancel'))}</button><button class="btn danger" id="confirm-delete" data-action="confirm-delete" data-id="${c.id}" disabled>${esc(tr('delete.action'))}</button></div></div>`,'modal-backdrop');
+  document.getElementById('delete-confirm').addEventListener('change',e=>{document.getElementById('confirm-delete').disabled=!e.target.checked;});
+}
+function toggleCombo(id){
+  const c=findCombo(id);if(!c)return;
+  c.status=c.status==='active'?'inactive':'active';
+  c.revision=(c.revision||1)+1;
+  renderList();if(currentComboId===id)renderDetail();
+  toast(tr(c.status==='active'?'toast.activated':'toast.deactivated'),'ok');
+}
+function deleteCombo(id){
+  combos=combos.filter(c=>c.id!==id);closeOverlay();renderList();toast(tr('toast.deleted'),'ok');
+}
+function openAI(){
+  aiDraft=aiDraft||null;aiBusy=false;renderAI();
+}
+function draftCard(){
+  if(!aiDraft){
+    return `<div class="empty-state" style="border:0;background:transparent"><div class="empty-icon">AI</div><h2>${esc(tr('ai.draftTitle'))}</h2><p>${esc(tr('ai.subtitle'))}</p></div>`;
+  }
+  const d=aiDraft;
+  return `<div class="draft-head"><div><h3 style="margin:0">${esc(d.name)}</h3><div class="muted" style="font-size:12px">${esc(strategyLabel(d.strategy))} · fallback ON · ${d.members.length} membros · ${new Set(d.members.map(m=>m.provider)).size} providers</div></div><span class="chip info">${esc(tr('status.draft'))}</span></div><div class="draft-members">${d.members.map(m=>`<div class="draft-member"><div class="top"><strong>${esc(m.model)}</strong><span class="chip">${esc(m.provider)}</span></div><div class="meta">Tier ${m.tier} · peso ${m.weight} · ${m.context} · US$ ${m.input}/${m.output} · ${m.caps.join(' · ')}</div><div class="rationale"><strong>${esc(tr('ai.rationale'))}:</strong> ${esc(m.reason)}</div></div>`).join('')}</div><div class="banner" style="margin-top:12px"><div><strong>${esc(tr('ai.warnings'))}</strong><div>${esc(tr('ai.fallbackWarning'))}</div></div></div><div class="actions" style="margin-top:12px"><button class="btn" data-action="ai-validate">${esc(tr('actions.validate'))}</button><button class="btn" data-action="ai-apply">${esc(tr('actions.apply'))}</button><button class="btn" data-action="ai-discard">${esc(tr('actions.discard'))}</button></div>`;
+}
+function renderAI(){
+  const log=aiDraft?`<div class="bubble user"><div class="who">Você</div>Código barato, baixa latência, com fallback se der 429.</div><div class="bubble ai"><div class="who">IA</div>Vou priorizar modelos com tools e contexto suficiente, mantendo um fallback de provider. Estou consultando o catálogo real.</div>`:`<div class="bubble ai"><div class="who">IA</div>${esc(tr('ai.subtitle'))}</div>`;
+  openOverlay(`<div class="drawer" role="dialog" aria-modal="true" aria-labelledby="ai-title" data-dialog><div class="drawer-head"><div><h2 id="ai-title">${esc(tr('ai.title'))}</h2><div class="muted">${esc(tr('ai.subtitle'))}</div></div><button class="modal-close" data-action="close" aria-label="${esc(tr('actions.close'))}">×</button></div><div class="ai-layout"><div class="chat"><div class="chat-log" role="log" aria-live="polite">${log}</div><div class="tool-log">${aiDraft?`<span class="tool done">✓ ${esc(tr('ai.toolCatalog'))}</span><span class="tool done">✓ ${esc(tr('ai.toolCost'))}</span><span class="tool done">✓ ${esc(tr('ai.toolValidate'))}</span>`:''}</div><div class="suggestions"><button class="suggestion" data-suggestion="Código barato e rápido">Código barato e rápido</button><button class="suggestion" data-suggestion="Resumos longos">Resumos longos</button><button class="suggestion" data-suggestion="Visão para notas fiscais">Visão para notas fiscais</button></div><div class="composer"><textarea class="input" id="ai-input" placeholder="${esc(tr('ai.placeholder'))}" aria-label="${esc(tr('ai.placeholder'))}"></textarea><button class="btn primary" data-action="ai-send" ${aiBusy?'disabled':''}>${esc(tr('actions.send'))}</button></div><div class="muted" style="padding:0 16px 10px;font-size:11px">${esc(tr('ai.limit'))} · ${esc(tr('ai.hint'))}</div></div><div class="draft">${aiBusy?`<div class="banner"><div>${esc(tr('ai.thinking'))}</div><span class="chip info">${esc(tr('ai.toolCatalog'))}</span></div>`:draftCard()}</div></div><div class="drawer-foot"><button class="btn" data-action="close">${esc(tr('actions.close'))}</button>${aiDraft?`<button class="btn" data-action="ai-save-draft">${esc(tr('actions.saveDraft'))}</button><button class="btn primary" data-action="ai-save-active">${esc(tr('actions.saveActivate'))}</button>`:''}</div></div>`);
+}
+function simulateAI(text){
+  if(aiBusy)return;
+  aiBusy=true;renderAI();
+  setTimeout(()=>{
+    aiBusy=false;
+    aiDraft={name:'Fast coding',strategy:'priority_round_robin',members:[
+      {provider:'OpenAI',providerId:'openai',model:'gpt-5-mini',tier:0,weight:60,caps:['stream','tools'],context:'128k',input:'0.25',output:'1.00',reason:'Menor custo e boa latência para código.'},
+      {provider:'Anthropic',providerId:'anthropic',model:'claude-haiku-4',tier:0,weight:40,caps:['stream','tools'],context:'200k',input:'0.80',output:'4.00',reason:'Contexto maior para arquivos grandes.'},
+      {provider:'Google',providerId:'google',model:'gemini-3-flash',tier:1,weight:100,caps:['stream','tools','vision'],context:'1M',input:'0.10',output:'0.40',reason:'Fallback de provider com baixo custo.'}
+    ]};
+    renderAI();
+  },1000);
+}
+function saveAI(active){
+  if(!aiDraft)return;
+  const next={id:'c'+Date.now(),slug:'fast-coding-ai',name:aiDraft.name,description:'Rascunho gerado por IA.',status:active?'active':'draft',strategy:aiDraft.strategy,revision:1,source:'ai',updated:'agora',usage:'—',cost:'—',health:'ok',failover:true,rpm:300,tpm:200000,maxAttempts:5,members:aiDraft.members.map(m=>({...m}))};
+  combos.unshift(next);closeOverlay();renderList();toast(tr(active?'toast.activated':'toast.aiSaved'),'ok');
+}
+function handleAction(el){
+  const action=el.dataset.action,id=el.dataset.id,index=Number(el.dataset.index);
+  if(action==='new')return openManual();
+  if(action==='ai')return openAI();
+  if(action==='detail')return openDetail(id);
+  if(action==='edit'){const c=findCombo(id);closeOverlay();return openManual(c);}
+  if(action==='toggle')return toggleCombo(id);
+  if(action==='delete')return openDelete(id);
+  if(action==='confirm-delete')return deleteCombo(id);
+  if(action==='close')return closeOverlay();
+  if(action==='retry'){setDemoState('default');return;}
+  if(action==='manual-back'){collectManualStep();manual._step=Math.max(1,manual._step-1);return renderManual();}
+  if(action==='manual-next'){collectManualStep();if(manual._step===1&&!manual.name.trim()){toast(tr('manual.required'),'bad');return;}manual._step=Math.min(4,manual._step+1);return renderManual();}
+  if(action==='manual-save-draft')return saveManual(false);
+  if(action==='manual-save-active')return saveManual(true);
+  if(action==='add-member'||action==='member-up'||action==='member-down'||action==='member-remove')return changeManualMember(action,index);
+  if(action==='detail-member-up'||action==='detail-member-down'){const c=findCombo(id);if(!c)return;if(action==='detail-member-up'&&index>0)[c.members[index-1],c.members[index]]=[c.members[index],c.members[index-1]];if(action==='detail-member-down'&&index<c.members.length-1)[c.members[index+1],c.members[index]]=[c.members[index],c.members[index+1]];c.revision++;renderDetail();return;}
+  if(action==='ai-send'){const input=document.getElementById('ai-input');const text=input?.value?.trim()||'Código barato, baixa latência, com fallback.';return simulateAI(text);}
+  if(action==='suggestion'||action==='ai-suggestion')return simulateAI('');
+  if(action==='ai-apply'){if(!aiDraft)return;const seed={id:'c'+Date.now(),slug:'fast-coding-ai',name:aiDraft.name,description:'Rascunho gerado por IA.',status:'draft',strategy:aiDraft.strategy,revision:1,source:'ai',updated:'agora',usage:'—',cost:'—',health:'ok',failover:true,rpm:300,tpm:200000,maxAttempts:5,members:aiDraft.members.map(m=>({...m}))};closeOverlay();return openManual(null,seed);}
+  if(action==='ai-discard'){aiDraft=null;return renderAI();}
+  if(action==='ai-save-draft')return saveAI(false);
+  if(action==='ai-save-active')return saveAI(true);
+  if(action==='validate'){toast('OK · 3 membros elegíveis, 1 warning','ok');return;}
+}
+document.addEventListener('click',e=>{
+  const actionEl=e.target.closest('[data-action]');
+  if(actionEl){e.preventDefault();handleAction(actionEl);return;}
+  const tab=e.target.closest('[data-detail-tab]');
+  if(tab){detailTab=tab.dataset.detailTab;renderDetail();return;}
+  const suggestion=e.target.closest('[data-suggestion]');
+  if(suggestion){const input=document.getElementById('ai-input');if(input)input.value=suggestion.dataset.suggestion;simulateAI(suggestion.dataset.suggestion);return;}
+  if(e.target.matches('[data-overlay="1"]'))closeOverlay();
+  const quick=e.target.closest('[data-quick]');
+  if(quick){document.querySelectorAll('[data-quick]').forEach(x=>x.classList.remove('active'));quick.classList.add('active');const s=document.getElementById('filter-status');if(s)s.value=quick.dataset.quick==='all'?'all':quick.dataset.quick;renderList();return;}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay();});
+document.addEventListener('change',e=>{
+  if(e.target.id==='locale-select'){locale=e.target.value;localStorage.setItem(LOCALE_KEY,locale);applyI18n();return;}
+  if(e.target.id==='demo-state'){setDemoState(e.target.value);return;}
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='search'){renderList();return;}
+});
+document.getElementById('open-manual').addEventListener('click',()=>openManual());
+document.getElementById('open-ai').addEventListener('click',()=>openAI());
+document.getElementById('filter-status').addEventListener('change',renderList);
+document.getElementById('filter-strategy').addEventListener('change',renderList);
+renderLocaleSelect();
+applyI18n();
+if(demoState==='success'){setTimeout(()=>toast(tr('toast.saved'),'ok'),50);}
+if(view==='manual')setTimeout(()=>openManual(),50);
+if(view==='ai')setTimeout(()=>openAI(),50);
+if(view==='detail')setTimeout(()=>openDetail(combos[0].id),50);
+})();
+</script>
+</body>
+</html>
+

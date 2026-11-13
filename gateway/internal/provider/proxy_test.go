@@ -44,14 +44,46 @@ func TestSelectProxyRequiredFailsClosed(t *testing.T) {
 }
 
 func TestParseProxyMode(t *testing.T) {
-	for _, value := range []string{"off", "preferred", "required", "REQUIRED"} {
+	for _, value := range []string{"off", "preferred", "required", "manual", "auto", "inherit", "REQUIRED"} {
 		if _, ok := provider.ParseProxyMode(value); !ok {
 			t.Fatalf("expected %q to be valid", value)
 		}
 	}
-	for _, value := range []string{"", "auto", "on"} {
+	for _, value := range []string{"", "on", "bogus"} {
 		if _, ok := provider.ParseProxyMode(value); ok {
 			t.Fatalf("expected %q to be invalid", value)
+		}
+	}
+}
+
+func TestResolveEffectiveMode(t *testing.T) {
+	cases := []struct {
+		account string
+		auto    bool
+		want    provider.ProxyMode
+	}{
+		{"inherit", true, provider.ProxyModeAuto},
+		{"inherit", false, provider.ProxyModeOff},
+		{"off", true, provider.ProxyModeOff},
+		{"manual", false, provider.ProxyModeManual},
+		{"auto", false, provider.ProxyModeAuto},
+		{"preferred", false, provider.ProxyModePreferred},
+		{"bogus", true, provider.ProxyModeOff},
+	}
+	for _, test := range cases {
+		if got := provider.ResolveEffectiveMode(test.account, test.auto); got != test.want {
+			t.Fatalf("ResolveEffectiveMode(%q, %v) = %q, want %q", test.account, test.auto, got, test.want)
+		}
+	}
+}
+
+func TestSelectProxyManualAndAutoFailClosed(t *testing.T) {
+	for _, mode := range []provider.ProxyMode{provider.ProxyModeManual, provider.ProxyModeAuto} {
+		if use, err := provider.SelectProxy(mode, false); use || !errors.Is(err, provider.ErrProxyRequired) {
+			t.Fatalf("%q without a healthy proxy must fail closed: use=%v err=%v", mode, use, err)
+		}
+		if use, err := provider.SelectProxy(mode, true); err != nil || !use {
+			t.Fatalf("%q with a healthy proxy must use it: use=%v err=%v", mode, use, err)
 		}
 	}
 }

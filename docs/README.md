@@ -27,7 +27,7 @@ A arquitetura inicial é **single-tenant (instância única)**, mas o modelo de 
 | 02 | [DER](02-DER.md) | Entidades, relacionamentos, cardinalidades, chaves, índices, RLS e retenção |
 | 03 | [UML](03-UML.md) | Componentes, sequências (request, cache, failover, proxy, DLP), classes e implantação |
 | 04 | [Análise de stack](04-ANALISE-STACK.md) | Comparação de alternativas, cálculos de capacidade e recomendação única |
-| 05 | [ADRs](05-ADRS.md) | 18 Architecture Decision Records com contexto, alternativas e consequências |
+| 05 | [ADRs](05-ADRS.md) | 23 Architecture Decision Records com contexto, alternativas e consequências |
 | 06 | [Roadmap e riscos](06-ROADMAP-RISCOS.md) | Fases P0/P1/P2, critérios de saída, riscos, mitigação e decisões pendentes |
 | 07 | [i18n e guia do usuário](07-I18N-E-USER-GUIDE.md) | Idiomas, preferência, fallback, links contextuais e estrutura do guia versionado |
 | — | [ADD](architecture/ADD.md) | Documento consolidado de arquitetura (C4, NFRs, stack, segurança, deploy Swarm) |
@@ -37,6 +37,9 @@ A arquitetura inicial é **single-tenant (instância única)**, mas o modelo de 
 | — | [QA P0-α E1.1–E1.4](qa/p0-alpha-e1.1-e1.4.md) | Plano, casos executados, auditoria de segurança e riscos residuais |`r`n| — | [QA P0-α E1.6](qa/p0-alpha-e1.6.md) | Roteamento, failover, circuit breaker, isolamento e riscos residuais |`r`n| — | [QA P0-α E1.12](qa/p0-alpha-e1.12.md) | Credenciais, criptografia, endpoint e riscos residuais |`r`n| — | [QA P0-α E1.5](qa/p0-alpha-e1.5.md) | Chat JSON/SSE, idempotência, validação e riscos residuais |`r`n| — | [QA P0-α E1.7](qa/p0-alpha-e1.7.md) | Cache exato, TTL, invalidação, isolamento e riscos residuais |`r`n| — | [QA P0-α E1.8](qa/p0-alpha-e1.8.md) | Usage/custo, outbox, NATS, idempotência e riscos residuais |`r`n| — | [QA P0-α E1.9](qa/p0-alpha-e1.9.md) | OTel, spans, SLOs, carga 100 RPS e riscos residuais |`r`n| — | [QA P0-α E1.10](qa/p0-alpha-e1.10.md) | OpenAPI lint, breaking changes, geração de tipos e contrato |`r`n| — | [QA P0-α E1.11](qa/p0-alpha-e1.11.md) | Swarm, Traefik, secrets, healthcheck e riscos residuais |`r`n| — | [SLOs P0-α](observability/P0-ALPHA-SLOS.md) | Sinais OTel, metas, consultas Datadog/Azure e exportação |
 | — | [Design System](../design-system/MASTER.md) | Tokens, componentes e regras visuais (corporate navy/slate) |
 | — | [Mockup do console](../design-system/mockups/console.html) | Mockup navegável: Dashboard, Providers, Endpoints, API Manager, MCP, Cache, DLP, Observabilidade, Custo, Configurações e onboarding |
+| — | [Mockup de combos](../design-system/mockups/combos.html) | Mockup navegável de listagem, criação manual, criação com IA, edição, detalhe, ativação, reordenação, exclusão e estados |
+| — | [Referência: Combos no AllCode](reference/COMBOS-ALLCODE-REFERENCE.md) | Estudo conceitual de combos, estratégias, failover, IA e lacunas; não é dependência |
+| — | [Combos do dontstop](reference/COMBOS.md) | Modelo, validações, seleção, failover, API, IA assistida e critérios de aceite |
 | — | [Guia do usuário](user-guide/README.md) | Guias por página/modal em 6 idiomas, com imagens, alt e fallback |
 | — | [Referência: Endpoints/API Manager](reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md) | Como 9Router e OmniRoute tratam endpoints e API keys; o que adotar/evitar |
 | — | [Referência: MCP](reference/MCP-REFERENCIAS.md) | Como 9Router e OmniRoute expõem MCP; decisões do dontstop |
@@ -76,7 +79,7 @@ Os documentos citam explicitamente as seguintes fontes:
 ## 6. UI/UX e mockups
 
 - **Design system:** [`design-system/MASTER.md`](../design-system/MASTER.md) — paleta navy/slate, Fira Sans/Fira Code, densidade de dashboard e WCAG 2.2 AA.
-- **Specs por tela:** `design-system/pages/{dashboard,providers,endpoints,api-manager,mcp,cache,dlp,observability,cost}.md`.
+- **Specs por tela:** `design-system/pages/{dashboard,providers,combos,endpoints,api-manager,mcp,cache,dlp,observability,cost}.md`.
 - **Mockup navegável:** [`design-system/mockups/console.html`](../design-system/mockups/console.html) — abra no navegador e alterne as abas.
 - **Regra:** nenhuma tela vai para código antes de o mockup/spec ser validado.
 

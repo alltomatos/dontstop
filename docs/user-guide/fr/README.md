@@ -8,6 +8,7 @@ Un guide par page, fenêtre modale et fonctionnalité de la console. Les capture
 |---|---|
 | `dashboard` | Tableau de bord | [Tableau de bord](dashboard.md) | [PNG](../assets/fr/dashboard.png) |
 | `providers` | Fournisseurs | [Fournisseurs](providers.md) | [PNG](../assets/fr/providers.png) |
+| `combos` | Combos | [Combos](combos.md) | [PNG](../assets/fr/combos.png) |
 | `endpoints` | Points de terminaison | [Points de terminaison](endpoints.md) | [PNG](../assets/fr/endpoints.png) |
 | `api-manager` | Gestionnaire d'API | [Gestionnaire d'API](api-manager.md) | [PNG](../assets/fr/api-manager.png) |
 | `mcp` | MCP | [MCP](mcp.md) | [PNG](../assets/fr/mcp.png) |

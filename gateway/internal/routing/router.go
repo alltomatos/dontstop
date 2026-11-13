@@ -40,6 +40,7 @@ type Candidate struct {
 	ProviderID           string
 	ProviderName         string
 	ProviderKind         string
+	ModelID              string
 	Priority             int
 	Weight               int
 	BaseURL              string
@@ -185,6 +186,83 @@ func (r *Router) Route(ctx context.Context, tenantID, model string, attempt Atte
 	return Candidate{}, ErrAllCandidatesFailed
 }
 
+// TargetRepository loads accounts for an explicit provider/model target.
+type TargetRepository interface {
+	CandidatesForTarget(ctx context.Context, tenantID, providerID, model string) ([]Candidate, error)
+}
+
+// RouteTargets selects a combo member and fails over across members/accounts.
+func (r *Router) RouteTargets(ctx context.Context, tenantID string, targets []ComboTarget, attempt Attempt) (Candidate, error) {
+	ctx, span := tracer.Start(ctx, "routing.combo")
+	defer span.End()
+	repository, ok := r.repository.(TargetRepository)
+	if !ok {
+		return Candidate{}, fmt.Errorf("routing repository does not support combo targets")
+	}
+	if len(targets) == 0 {
+		return Candidate{}, ErrNoCandidate
+	}
+	var lastErr error
+	attempts := 0
+	failovers := 0
+	for _, target := range targets {
+		if attempts >= r.maxAttempts {
+			break
+		}
+		candidates, err := repository.CandidatesForTarget(ctx, tenantID, target.ProviderID, target.ModelID)
+		if err != nil {
+			return Candidate{}, fmt.Errorf("list combo candidates: %w", err)
+		}
+		for _, candidate := range r.order(candidates) {
+			if attempts >= r.maxAttempts {
+				break
+			}
+			if err := ctx.Err(); err != nil {
+				return Candidate{}, err
+			}
+			allowed, err := r.breaker.Allow(ctx, candidate)
+			if err == nil && !allowed {
+				continue
+			}
+			attempts++
+			attemptCtx, cancel := context.WithCancel(ctx)
+			started := time.Now()
+			result, err := attempt(attemptCtx, candidate)
+			cancel()
+			latency := time.Since(started)
+			if err == nil {
+				_ = r.breaker.Success(ctx, candidate)
+				span.SetAttributes(
+					attribute.String("routing.combo.provider_id", target.ProviderID),
+					attribute.String("routing.combo.model_id", target.ModelID),
+					attribute.Int("routing.attempts", attempts),
+					attribute.Int("routing.failovers", failovers),
+				)
+				return candidate, nil
+			}
+			lastErr = err
+			span.AddEvent("routing.combo_attempt_failed", trace.WithAttributes(
+				attribute.String("routing.provider_id", candidate.ProviderID),
+				attribute.String("routing.model_id", target.ModelID),
+				attribute.String("routing.failure", string(result.Failure)),
+				attribute.Int("routing.attempt", attempts),
+				attribute.Int64("routing.latency_ms", latency.Milliseconds()),
+			))
+			if result.Failure == FailureTerminal {
+				return candidate, err
+			}
+			_ = r.breaker.Failure(ctx, candidate, result.Failure)
+			if result.FirstTokenSent {
+				return candidate, err
+			}
+			failovers++
+		}
+	}
+	if lastErr != nil {
+		return Candidate{}, fmt.Errorf("%w: %w", ErrAllCandidatesFailed, lastErr)
+	}
+	return Candidate{}, ErrAllCandidatesFailed
+}
 func (r *Router) order(candidates []Candidate) []Candidate {
 	ordered := append([]Candidate(nil), candidates...)
 	sort.SliceStable(ordered, func(i, j int) bool {

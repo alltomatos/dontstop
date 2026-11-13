@@ -25,7 +25,7 @@
 - Upstream padrão: `https://agentrouter.org`.
 - O AgentRouter aplica um **WAF de fingerprint de conexão**. O AllCode registra que clientes genéricos (Node `fetch`/undici, `curl`, `httpx` assíncrono) recebem `unauthorized client detected` mesmo com chave válida.
 - Solução do AllCode: relay local em Python usando o SDK **síncrono** `anthropic`. Porta padrão `7187`; health em `GET /health` retorna `{"ok":true,"version":2}`. O relay reemite as requisições e esconde o WAF do processo principal.
-- Consequência para o dontstop: o adaptador fala Anthropic Messages e é nativo. O relay do AllCode é apenas evidência histórica de pesquisa; não é adotado como runtime. O `base_url` deve apontar para o endpoint real do provedor.
+- Consequência para o dontstop: o adaptador fala Anthropic Messages e é nativo. Desde o **ADR-025**, o relay MIT do AllCode é **vendorizado** como sidecar interno (`vendor/agentrouter-relay`), sem o app AllCode e sem instalar SDK em runtime; o gateway aponta o `base_url` do AgentRouter para o relay.
 
 ## Modelos e limites
 
@@ -80,7 +80,7 @@ Lista estática do AllCode (o `/v1/models` real também é bloqueado pelo WAF):
 
 ## Riscos e pendências
 
-- O relay Python é apenas um artefato de pesquisa do AllCode; o dontstop não o empacota, não o inicia e não depende dele. Se o WAF bloquear o transporte nativo, o provedor fica indisponível até haver solução nativa.
+- O relay é **vendorizado** (`vendor/agentrouter-relay`, MIT) como sidecar interno (ADR-025); o dontstop não depende do app AllCode e não instala SDK em runtime (dependências pinadas na imagem). Se o WAF mudar, o SDK pinado precisa ser atualizado.
 - A tradução adiciona latência e depende de serviço externo; falhas devem ser monitoradas e bloqueadas, não mascaradas.
 - O limite real de contexto/saída e o custo por modelo não são publicados; usar os placeholders do catálogo até termos medição própria.
 - Testes de contrato/adaptador usam `httptest`; o teste live é opt-in (`AGENTROUTER_LIVE_KEY`, `AGENTROUTER_LIVE_BASE_URL`).

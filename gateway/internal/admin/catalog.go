@@ -165,6 +165,9 @@ func (s *ProviderService) CreateFromCatalog(ctx context.Context, tenantID string
 		return Provider{}, fmt.Errorf("%w: unsupported catalog protocol %q", ErrInvalidInput, entry.Protocol)
 	}
 	baseURL := input.BaseURL
+	if baseURL == "" && kind == "agentrouter" && s.agentRouterRelayURL != "" {
+		baseURL = s.agentRouterRelayURL
+	}
 	if baseURL == "" {
 		baseURL = entry.DefaultBaseURL
 	}

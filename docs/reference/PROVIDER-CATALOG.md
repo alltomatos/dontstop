@@ -54,7 +54,7 @@ adapters existentes (API key + wire suportado).
 | `nvidia` | openai | `https://integrate.api.nvidia.com/v1` | 3 | Bearer |
 | `openai` | openai | `https://api.openai.com/v1` | 4 | Bearer |
 | `opencode-go` | openai | `https://opencode.ai/inference/go/openai/v1` | 0 (sync `/models`) | Bearer + `x-opencode-session` |
-| `agentrouter` | agentrouter | `https://agentrouter.org` | 5 estáticos | `x-api-key` + `anthropic-version` |
+| `agentrouter` | agentrouter | `https://agentrouter.org` | 8 estáticos (relay sidecar, ADR-025) | `x-api-key` + `anthropic-version` |
 | `openrouter` | openai | `https://openrouter.ai/api/v1` | 1 (`auto`) | Bearer |
 | `perplexity` | openai | `https://api.perplexity.ai` | 2 | Bearer |
 | `together` | openai | `https://api.together.xyz/v1` | 3 | Bearer |

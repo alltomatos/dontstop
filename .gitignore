@@ -34,7 +34,9 @@ secrets/
 *.out
 coverage.out
 coverage.html
-vendor/
+vendor/*
+!vendor/agentrouter-relay/
+!vendor/agentrouter-relay/**
 
 # Node / TypeScript
 node_modules/
@@ -76,3 +78,6 @@ tests/security/.auth/
 tests/e2e/playwright-report/
 tests/e2e/test-results/
 
+
+__pycache__/
+*.pyc

@@ -16,6 +16,7 @@ type AdminWebshareService interface {
 	Test(ctx context.Context, tenantID, actor, apiKey, planID string) (admin.WebshareTestResult, error)
 	Save(ctx context.Context, tenantID, actor string, input admin.WebshareSaveInput) (admin.WebshareSettings, error)
 	Sync(ctx context.Context, tenantID, actor string) (admin.WebshareSyncResult, error)
+	RefreshPool(ctx context.Context, tenantID string) error
 }
 
 func adminWebshareStatus(service AdminWebshareService) http.HandlerFunc {
@@ -117,5 +118,20 @@ func writeWebshareError(w http.ResponseWriter, err error) {
 		writeAPIError(w, http.StatusBadGateway, "webshare_invalid_response", "invalid webshare response")
 	default:
 		writeAPIError(w, http.StatusBadGateway, "webshare_error", "webshare request failed")
+	}
+}
+
+func adminWebshareRefresh(service AdminWebshareService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		if err := service.RefreshPool(request.Context(), principal.TenantID); err != nil {
+			writeWebshareError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	}
 }

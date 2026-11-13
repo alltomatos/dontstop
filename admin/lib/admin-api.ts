@@ -5,7 +5,8 @@ import {
   SIGNUP_URLS,
   type Provider,
   type ProviderAccount,
-  type ProviderOrigin
+  type ProviderOrigin,
+  type ProviderProxyMode
 } from "./providers";
 
 interface AdminAccountProxy {
@@ -41,6 +42,7 @@ interface AdminProvider {
   origin: string;
   catalog_slug?: string;
   enabled: boolean;
+  proxy_auto?: boolean;
   accounts_count: number;
   usable_accounts?: number;
   models_count: number;
@@ -58,6 +60,21 @@ function staticProvider(record: AdminProvider): Provider | undefined {
   return record.origin === "custom" ? undefined : PROVIDERS[record.kind];
 }
 
+function normalizeProxyMode(value?: string): ProviderProxyMode {
+  switch (value) {
+    case "inherit":
+    case "off":
+    case "manual":
+    case "auto":
+      return value;
+    case "preferred":
+    case "required":
+      return "manual";
+    default:
+      return "inherit";
+  }
+}
+
 function mapAccount(account: AdminAccount): ProviderAccount {
   const warn = account.status === "cooldown";
   return {
@@ -66,7 +83,7 @@ function mapAccount(account: AdminAccount): ProviderAccount {
     meta: account.base_url || account.id,
     status: warn ? "warn" : "ok",
     statusKey: warn ? "common.cooldown" : "common.healthy",
-    proxyMode: (account.proxy_mode as ProviderAccount["proxyMode"]) ?? "off",
+    proxyMode: normalizeProxyMode(account.proxy_mode),
     modelsAvailable: account.models_available ?? 0,
     modelsUsable: account.models_usable ?? 0,
     capabilities: account.capabilities ?? [],
@@ -116,6 +133,7 @@ function mapProvider(record: AdminProvider): Provider {
     usableAccounts: record.usable_accounts ?? 0,
     modelsCount: record.models_count,
     modelsUsable: record.models_usable ?? record.models_count,
+    proxyAuto: record.proxy_auto ?? false,
     accounts: (record.accounts ?? []).map(mapAccount)
   };
 }
@@ -494,6 +512,8 @@ interface AdminProxyAccount {
   provider_id: string;
   provider_name: string;
   proxy_mode: string;
+  banned_until?: string;
+  ban_reason?: string;
 }
 
 interface AdminProxyEndpoint {
@@ -531,7 +551,9 @@ function mapProxyEndpoint(record: AdminProxyEndpoint): ProxyEndpoint {
       name: account.name,
       providerId: account.provider_id,
       providerName: account.provider_name,
-      proxyMode: account.proxy_mode as ProxyEndpoint["accounts"][number]["proxyMode"]
+      proxyMode: normalizeProxyMode(account.proxy_mode),
+      bannedUntil: account.banned_until,
+      banReason: account.ban_reason
     }))
   };
 }

@@ -20,7 +20,7 @@
 | Provedor (slug canônico) | Origem | Auth | Protocolo | Base URL | Modelos | Grupo |
 |---|---|---|---|---|---|---|
 | adapta-web | O | apikey | OpenAI-compatible | https://agent.adapta.one/api/chat/stream/v1 | 7 | web |
-| agentrouter | O | apikey | Anthropic Messages | https://agentrouter.org/v1/messages | 3 | 1P |
+| agentrouter | O | apikey | Anthropic Messages | https://agentrouter.org/v1/messages (relay interno, ADR-025) | 8 | 1P |
 | agnes | 9+O | apikey | OpenAI-compatible | https://apihub.agnes-ai.com/v1/chat/completions | 4 (ctx 512k) | openai-compat |
 | agnes-cn | O | apikey | OpenAI-compatible | https://api.agnes-ai.cn/v1/chat/completions | 3 (ctx 512k) | openai-compat |
 | agy | O | oauth | Code Assist (prop.) | - | 19 (ctx 1024k) | 1P |

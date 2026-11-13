@@ -8,6 +8,7 @@ One guide per console page, modal and workflow. Screenshots are captured in the 
 |---|---|
 | `dashboard` | Dashboard | [Dashboard](dashboard.md) | [PNG](../assets/en/dashboard.png) |
 | `providers` | Providers | [Providers](providers.md) | [PNG](../assets/en/providers.png) |
+| `combos` | Combos | [Combos](combos.md) | [PNG](../assets/en/combos.png) |
 | `endpoints` | Endpoints | [Endpoints](endpoints.md) | [PNG](../assets/en/endpoints.png) |
 | `api-manager` | API Manager | [API Manager](api-manager.md) | [PNG](../assets/en/api-manager.png) |
 | `mcp` | MCP | [MCP](mcp.md) | [PNG](../assets/en/mcp.png) |

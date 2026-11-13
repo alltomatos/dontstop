@@ -455,6 +455,101 @@ A URL pública, as âncoras, as imagens e a abertura em nova aba não mudam. Em 
 - (+) Cooldown e tracing consistentes entre réplicas.
 - (?) O limite de tentativas por requisição precisa equilibrar latência e diversidade de contas.
 
+## ADR-023 - Combos nativos com failover na mesma requisição
+
+**Status:** Proposto
+**Contexto:** o PRD já previa rotas/combos, mas o AllCode e os gateways de referência implementam
+combos de formas divergentes. O AllCode usa JSONC, dois resolvedores, `report` não ligado no caminho
+V1 e failover apenas na próxima requisição. Copiar esse comportamento criaria dívida técnica e não
+atenderia ao failover conta → modelo → provider já aceito no dontstop. O combo precisa ser um modelo
+virtual nativo, multi-tenant, observável e consistente entre réplicas.
+
+**Decisão:**
+- Combo é uma entidade PostgreSQL por tenant (`combos` + `combo_members`), com `slug` imutável,
+  `revision`, `status` (`draft`, `active`, `inactive`), estratégia, limites e membros
+  `provider_id + model_id` validados contra o catálogo ativo.
+- O identificador público é `combo/<slug>`. O combo ativo aparece em `/v1/models` e é consumido por
+  `/v1/chat/completions`; o response mantém o modelo solicitado e expõe headers
+  `X-Donstop-Combo*`.
+- Estratégias P0: `priority`, `round_robin` e `priority_round_robin`, com peso apenas dentro do
+  mesmo tier. Cursores e rate limit vivem no Redis por tenant/combo; não em memória.
+- Failover ocorre **na mesma requisição**, antes do primeiro chunk: todas as contas do membro,
+  depois o próximo membro, com `max_attempts` limitado. `400/413/422` são terminais.
+- O combo usa as contas e o circuit breaker existentes; não cria credenciais, contas ou providers.
+- A criação assistida por IA é conversacional, usa ferramentas read-only sobre o catálogo real,
+  produz um rascunho validado e **nunca** ativa ou salva o combo automaticamente.
+- Toda alteração é auditada e incrementa `revision`; cache e listas são invalidados.
+- AllCode, 9Router e OmniRoute permanecem apenas referências de estudo; nenhum runtime, relay,
+  upstream, SDK ou catálogo externo é usado.
+
+**Alternativas rejeitadas:**
+- Persistir em JSONC como o AllCode: não isola tenant, não versiona, não escala e não audita.
+- Failover só na próxima requisição: piora disponibilidade e contraria o FR-14.
+- Cursores em memória: quebram com múltiplas réplicas.
+- Combo de combo: recursão, custo imprevisível e UX confusa no P0.
+- IA com escrita direta ou ativação automática: risco de configuração incorreta e perda de controle.
+- Reutilizar o gateway do AllCode: viola a regra de independência de runtime.
+
+**Consequências:**
+- (+) Modelo de combo explícito, testável, multi-tenant e compatível com OpenAI.
+- (+) Failover mais forte que a referência, com limite de tentativas e tracing por membro.
+- (+) IA útil para descobrir o catálogo sem remover a revisão humana.
+- (?) Mais tabelas, endpoints, migrações, cache e testes de concorrência.
+- (?) O custo/latência por membro depende de telemetria confiável; no P0 preço/contexto são
+  filtros e latência/custo são warnings.
+
+**Documentos correspondentes:** [`reference/COMBOS.md`](reference/COMBOS.md),
+[`reference/COMBOS-ALLCODE-REFERENCE.md`](reference/COMBOS-ALLCODE-REFERENCE.md),
+[`design-system/pages/combos.md`](../design-system/pages/combos.md).
+
+## ADR-024 - Isolamento de IP por provedor, modo `auto` e poison persistente
+
+**Status:** Proposto
+**Data:** 2026-11-13
+**Supersede (parcial):** [ADR-021](#adr-021---proxy-webshare-dedicado-e-sticky-por-conta-de-provedor) — a regra "um mesmo IP pode atender N contas do tenant" passa a valer apenas **entre provedores diferentes**; dentro do mesmo provedor o IP passa a ser exclusivo.
+
+**Contexto:** o risco real é um IP de saída ser **restrito/banido por um provedor**. O modelo anterior permitia até 3 contas por IP dentro do tenant, o que gera banimento cruzado entre contas do mesmo provedor. O Webshare entrega outro IP automaticamente quando um proxy falha, e o gateway precisa detectar isso. O plano tem 100 IPs; reutilizar o mesmo IP em provedores distintos é seguro (o banimento é por provedor) e faz o pool render mais.
+
+**Decisão:**
+- **Invariante de isolamento:** um endpoint atende no máximo **1 conta por provedor**; reuso entre provedores é permitido. `proxy_assignments` ganha `provider_id` (desnormalizado) e `UNIQUE (tenant_id, provider_id, proxy_endpoint_id)`.
+- **Modo `auto` híbrido:** `providers.proxy_auto boolean` (default do provedor). Conta tem `proxy_mode` em `inherit|off|manual|auto`. Modo efetivo: `inherit` → `auto` se `proxy_auto`, senão `off`.
+- **Modo `manual`:** a conta usa um endpoint fixo (1 por provedor); **sem fallback direto silencioso** — falha fechada para não expor o IP real do gateway.
+- **Legado:** `preferred`/`required` continuam legíveis e são normalizados para `manual` em escrita; migração única reescreve as linhas existentes. Elimina o fallback direto que vaza a saída da plataforma.
+- **Pool do `auto`:** `Candidates()` filtra `source='webshare'`, `valid`, não envenenado, não quarentenado e sem outra conta **do mesmo provedor**. IP fixo por conta até falhar (sticky renovado).
+- **Poison persistente por (provedor, endpoint):** nova tabela `proxy_poison (tenant_id, provider_id, proxy_endpoint_id, banned_until, reason)`. Classificação: `proxy_unreachable` (connect/timeout/TLS, 15 min), `proxy_auth` (407, 1 h), `upstream_ban` (403/429 com sinal de ban, 24 h) e `upstream_quota` (429 sem sinal, **sem poison**). ADR-021 preservado: 401/403 de credencial **não** rotacionam proxy.
+- **Re-sync Webshare na falha:** o coordinator dispara refresh assíncrono com debounce (30 s, lock Redis `t:{tenant}:proxy:refresh`) que re-lista os IPs e importa substitutos; a rotação imediata usa o pool local. O IP morto é substituído para falhas futuras.
+- **Rotação transparente:** `canRotate` aceita falha de proxy e `upstream_ban`; re-tenta na mesma request (máx. 2), antes do primeiro chunk.
+
+**Alternativas rejeitadas:**
+- **1:1 global (uma conta por IP no tenant):** desperdiça o pool (100 IPs para N×M contas) e é mais restritivo que o risco real (ban é por provedor).
+- **Fallback direto automático (`preferred`):** expõe o IP real do gateway ao provedor e pode banir a saída da plataforma inteira.
+- **Manter o IP no pool após falha:** gera exatamente o banimento cruzado que se quer eliminar.
+- **Poison global por endpoint:** impediria o reuso entre provedores, que é seguro e desejável.
+
+**Consequências:**
+- (+) Contas do mesmo provedor em IPs distintos; falha de um IP não derruba as demais.
+- (+) Pool rende mais (reuso cross-provider) e o Webshare continua sendo a única fonte de proxies.
+- (+) Fail-closed elimina vazamento do IP real em fallback.
+- (?) Quebra de compatibilidade: atribuições que compartilham IP dentro do mesmo provedor precisam ser desdobradas por migração.
+- (?) O re-sync depende do Webshare e precisa de debounce/backoff para não virar tempestade de chamadas.
+- (?) Mais uma tabela (`proxy_poison`), uma coluna (`provider_id`), uma migration e testes de concorrência.
+
+**Documentos correspondentes:** [`reference/WEBSHARE-PROXY-PLAN.md`](reference/WEBSHARE-PROXY-PLAN.md), [`architecture/ADD.md`](architecture/ADD.md), [`02-DER.md`](02-DER.md), [`design-system/pages/proxy-network.md`](../design-system/pages/proxy-network.md), [`design-system/pages/providers.md`](../design-system/pages/providers.md).
+
+## ADR-025 - Sidecar relay vendorizado para o AgentRouter (WAF de fingerprint)
+
+**Status:** Aceito
+**Data:** 2026-11-13
+
+**Contexto e decisão:** o AgentRouter bloqueia clientes genéricos por fingerprint de conexão
+(`401 unauthorized client detected`); só o SDK Python `anthropic` síncrono passa. O dontstop vendoriza
+o relay MIT do AllCode como **sidecar interno** (rede `app`, sem porta pública, sem túnel, sem `pip` em
+runtime), com a chave repassada via `x-api-key` pelo gateway (cofre cifrado, `tenant_id`, auth e
+políticas do Endpoint Registry), tradução **fail-closed** no gateway, catálogo estático atualizado e
+disponibilidade dinâmica (402/503). Emenda a regra "sem relay" restrita ao AgentRouter.
+
+**Detalhe completo:** [`docs/adr/0025-agentrouter-relay-sidecar.md`](adr/0025-agentrouter-relay-sidecar.md).
+
 ## Fontes consultadas
 
 - `[MAP-9R]` — fallback, cache, SQLite, multitenancy, mutex global e segredos em texto plano.

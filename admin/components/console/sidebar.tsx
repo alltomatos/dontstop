@@ -8,6 +8,7 @@ import {
   Database,
   KeyRound,
   LayoutDashboard,
+  Layers,
   Network,
   Plug,
   Server,
@@ -20,6 +21,7 @@ import { useI18n } from "./i18n-provider";
 const items = [
   { href: "/dashboard", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/providers", key: "nav.providers", icon: Server },
+  { href: "/combos", key: "nav.combos", icon: Layers },
   { href: "/proxies", key: "nav.proxies", icon: Network },
   { href: "/endpoints", key: "nav.endpoints", icon: Waypoints },
   { href: "/api-manager", key: "nav.apiManager", icon: KeyRound },

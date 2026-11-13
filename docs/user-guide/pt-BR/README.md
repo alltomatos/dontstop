@@ -8,6 +8,7 @@ Um guia por página, modal e funcionalidade do console. As capturas são feitas 
 |---|---|
 | `dashboard` | Dashboard | [Dashboard](dashboard.md) | [PNG](../assets/pt-BR/dashboard.png) |
 | `providers` | Provedores | [Provedores](providers.md) | [PNG](../assets/pt-BR/providers.png) |
+| `combos` | Combos | [Combos](combos.md) | [PNG](../assets/pt-BR/combos.png) |
 | `endpoints` | Endpoints | [Endpoints](endpoints.md) | [PNG](../assets/pt-BR/endpoints.png) |
 | `api-manager` | Gerenciador de API | [Gerenciador de API](api-manager.md) | [PNG](../assets/pt-BR/api-manager.png) |
 | `mcp` | MCP | [MCP](mcp.md) | [PNG](../assets/pt-BR/mcp.png) |

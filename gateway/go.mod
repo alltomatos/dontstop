@@ -2,6 +2,8 @@ module github.com/alltomatos/dontstop/gateway
 
 go 1.26.10
 
+toolchain go1.26.11
+
 require (
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/nats-io/nats.go v1.55.0

@@ -19,7 +19,7 @@ erDiagram
     TENANTS ||--o{ USERS : has
     TENANTS ||--o{ API_KEYS : issues
     TENANTS ||--o{ PROVIDERS : configures
-    TENANTS ||--o{ ROUTES : owns
+    TENANTS ||--o{ COMBOS : owns
     TENANTS ||--o{ POLICIES : defines
     TENANTS ||--o{ DLP_RULES : defines
     TENANTS ||--o{ PROXY_POOLS : owns
@@ -35,16 +35,21 @@ erDiagram
 
     PROVIDERS ||--o{ PROVIDER_MODELS : offers
     PROVIDERS ||--o{ PROVIDER_ACCOUNTS : owns
-    PROVIDERS ||--o{ ROUTE_TARGETS : targets
+    PROVIDERS ||--o{ COMBO_MEMBERS : offers
     PROVIDER_ACCOUNTS ||--|| PROVIDER_CREDENTIALS : stores
     PROVIDER_ACCOUNTS ||--o{ PROXY_ASSIGNMENTS : uses
     PROXIES ||--o{ PROXY_ASSIGNMENTS : assigned
     PROXY_POOLS ||--o{ PROXIES : contains
     PROXIES ||--o{ PROXY_HEALTH_EVENTS : reports
 
-    ROUTES ||--o{ ROUTE_TARGETS : contains
+    COMBOS ||--o{ COMBO_MEMBERS : contains
+    PROVIDER_MODELS ||--o{ COMBO_MEMBERS : selected
+    COMBO_MEMBERS ||--o{ FAILOVER_EVENTS : attempts
+    COMBOS ||--o{ COMBO_AI_SESSIONS : assists
+    COMBO_AI_SESSIONS ||--o{ COMBO_AI_MESSAGES : has
+    COMBO_AI_SESSIONS ||--o{ COMBO_AI_DRAFTS : produces
+    COMBO_AI_DRAFTS ||--o| COMBOS : accepted_as
     PROVIDER_MODELS ||--o{ MODEL_ALIASES : aliased
-    ROUTES ||--o{ FAILOVER_EVENTS : triggers
 
     POLICIES ||--o{ POLICY_RULES : contains
     DLP_RULES ||--o{ DLP_EVENTS : fires
@@ -52,7 +57,7 @@ erDiagram
     API_KEYS ||--o{ REQUESTS : authorizes
     PROVIDERS ||--o{ REQUESTS : serves
     PROVIDER_ACCOUNTS ||--o{ REQUESTS : executes
-    ROUTES ||--o{ REQUESTS : routes
+    COMBOS ||--o{ REQUESTS : routes
     REQUESTS ||--o{ DLP_EVENTS : inspects
     REQUESTS ||--o{ CACHE_EVENTS : uses
     REQUESTS ||--o{ FAILOVER_EVENTS : records
@@ -142,22 +147,82 @@ erDiagram
       text key_version
       timestamptz rotated_at
     }
-    ROUTES {
+    COMBOS {
       uuid id PK
       uuid tenant_id FK
+      text slug UK
+      text name
+      text description
+      text strategy
+      boolean failover_enabled
+      text status
+      int revision
+      int rpm_limit
+      int tpm_limit
+      int max_attempts
+      text source
+      uuid created_by FK
+      timestamptz created_at
+      timestamptz updated_at
+    }
+    COMBO_MEMBERS {
+      uuid id PK
+      uuid tenant_id FK
+      uuid combo_id FK
+      uuid provider_id FK
+      text model_id FK
+      smallint priority
+      int position
+      int weight
+      boolean enabled
+      jsonb constraints
+      timestamptz created_at
+      timestamptz updated_at
+    }
+    COMBO_AI_SESSIONS {
+      uuid id PK
+      uuid tenant_id FK
+      uuid created_by FK
+      uuid assistant_provider_id FK
+      text assistant_model_id
+      text status
+      int budget_tokens
+      int used_tokens
+      numeric budget_usd
+      numeric used_usd
+      timestamptz expires_at
+      timestamptz created_at
+      timestamptz updated_at
+    }
+    COMBO_AI_MESSAGES {
+      uuid id PK
+      uuid tenant_id FK
+      uuid session_id FK
+      text role
+      jsonb content
+      text tool_name
+      text tool_call_id
+      int tokens_in
+      int tokens_out
+      timestamptz created_at
+    }
+    COMBO_AI_DRAFTS {
+      uuid id PK
+      uuid tenant_id FK
+      uuid session_id FK
+      text status
       text name
       text strategy
-      boolean enabled
-      jsonb config
-    }
-    ROUTE_TARGETS {
-      uuid id PK
-      uuid route_id FK
-      uuid provider_id FK
-      text model_key
-      int priority
-      int weight
-      jsonb conditions
+      boolean failover_enabled
+      int rpm_limit
+      int tpm_limit
+      jsonb members
+      text rationale
+      jsonb warnings
+      jsonb validation
+      uuid accepted_combo_id FK
+      timestamptz expires_at
+      timestamptz created_at
     }
     MODEL_ALIASES {
       uuid id PK
@@ -250,7 +315,8 @@ erDiagram
       uuid api_key_id FK
       uuid provider_id FK
       uuid account_id FK
-      uuid route_id FK
+      uuid combo_id FK
+      uuid combo_member_id FK
       text model_key
       text status
       int http_status
@@ -268,6 +334,7 @@ erDiagram
       uuid tenant_id FK
       date day
       uuid provider_id FK
+      uuid combo_id FK
       text model_key
       bigint requests
       bigint tokens_in
@@ -350,8 +417,11 @@ erDiagram
 | `provider_models` | Catálogo de modelos | `(provider_id, model_key)` único; capabilities e pricing em JSONB |
 | `provider_accounts` | Conta/credencial rotacionável | `(provider_id, priority)` indexado; `status` e `health_score` |
 | `provider_credentials` | Segredo cifrado | 1:1 com account; `encrypted_payload` bytea; `key_version` |
-| `routes` | Combo/política de encadeamento | `(tenant_id, name)` único; `strategy` |
-| `route_targets` | Alvos ordenados | `(route_id, priority)`; FK para provider/model |
+| `combos` | Modelo virtual/política de encadeamento | `(tenant_id, slug)` único; `status`, `revision`, `strategy`, limites e `max_attempts` |
+| `combo_members` | Membros ordenados do combo | `(combo_id, provider_id, model_id)` único; `(combo_id, priority, position)` único; FK para provider/model |
+| `combo_ai_sessions` | Sessão de criação assistida | Escopo por tenant/usuário; modelo assistente sem combo; TTL 30 min |
+| `combo_ai_messages` | Histórico da conversa | Sem segredos/PII bruta; retenção curta |
+| `combo_ai_drafts` | Rascunho revisável | `members`, `warnings`, `validation`; aceite cria combo `draft` |
 | `model_aliases` | Nome amigável → modelo real | `(tenant_id, alias)` único |
 | `failover_events` | Histórico de troca de conta/modelo | Particionado por mês; `request_id` indexado |
 
@@ -359,10 +429,14 @@ erDiagram
 
 | Entidade | Papel | Chaves e regras |
 |---|---|---|
-| `proxy_pools` | Pool lógico | `(tenant_id, name)` único; `source` = webshare |
-| `proxies` | Proxy individual | `(pool_id, host, port)` único; `score`, `latency_ms`, `success_rate` |
-| `proxy_assignments` | Vínculo conta↔proxy | `(account_id, proxy_id)` único; `sticky_until` |
+| `proxy_endpoints` | IP de saída (Webshare ou manual) | `(tenant_id, address, port)` único; `source` (`webshare`/`manual`); `score`, `valid`, `quarantined_until` |
+| `proxy_assignments` | Vínculo conta↔IP | `(tenant_id, provider_account_id)` único e `UNIQUE (tenant_id, provider_id, proxy_endpoint_id)`; `sticky_until` |
+| `proxy_poison` | Ban por provedor/IP | `(tenant_id, provider_id, proxy_endpoint_id)` único; `banned_until`, `reason` |
 | `proxy_health_events` | Telemetria de saúde | Particionado por dia; retenção 30 d |
+
+> **Isolamento (ADR-024):** um IP atende no máximo **1 conta por provedor**; o reuso entre
+> provedores diferentes é permitido. O poison é por `(provedor, endpoint)`, não global, para não
+> impedir esse reuso.
 
 ### 3.4 Política, DLP e cache
 
@@ -575,10 +649,13 @@ erDiagram
 | Provider → Models | 1:N | Modelo não existe sem provider |
 | Provider → Accounts | 1:N | Múltiplas contas por provider |
 | Account → Credential | 1:1 | Uma credencial ativa por conta |
-| Route → Targets | 1:N | Ordem por prioridade; pelo menos um alvo |
+| Combo → Members | 1:N | Ordem por `priority` + `position`; 1–32 membros; ao menos um elegível para ativar |
+| Combo AI Session → Messages | 1:N | Histórico da conversa; sem segredo/PII bruta |
+| Combo AI Session → Drafts | 1:N | Rascunhos revisáveis; aceite explícito cria combo `draft` |
+| Combo AI Draft → Combo | 0:1 | `accepted_combo_id` após aceite; nunca ativa automaticamente |
 | Pool → Proxies | 1:N | Pool pode estar vazio (fallback direto) |
-| Account ↔ Proxy | N:M | Via `proxy_assignments`, com sticky opcional |
-| Request → Tenant/Key/Provider/Account/Route | N:1 | FKs opcionais para eventos de cache/DLP sem provider |
+| Account ↔ Proxy | 1:1 por provedor | Via `proxy_assignments` com `provider_id`; reuso cross-provider permitido (ADR-024) |
+| Request → Tenant/Key/Provider/Account/Combo | N:1 | FKs opcionais para eventos de cache/DLP sem provider |
 | Policy → Rules | 1:N | Regras avaliadas em ordem |
 | Quota → Usage | 1:N | Consumo por período |
 | Webhook → Deliveries | 1:N | Retry por entrega |
@@ -593,8 +670,13 @@ erDiagram
 | `providers` | `UNIQUE(tenant_id, slug)` | Idempotência de cadastro |
 | `provider_models` | `UNIQUE(provider_id, model_key)` | Catálogo sem duplicata |
 | `provider_accounts` | `(provider_id, status, priority)` | Seleção de conta |
-| `route_targets` | `(route_id, priority)` | Ordem de fallback |
-| `proxies` | `(pool_id, status, score DESC)` | Escolha do melhor proxy |
+| `combos` | `UNIQUE(tenant_id, slug)` | Identidade pública e isolamento |
+| `combos` | `(tenant_id, status, updated_at DESC)` | Listagem do console |
+| `combo_members` | `(combo_id, priority, position)` | Ordem de fallback e reordenação determinística |
+| `combo_members` | `(tenant_id, provider_id, model_id)` | Elegibilidade e busca por membro |
+| `proxy_endpoints` | `(tenant_id, score DESC, last_verified_at DESC)` | Escolha do melhor IP no modo `auto` |
+| `proxy_assignments` | `UNIQUE(tenant_id, provider_id, proxy_endpoint_id)` | Garante 1 conta/IP por provedor |
+| `proxy_poison` | `(tenant_id, provider_id, banned_until)` | Excluir IPs banidos do provedor |
 | `requests` | `(tenant_id, created_at DESC)` | Consulta por tenant |
 | `requests` | `(provider_id, model_key, created_at DESC)` | Saúde/custo por modelo |
 | `requests` | `(api_key_id, created_at DESC)` | Consumo por chave |
@@ -627,7 +709,9 @@ erDiagram
 
 | Dado | Store | Chave | TTL |
 |---|---|---|---|
-| Resposta exata | Redis | `t:{tenant}:exact:{sha256}` | 1 h padrão (configurável) |
+| Resposta exata | Redis | `t:{tenant}:exact:{sha256}` (modelo `combo/<slug>@<revision>`) | 1 h padrão (configurável) |
+| Cursor de combo | Redis | `t:{tenant}:combo:{id}:rr` e `:tier:{priority}` | Persistente enquanto o combo existir |
+| Rate limit de combo | Redis | `t:{tenant}:combo:{id}:rl:{window}` | Janela do limite |
 | Metadados de cache exato | Postgres `cache_entries` | `(tenant_id, key_hash)` | Igual ao TTL + 7 d para estatística |
 | Vetor semântico | Qdrant | `point_id = uuid`; payload `{tenant_id, model_key, prompt_hash}` | 24 h máximo |
 | Metadados semânticos | Postgres `semantic_cache_entries` | `vector_id` | 30 d |
@@ -642,6 +726,8 @@ erDiagram
 | Payload de prompt/resposta | **Off por padrão** | Opt-in por tenant; criptografado; acesso auditado |
 | Metadados de requisição | 90 d quente; 1 ano frio | Sem conteúdo |
 | Auditoria | 1 ano | Imutável; exportável |
+| Mensagens da IA de combos | 7 d | Sem segredo/PII bruta; não treina modelo |
+| Rascunhos da IA de combos | 24 h | Expira ou é descartado; aceite gera combo `draft` |
 | DLP events | 1 ano | Sem PII bruta; apenas hash/detector |
 | Uso agregado | 2 anos | Base para FinOps |
 | Cache | TTL curto | Invalidação por modelo/tenant |

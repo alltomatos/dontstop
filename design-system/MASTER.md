@@ -159,6 +159,7 @@
 |---|---|---|
 | Dashboard | [pages/dashboard.md](pages/dashboard.md) | `mockups/console.html#dashboard` |
 | Providers | [pages/providers.md](pages/providers.md) | `mockups/console.html#providers` |
+| Combos | [pages/combos.md](pages/combos.md) | `mockups/combos.html` |
 | Endpoint final + Políticas | [pages/endpoints.md](pages/endpoints.md) | `mockups/console.html#endpoints` |
 | Gerenciador de API | [pages/api-manager.md](pages/api-manager.md) | `mockups/console.html#api-manager` |
 | MCP | [pages/mcp.md](pages/mcp.md) | `mockups/console.html#mcp` |

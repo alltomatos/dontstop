@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
 	stickyTTL      = 30 * time.Minute
 	quarantineTTL  = 5 * time.Minute
 	candidateLimit = 50
+	refreshTimeout = 20 * time.Second
 )
 
 // Endpoint is a proxy assignment candidate loaded from the pool.
@@ -40,10 +44,11 @@ type Lease struct {
 // Repository persists the proxy pool and assignments.
 type Repository interface {
 	Assignment(ctx context.Context, tenantID, accountID string) (Endpoint, bool, error)
-	Candidates(ctx context.Context, tenantID, excludeID string, limit int) ([]Endpoint, error)
+	Candidates(ctx context.Context, tenantID, accountID, excludeID string, limit int) ([]Endpoint, error)
 	Assign(ctx context.Context, tenantID, accountID, endpointID string) error
 	RecordFailure(ctx context.Context, tenantID, endpointID string) error
 	RecordSuccess(ctx context.Context, tenantID, endpointID string) error
+	RecordBan(ctx context.Context, tenantID, accountID, endpointID, reason string, until time.Time) error
 }
 
 // State coordinates transient quarantine in Redis.
@@ -58,17 +63,38 @@ type Decrypter interface {
 	Decrypt(ciphertext []byte) ([]byte, error)
 }
 
+// PoolRefresher re-syncs the upstream pool after a failure (e.g. Webshare).
+type PoolRefresher interface {
+	RefreshPool(ctx context.Context, tenantID string) error
+}
+
 // Coordinator selects, rotates and reports on account proxies.
 type Coordinator struct {
-	repository Repository
-	state      State
-	decrypter  Decrypter
-	now        func() time.Time
+	repository    Repository
+	state         State
+	decrypter     Decrypter
+	refresher     PoolRefresher
+	now           func() time.Time
+	rotateCounter metric.Int64Counter
+	poisonCounter metric.Int64Counter
+	missCounter   metric.Int64Counter
 }
 
 // NewCoordinator creates a proxy coordinator.
 func NewCoordinator(repository Repository, state State, decrypter Decrypter) *Coordinator {
-	return &Coordinator{repository: repository, state: state, decrypter: decrypter, now: time.Now}
+	meter := otel.Meter("dontstop/gateway/proxy")
+	rotate, _ := meter.Int64Counter("proxy.rotate")
+	poison, _ := meter.Int64Counter("proxy.poison")
+	miss, _ := meter.Int64Counter("proxy.candidate_miss")
+	return &Coordinator{
+		repository: repository, state: state, decrypter: decrypter, now: time.Now,
+		rotateCounter: rotate, poisonCounter: poison, missCounter: miss,
+	}
+}
+
+// SetPoolRefresher enables the failure-driven upstream pool refresh.
+func (c *Coordinator) SetPoolRefresher(refresher PoolRefresher) {
+	c.refresher = refresher
 }
 
 // Resolve returns the proxy lease for an account. Off never acquires one.
@@ -89,12 +115,12 @@ func (c *Coordinator) Resolve(ctx context.Context, tenantID, accountID, mode str
 		return c.lease(assigned)
 	}
 
-	endpoint, found, err := c.next(ctx, tenantID, assigned.ID)
+	endpoint, found, err := c.next(ctx, tenantID, accountID, assigned.ID)
 	if err != nil {
 		return Lease{}, err
 	}
 	if !found {
-		if normalized == provider.ProxyModeRequired {
+		if provider.RequiresProxy(normalized) {
 			return Lease{}, provider.ErrProxyRequired
 		}
 		return Lease{}, nil
@@ -106,7 +132,7 @@ func (c *Coordinator) Resolve(ctx context.Context, tenantID, accountID, mode str
 }
 
 // Rotate quarantines the failed proxy and leases the next eligible one.
-func (c *Coordinator) Rotate(ctx context.Context, tenantID, accountID, failedEndpointID, mode string) (Lease, error) {
+func (c *Coordinator) Rotate(ctx context.Context, tenantID, accountID, failedEndpointID, mode string, kind provider.ProxyFailureKind, ttl time.Duration) (Lease, error) {
 	normalized := provider.NormalizeProxyMode(mode)
 	if normalized == provider.ProxyModeOff {
 		return Lease{}, nil
@@ -114,13 +140,28 @@ func (c *Coordinator) Rotate(ctx context.Context, tenantID, accountID, failedEnd
 	if failedEndpointID != "" {
 		_ = c.repository.RecordFailure(ctx, tenantID, failedEndpointID)
 		_ = c.state.Quarantine(ctx, tenantID, failedEndpointID, quarantineTTL)
+		if kind != "" && ttl > 0 {
+			_ = c.repository.RecordBan(ctx, tenantID, accountID, failedEndpointID, string(kind), c.now().Add(ttl))
+			c.poisonCounter.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("dontstop.tenant_id", tenantID),
+				attribute.String("proxy.failure_kind", string(kind)),
+			))
+		}
+		if c.refresher != nil {
+			tenant := tenantID
+			go func() {
+				refreshCtx, cancel := context.WithTimeout(context.Background(), refreshTimeout)
+				defer cancel()
+				_ = c.refresher.RefreshPool(refreshCtx, tenant)
+			}()
+		}
 	}
-	endpoint, found, err := c.next(ctx, tenantID, failedEndpointID)
+	endpoint, found, err := c.next(ctx, tenantID, accountID, failedEndpointID)
 	if err != nil {
 		return Lease{}, err
 	}
 	if !found {
-		if normalized == provider.ProxyModeRequired {
+		if provider.RequiresProxy(normalized) {
 			return Lease{}, provider.ErrProxyRequired
 		}
 		return Lease{}, nil
@@ -128,6 +169,10 @@ func (c *Coordinator) Rotate(ctx context.Context, tenantID, accountID, failedEnd
 	if err := c.repository.Assign(ctx, tenantID, accountID, endpoint.ID); err != nil {
 		return Lease{}, fmt.Errorf("rotate proxy: %w", err)
 	}
+	c.rotateCounter.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("dontstop.tenant_id", tenantID),
+		attribute.String("proxy.failure_kind", string(kind)),
+	))
 	return c.lease(endpoint)
 }
 
@@ -151,8 +196,8 @@ func (c *Coordinator) usable(ctx context.Context, tenantID string, endpoint Endp
 	return err != nil || !quarantined
 }
 
-func (c *Coordinator) next(ctx context.Context, tenantID, excludeID string) (Endpoint, bool, error) {
-	candidates, err := c.repository.Candidates(ctx, tenantID, excludeID, candidateLimit)
+func (c *Coordinator) next(ctx context.Context, tenantID, accountID, excludeID string) (Endpoint, bool, error) {
+	candidates, err := c.repository.Candidates(ctx, tenantID, accountID, excludeID, candidateLimit)
 	if err != nil {
 		return Endpoint{}, false, err
 	}
@@ -162,6 +207,7 @@ func (c *Coordinator) next(ctx context.Context, tenantID, excludeID string) (End
 		}
 		return candidate, true, nil
 	}
+	c.missCounter.Add(ctx, 1, metric.WithAttributes(attribute.String("dontstop.tenant_id", tenantID)))
 	return Endpoint{}, false, nil
 }
 
