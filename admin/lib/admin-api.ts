@@ -388,6 +388,30 @@ export async function getMcpStatus(): Promise<MCPStatus | null> {
   }
 }
 
+export interface MCPToolCount {
+  tool: string;
+  count: number;
+}
+
+export interface MCPActivity {
+  total_calls: number;
+  success_rate: number;
+  avg_latency_ms: number;
+  top_tools: MCPToolCount[];
+  hours: number;
+  generated_at: string;
+}
+
+export async function getMcpActivity(hours = 24): Promise<MCPActivity | null> {
+  const response = await adminRequest(`/admin/v1/mcp/activity?hours=${hours}`);
+  if (!response?.ok) return null;
+  try {
+    return await response.json() as MCPActivity;
+  } catch {
+    return null;
+  }
+}
+
 
 export interface CacheStats {
   hits: number;

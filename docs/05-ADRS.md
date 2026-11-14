@@ -550,6 +550,21 @@ disponibilidade dinâmica (402/503). Emenda a regra "sem relay" restrita ao Agen
 
 **Detalhe completo:** [`docs/adr/0025-agentrouter-relay-sidecar.md`](adr/0025-agentrouter-relay-sidecar.md).
 
+## ADR-026 - MCP runtime no gateway (Go SDK, transportes e ferramentas de gestão)
+
+**Status:** Aceito
+**Data:** 2026-11-13
+
+**Contexto e decisão:** o MCP era apenas administrativo (settings/status/tools), sem runtime, auditoria ou
+restart. O dontstop passa a executar o **runtime MCP no gateway** com o SDK Go oficial (pinado), transportes
+`Streamable HTTP` (`/mcp`), `SSE` legado (`/sse`+`/messages`) e `stdio` (`gateway mcp`), **desligado por padrão**,
+Bearer/escopo e gate por tenant antes do handler. Ferramentas são filtradas por `enabled` + escopo; a Fase A
+inclui combos (`combos:read`/`combos:write`) e leitura de providers/models, **sem segredos via MCP**; a Fase B
+deferida cobre operações sensíveis. Auditoria em `audit_outbox` (`mcp.*` + `mcp.tool.call` + `mcp.combo.*`),
+restart auditado, spans/métricas sem payload/PII e proibição de túneis.
+
+**Detalhe completo:** [`docs/adr/0026-mcp-runtime-and-management-tools.md`](adr/0026-mcp-runtime-and-management-tools.md).
+
 ## Fontes consultadas
 
 - `[MAP-9R]` — fallback, cache, SQLite, multitenancy, mutex global e segredos em texto plano.

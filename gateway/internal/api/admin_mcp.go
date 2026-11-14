@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/alltomatos/dontstop/gateway/internal/admin"
 )
@@ -12,8 +13,10 @@ import (
 // AdminMCPService exposes MCP settings administration.
 type AdminMCPService interface {
 	Status(ctx context.Context, tenantID string) (admin.MCPStatus, error)
-	UpdateSettings(ctx context.Context, tenantID string, enabled *bool, transport *string) (admin.MCPStatus, error)
-	UpdateTool(ctx context.Context, tenantID, toolID string, enabled bool) (admin.MCPStatus, error)
+	UpdateSettings(ctx context.Context, tenantID, actor string, enabled *bool, transport *string) (admin.MCPStatus, error)
+	UpdateTool(ctx context.Context, tenantID, actor, toolID string, enabled bool) (admin.MCPStatus, error)
+	Restart(ctx context.Context, tenantID, actor string) (admin.MCPStatus, error)
+	Activity(ctx context.Context, tenantID string, hours int) (admin.MCPActivity, error)
 }
 
 func adminMCPStatus(service AdminMCPService) http.HandlerFunc {
@@ -46,7 +49,7 @@ func adminMCPUpdateSettings(service AdminMCPService) http.HandlerFunc {
 			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid JSON body")
 			return
 		}
-		status, err := service.UpdateSettings(request.Context(), principal.TenantID, input.Enabled, input.Transport)
+		status, err := service.UpdateSettings(request.Context(), principal.TenantID, principal.KeyID, input.Enabled, input.Transport)
 		if errors.Is(err, admin.ErrInvalidInput) {
 			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid MCP settings")
 			return
@@ -73,7 +76,7 @@ func adminMCPUpdateTool(service AdminMCPService) http.HandlerFunc {
 			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "enabled is required")
 			return
 		}
-		status, err := service.UpdateTool(request.Context(), principal.TenantID, request.PathValue("id"), *input.Enabled)
+		status, err := service.UpdateTool(request.Context(), principal.TenantID, principal.KeyID, request.PathValue("id"), *input.Enabled)
 		if errors.Is(err, admin.ErrNotFound) {
 			writeAPIError(w, http.StatusNotFound, "not_found", "MCP tool not found")
 			return
@@ -83,6 +86,60 @@ func adminMCPUpdateTool(service AdminMCPService) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, status)
+	}
+}
+
+func adminMCPTools(service AdminMCPService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		status, err := service.Status(request.Context(), principal.TenantID)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to load MCP tools")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"object": "list", "data": status.Tools})
+	}
+}
+
+func adminMCPRestart(service AdminMCPService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		status, err := service.Restart(request.Context(), principal.TenantID, principal.KeyID)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to restart MCP")
+			return
+		}
+		writeJSON(w, http.StatusOK, status)
+	}
+}
+
+func adminMCPActivity(service AdminMCPService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		hours := 24
+		if raw := request.URL.Query().Get("hours"); raw != "" {
+			parsed, err := strconv.Atoi(raw)
+			if err != nil || parsed <= 0 || parsed > 168 {
+				writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid hours")
+				return
+			}
+			hours = parsed
+		}
+		activity, err := service.Activity(request.Context(), principal.TenantID, hours)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to load MCP activity")
+			return
+		}
+		writeJSON(w, http.StatusOK, activity)
 	}
 }
 

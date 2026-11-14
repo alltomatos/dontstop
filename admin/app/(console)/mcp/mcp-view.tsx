@@ -1,27 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Breadcrumbs, PageHeader } from "@/components/console/page";
 import { CopyButton, Toggle } from "@/components/console/ui";
 import { useI18n } from "@/components/console/i18n-provider";
-import type { MCPStatus } from "@/lib/admin-api";
+import type { MCPActivity, MCPStatus } from "@/lib/admin-api";
 
-const tools = [
-  { name: "dontstop_chat", scope: "chat:write" },
-  { name: "dontstop_models", scope: "models:read" },
-  { name: "dontstop_embeddings", scope: "embeddings:write" },
-  { name: "dontstop_web_search", scope: "web:read" },
-  { name: "dontstop_usage", scope: "usage:read" },
-  { name: "dontstop_health", scope: "models:read" }
-];
-
-export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) {
+export function McpView({ initialStatus, initialActivity }: { initialStatus: MCPStatus | null; initialActivity: MCPActivity | null }) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState(initialStatus?.enabled ?? false);
   const [transport, setTransport] = useState<MCPStatus["transport"]>(initialStatus?.transport ?? "streamable-http");
+  const [tools, setTools] = useState<MCPStatus["tools"]>(initialStatus?.tools ?? []);
   const [toolState, setToolState] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(tools.map(tool => [tool.name, initialStatus?.tools.find(item => item.id === tool.name)?.enabled ?? true]))
+    Object.fromEntries((initialStatus?.tools ?? []).map(tool => [tool.id, tool.enabled]))
   );
+  const [activity, setActivity] = useState<MCPActivity | null>(initialActivity);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/mcp/activity?hours=24", { cache: "no-store" });
+        if (!response.ok) return;
+        const next = await response.json() as MCPActivity;
+        if (!cancelled) setActivity(next);
+      } catch {
+        // Keep the server-rendered snapshot when the Admin API is unavailable.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  function applyStatus(status: MCPStatus) {
+    setEnabled(status.enabled);
+    setTransport(status.transport);
+    setTools(status.tools);
+    setToolState(Object.fromEntries(status.tools.map(tool => [tool.id, tool.enabled])));
+  }
 
   async function persistSettings(next: { enabled?: boolean; transport?: string }) {
     try {
@@ -31,9 +46,7 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
         body: JSON.stringify(next)
       });
       if (response.ok) {
-        const status = await response.json() as MCPStatus;
-        setEnabled(status.enabled);
-        setTransport(status.transport);
+        applyStatus(await response.json() as MCPStatus);
       }
     } catch {
       // Keep local state when the Admin API is unavailable.
@@ -48,15 +61,29 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
         body: JSON.stringify({ enabled: value })
       });
       if (response.ok) {
-        const status = await response.json() as MCPStatus;
-        setToolState(Object.fromEntries(status.tools.map(tool => [tool.id, tool.enabled])));
+        applyStatus(await response.json() as MCPStatus);
       }
     } catch {
       // Keep local state when the Admin API is unavailable.
     }
   }
 
-  const endpoint = transport === "stdio" ? "dontstop mcp" : transport === "sse" ? "https://gateway.dontstop.corp/api/mcp/sse" : "https://gateway.dontstop.corp/api/mcp/stream";
+  async function restart() {
+    try {
+      const response = await fetch("/api/admin/mcp/restart", { method: "POST" });
+      if (response.ok) {
+        window.location.reload();
+      }
+    } catch {
+      // Keep the current view when the Admin API is unavailable.
+    }
+  }
+
+  const endpoint = transport === "stdio" ? "gateway mcp" : transport === "sse" ? "https://gateway.dontstop.corp/sse" : "https://gateway.dontstop.corp/mcp";
+  const enabledScopes = Array.from(new Set(tools.filter(tool => toolState[tool.id] ?? true).map(tool => tool.scope).filter(Boolean)));
+  const totalCalls = activity?.total_calls ?? 0;
+  const successRate = activity?.success_rate ?? 0;
+  const avgLatency = activity?.avg_latency_ms ?? 0;
 
   return (
     <>
@@ -64,7 +91,7 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
       <PageHeader
         title={t("mcp.server")}
         subtitle={t("mcp.subtitle")}
-        actions={<button className="btn" type="button">{t("common.restart")}</button>}
+        actions={<button className="btn" type="button" onClick={() => void restart()}>{t("common.restart")}</button>}
       />
 
       {!enabled ? (
@@ -72,7 +99,7 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
           <div className="empty-icon" aria-hidden="true">+</div>
           <h2>{t("mcp.disabledTitle")}</h2>
           <p>{t("mcp.disabledHint")}</p>
-          <button className="btn primary" type="button" onClick={() => { setEnabled(true); void persistSettings({ enabled: true }); }}>{t("mcp.enableServer")}</button>
+          <button className="btn primary" type="button" onClick={() => { setEnabled(true); void persistSettings({ enabled: true, transport }); }}>{t("mcp.enableServer")}</button>
         </section>
       ) : (
         <div className="stack">
@@ -90,7 +117,7 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
             </div>
             <h3>{t("mcp.howToConnect")}</h3>
             <ol className="muted">
-              <li>{t("mcp.step1", { command: "dontstop mcp" })}</li>
+              <li>{t("mcp.step1", { command: "gateway mcp" })}</li>
               <li>{t("mcp.step2")}</li>
               <li>{t("mcp.step3", { tool: "dontstop_chat" })}</li>
             </ol>
@@ -127,31 +154,33 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
             <div className="grid-3" style={{ marginTop: 12 }}>
               <div className="list-item"><span>{t("mcp.processStatus")}</span><span className="chip ok">{t("common.online")}</span></div>
               <div className="list-item"><span>PID</span><span className="mono">—</span></div>
-              <div className="list-item"><span>{t("mcp.uptime")}</span><span>2h14m</span></div>
-              <div className="list-item"><span>{t("mcp.heartbeat")}</span><span>12s</span></div>
+              <div className="list-item"><span>{t("mcp.uptime")}</span><span>runtime</span></div>
+              <div className="list-item"><span>{t("mcp.heartbeat")}</span><span>live</span></div>
             </div>
           </section>
 
           <section className="card">
             <h3>{t("mcp.activity")}</h3>
             <div className="kpis" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-              <div><div className="label">{t("mcp.totalCalls")}</div><div className="value num">1.284</div></div>
-              <div><div className="label">{t("mcp.successRate")}</div><div className="value num">99,2%</div></div>
-              <div><div className="label">{t("mcp.avgLatency")}</div><div className="value num">107 ms</div></div>
+              <div><div className="label">{t("mcp.totalCalls")}</div><div className="value num">{totalCalls.toLocaleString()}</div></div>
+              <div><div className="label">{t("mcp.successRate")}</div><div className="value num">{successRate.toFixed(1)}%</div></div>
+              <div><div className="label">{t("mcp.avgLatency")}</div><div className="value num">{Math.round(avgLatency)} ms</div></div>
             </div>
             <div className="grid-2">
               <div>
                 <h4>{t("mcp.topTools")}</h4>
                 <div className="list">
-                  <div className="list-item"><span className="mono">dontstop_chat</span><span className="num">812</span></div>
-                  <div className="list-item"><span className="mono">dontstop_models</span><span className="num">221</span></div>
+                  {(activity?.top_tools ?? []).map(item => (
+                    <div className="list-item" key={item.tool}><span className="mono">{item.tool}</span><span className="num">{item.count.toLocaleString()}</span></div>
+                  ))}
+                  {(activity?.top_tools ?? []).length === 0 ? <div className="small muted">—</div> : null}
                 </div>
               </div>
               <div>
                 <h4>{t("mcp.runtime")}</h4>
                 <div className="list">
                   <div className="list-item"><span>{t("mcp.transport")}</span><span>{transport}</span></div>
-                  <div className="list-item"><span>{t("mcp.appliedScopes")}</span><span className="mono">chat:write, models:read</span></div>
+                  <div className="list-item"><span>{t("mcp.appliedScopes")}</span><span className="mono">{enabledScopes.length ? enabledScopes.join(", ") : "—"}</span></div>
                 </div>
               </div>
             </div>
@@ -162,19 +191,22 @@ export function McpView({ initialStatus }: { initialStatus: MCPStatus | null }) 
             <table className="table">
               <thead><tr><th>{t("mcp.tool")}</th><th>{t("mcp.scope")}</th><th>{t("common.status")}</th></tr></thead>
               <tbody>
-                {tools.map(tool => (
-                  <tr key={tool.name}>
-                    <td className="mono">{tool.name}</td>
-                    <td className="mono">{tool.scope}</td>
-                    <td>
-                      <Toggle
-                        checked={toolState[tool.name]}
-                        onChange={value => { setToolState(current => ({ ...current, [tool.name]: value })); void persistTool(tool.name, value); }}
-                        label={t(toolState[tool.name] ? "mcp.toolDisable" : "mcp.toolEnable", { tool: tool.name })}
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {tools.map(tool => {
+                  const isEnabled = toolState[tool.id] ?? true;
+                  return (
+                    <tr key={tool.id}>
+                      <td className="mono">{tool.name}</td>
+                      <td className="mono">{tool.scope || "—"}</td>
+                      <td>
+                        <Toggle
+                          checked={isEnabled}
+                          onChange={value => { setToolState(current => ({ ...current, [tool.id]: value })); void persistTool(tool.id, value); }}
+                          label={t(isEnabled ? "mcp.toolDisable" : "mcp.toolEnable", { tool: tool.name })}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <p className="small muted">{t("mcp.toolDisabledHint")}</p>

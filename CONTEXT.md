@@ -22,6 +22,7 @@ existe desde o início para evoluir a multi-tenancy.
 | **Proxy mode** | `inherit` \| `off` \| `manual` \| `auto` (`preferred`/`required` legados). |
 | **Poison** | Ban persistente por `(tenant, provedor, endpoint)` com TTL por classe de falha. |
 | **Combo** | Modelo virtual por tenant com membros e failover na mesma requisição. |
+| **MCP** | Servidor opt-in no gateway (`stdio`/`SSE`/`streamable HTTP`) com ferramentas por escopo; gestão de combos na Fase A (ADR-026). |
 | **Endpoint policy** | Política por `/v1/*` (auth, escopo, rate limit, cache, DLP, proxy…). |
 | **API key** | Credencial do consumidor (Argon2id), com escopos, quotas e expiração. |
 

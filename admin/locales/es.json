@@ -277,7 +277,7 @@
   "mcp.streamHint": "Remoto — HTTP bidireccional moderno",
   "mcp.subtitle": "Model Context Protocol: servidor de herramientas para agentes e IDEs.",
   "mcp.successRate": "Tasa de éxito",
-  "mcp.summary": "6 herramientas en 5 ámbitos, 3 transportes (stdio / SSE / Streamable HTTP).",
+  "mcp.summary": "15 herramientas en 7 ámbitos, 3 transportes (stdio / SSE / Streamable HTTP).",
   "mcp.toggleOff": "OFF",
   "mcp.toggleOn": "ON",
   "mcp.tool": "Herramienta",

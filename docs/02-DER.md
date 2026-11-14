@@ -596,47 +596,40 @@ erDiagram
 
 ### 3.8 MCP (P0)
 
+> **Implementação (ADR-026):** o catálogo de ferramentas é **código** (`internal/mcp/tools`), não tabela; o
+> `mcp_tool_settings` guarda apenas overrides de enable por tenant. Chamadas e mudanças de settings são
+> auditadas em `audit_outbox` (não existe `mcp_call_events`).
+
 ```mermaid
 erDiagram
     TENANTS ||--|| MCP_SETTINGS : configures
-    TENANTS ||--o{ MCP_TOOLS : exposes
-    MCP_TOOLS ||--o{ MCP_CALL_EVENTS : logs
+    TENANTS ||--o{ MCP_TOOL_SETTINGS : overrides
 
     MCP_SETTINGS {
       uuid tenant_id PK
       boolean enabled
       text transport
-      jsonb allowed_origins
-      uuid updated_by FK
       timestamptz updated_at
     }
-    MCP_TOOLS {
-      uuid id PK
-      uuid tenant_id FK
-      text name UK
-      text description
-      text[] scopes
+    MCP_TOOL_SETTINGS {
+      uuid tenant_id PK
+      text tool_id PK
       boolean enabled
       timestamptz updated_at
-    }
-    MCP_CALL_EVENTS {
-      uuid id PK
-      uuid tenant_id FK
-      uuid tool_id FK
-      uuid api_key_id FK
-      text status
-      integer latency_ms
-      timestamptz created_at
     }
 ```
 
 | Entidade | Papel | Regras |
 |---|---|---|
-| `mcp_settings` | Estado global do servidor MCP | **`enabled=false` por padrão**; `transport` (`stdio/sse/streamable-http`); ativação auditada; sem túnel |
-| `mcp_tools` | Catálogo de ferramentas | `(tenant_id, name)` único; `enabled=false` remove anúncio; `scopes` obrigatórios |
-| `mcp_call_events` | Atividade e auditoria | Ferramenta, chave, status e latência; partição mensal; nunca guardar payload/PII |
+| `mcp_settings` | Estado do servidor MCP por tenant | **`enabled=false` por padrão**; `transport` (`stdio/sse/streamable-http`); ativação/troca auditada; sem túnel |
+| `mcp_tool_settings` | Override de enable por ferramenta | PK `(tenant_id, tool_id)`; ausência = habilitado; desativar remove o anúncio e a chamada falha por escopo |
+| `audit_outbox` | Auditoria | `mcp.enable/disable`, `mcp.transport`, `mcp.tool.enable/disable`, `mcp.restart`, `mcp.tool.call`, `mcp.combo.*`; nunca payload/PII |
+| `api_keys.scopes` | Autorização | `chat:write`, `models:read`, `embeddings:write`, `web:read`, `usage:read`, `combos:read`, `combos:write` |
 
-> **Sem segredo no endpoint MCP.** stdio é local; HTTP exige Bearer/escopo. Ativar, trocar transporte e desativar ferramenta são auditados.
+> **Catálogo de ferramentas (código):** base `dontstop_chat/models/embeddings/web_search/usage/health`; gestão
+> (Fase A) `dontstop_combo_catalog/list/get/create/update/activate/deactivate/delete` e `dontstop_provider_list`.
+> **Sem segredo no endpoint MCP:** `stdio` é local; HTTP exige Bearer/escopo; ferramentas de gestão exigem
+> `combos:write`.
 
 ## 4. Relacionamentos e cardinalidades
 

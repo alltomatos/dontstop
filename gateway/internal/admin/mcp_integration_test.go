@@ -35,19 +35,19 @@ func TestMCPServicePersistsSettingsAndTools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("status: %v", err)
 	}
-	if status.Enabled || status.Transport != "stdio" || len(status.Tools) != 6 {
+	if status.Enabled || status.Transport != "stdio" || len(status.Tools) != 15 {
 		t.Fatalf("unexpected defaults: %+v", status)
 	}
 	enabled := true
 	transport := "sse"
-	status, err = service.UpdateSettings(ctx, tenantID, &enabled, &transport)
+	status, err = service.UpdateSettings(ctx, tenantID, "test", &enabled, &transport)
 	if err != nil {
 		t.Fatalf("update settings: %v", err)
 	}
 	if !status.Enabled || status.Transport != "sse" {
 		t.Fatalf("unexpected settings: %+v", status)
 	}
-	status, err = service.UpdateTool(ctx, tenantID, "dontstop_chat", false)
+	status, err = service.UpdateTool(ctx, tenantID, "test", "dontstop_chat", false)
 	if err != nil {
 		t.Fatalf("update tool: %v", err)
 	}

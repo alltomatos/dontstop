@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
 	"github.com/alltomatos/dontstop/gateway/internal/cache"
 	"github.com/alltomatos/dontstop/gateway/internal/chat"
+	mcpruntime "github.com/alltomatos/dontstop/gateway/internal/mcp"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/config"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/database"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
@@ -44,9 +47,21 @@ func main() {
 		}
 		os.Exit(0)
 	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	stdio := len(os.Args) > 1 && os.Args[1] == "mcp"
+	var output io.Writer = os.Stdout
+	if stdio {
+		output = os.Stderr
+	}
+	logger := slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
-	if err := run(logger); err != nil {
+	if stdio {
+		if err := run(logger, true); err != nil {
+			logger.Error("gateway mcp stopped", "error", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+	if err := run(logger, false); err != nil {
 		logger.Error("gateway stopped", "error", err)
 		os.Exit(1)
 	}
@@ -69,7 +84,7 @@ func healthcheck() error {
 	return nil
 }
 
-func run(logger *slog.Logger) error {
+func run(logger *slog.Logger, stdio bool) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -132,8 +147,10 @@ func run(logger *slog.Logger) error {
 		deps.AdminWebshare = webshareService
 		deps.AdminCatalog = providerService
 		deps.AdminKeys = admin.NewAPIKeyService(pool)
-		deps.AdminUsage = admin.NewUsageService(pool)
-		deps.AdminMCP = admin.NewMCPService(pool)
+		usageService := admin.NewUsageService(pool)
+		deps.AdminUsage = usageService
+		mcpAdmin := admin.NewMCPService(pool)
+		deps.AdminMCP = mcpAdmin
 		deps.AdminCache = admin.NewCacheService(pool)
 		deps.AdminDLP = admin.NewDLPService(pool)
 		comboService = admin.NewComboService(pool)
@@ -148,6 +165,14 @@ func run(logger *slog.Logger) error {
 		chatService.SetProxyResolver(coordinator)
 		chatService.SetComboResolver(routing.NewComboRepository(pool))
 		deps.Chat = chatService
+		deps.MCP = mcpruntime.NewService(mcpruntime.Dependencies{
+			Store:  mcpAdmin,
+			Chat:   chatService,
+			Models: deps.Models,
+			Usage:  usageService,
+			Combos: comboService,
+			Logger: logger,
+		})
 	} else if cfg.DatabaseURL != "" {
 		logger.Warn("chat completions disabled", "reason", "DATABASE_URL, REDIS_URL and MASTER_KEY are required")
 	}
@@ -160,6 +185,13 @@ func run(logger *slog.Logger) error {
 		outbox = usage.NewOutboxPublisher(pool, publisher)
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if stdio {
+		return runMCP(ctx, deps, logger)
+	}
+
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
 		Handler:           otelhttp.NewHandler(api.NewRouter(deps), "gateway"),
@@ -167,11 +199,9 @@ func run(logger *slog.Logger) error {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	if webshareService != nil {
 		go webshareService.Run(ctx, cfg.WebshareSyncInterval)
 	}
-	defer stop()
 
 	if providerService != nil {
 		go providerService.RunModelTestWorker(ctx, 2*time.Second)
@@ -208,4 +238,20 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 	return nil
+}
+
+func runMCP(ctx context.Context, deps api.Dependencies, logger *slog.Logger) error {
+	if deps.MCP == nil || deps.Verifier == nil {
+		return errors.New("MCP stdio requires DATABASE_URL, REDIS_URL and MASTER_KEY")
+	}
+	key := strings.TrimSpace(os.Getenv("DONTSTOP_MCP_API_KEY"))
+	if key == "" {
+		return errors.New("DONTSTOP_MCP_API_KEY is required")
+	}
+	principal, err := deps.Verifier.Authenticate(ctx, "Bearer "+key)
+	if err != nil {
+		return fmt.Errorf("authenticate DONTSTOP_MCP_API_KEY: %w", err)
+	}
+	logger.Info("mcp stdio listening", "tenant_id", principal.TenantID)
+	return deps.MCP.RunStdio(ctx, principal)
 }

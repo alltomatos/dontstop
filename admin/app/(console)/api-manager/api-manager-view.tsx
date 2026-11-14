@@ -115,7 +115,7 @@ export function ApiManagerView({ initialKeys }: { initialKeys: KeyRow[] }) {
       ) : null}
 
       {tab === "consumers" ? <SimpleTable headers={[t("common.name"), t("api.keys")]} rows={[["prod-web", "1"], ["etl", "2"]]} /> : null}
-      {tab === "scopes" ? <SimpleTable headers={[t("api.scopes"), t("common.status")]} rows={[["chat:write", t("common.active")], ["models:read", t("common.active")], ["embeddings:write", t("common.active")]]} /> : null}
+      {tab === "scopes" ? <SimpleTable headers={[t("api.scopes"), t("common.status")]} rows={[["chat:write", t("common.active")], ["models:read", t("common.active")], ["embeddings:write", t("common.active")], ["web:read", t("common.active")], ["usage:read", t("common.active")], ["combos:read", t("common.active")], ["combos:write", t("common.active")]]} /> : null}
       {tab === "usage" ? <SimpleTable headers={[t("common.model"), t("common.used")]} rows={[["gpt-4.1", "82,4k"], ["claude-sonnet-4", "61,2k"]]} /> : null}
       {tab === "audit" ? <SimpleTable headers={[t("common.time"), t("common.action")]} rows={[["10:45", "api_key.create"], ["10:40", "api_key.rotate"]]} /> : null}
 

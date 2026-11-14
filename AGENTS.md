@@ -59,6 +59,7 @@ Detalhes e alternativas: [`docs/05-ADRS.md`](docs/05-ADRS.md).
 | [`docs/user-guide/README.md`](docs/user-guide/README.md) | Guia versionado por página/modal em seis idiomas |
 | [`docs/reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md`](docs/reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md) | Estudo conceitual de endpoints/API manager; n?o ? depend?ncia |
 | [`docs/reference/MCP-REFERENCIAS.md`](docs/reference/MCP-REFERENCIAS.md) | Estudo conceitual de MCP; não é dependência |
+| [`docs/reference/MCP.md`](docs/reference/MCP.md) | Contrato do runtime MCP (transportes, auth, ferramentas, erros) |
 | [`design-system/MASTER.md`](design-system/MASTER.md) | Tokens, componentes e regras visuais |
 | [`design-system/mockups/console.html`](design-system/mockups/console.html) | Mockup navegável do console |
 
@@ -117,6 +118,9 @@ go test ./...
 go vet ./...
 golangci-lint run
 govulncheck ./...
+
+# MCP stdio (IDE inicia; requer DATABASE_URL, REDIS_URL, MASTER_KEY e DONTSTOP_MCP_API_KEY)
+gateway mcp
 
 # Admin
 cd admin
@@ -217,12 +221,13 @@ k6 run tests/load/chat.js
 
 ## 8.2 MCP
 
-- **Desligado por padrão** (`mcp_settings.enabled=false`); ativação, troca de transporte, desativação de ferramenta e restart são auditados.
-- Transportes: `stdio` (local, a IDE inicia o processo), `SSE` e `Streamable HTTP`; exibir comando/URL copiável por transporte.
-- Ferramenta só é anunciada se `enabled=true` e o chamador tiver o escopo (`chat:write`, `models:read`, `embeddings:write`, `web:read`, `usage:read`).
-- HTTP MCP exige Bearer/escopo; **nunca** expor sem auth. **Proibido túnel** (Cloudflare/Tailscale/ngrok).
-- Status (PID/uptime/heartbeat), atividade 24h e top ferramentas vêm do runtime; logs não guardam payload/PII.
-- Desativar ferramenta remove o anúncio e chamadas existentes falham por escopo; não quebrar o servidor inteiro.
+- **Desligado por padrão** (`mcp_settings.enabled=false`); runtime no gateway com o **SDK Go oficial** (ADR-026). Ativação, troca de transporte, enable/disable de ferramenta e restart são auditados em `audit_outbox`.
+- Transportes: `Streamable HTTP` em `/mcp` (default), `SSE` legado em `/sse` + `/messages`, e `stdio` via `gateway mcp` (a IDE inicia; chave em `DONTSTOP_MCP_API_KEY`). Exibir snippet copiável por transporte.
+- Gate **antes** do handler: desligado ou transporte divergente → 404; HTTP MCP exige Bearer (`auth.Verifier`) e escopo. **Nunca** expor sem auth. **Proibido túnel** (Cloudflare/Tailscale/ngrok).
+- Ferramenta só é anunciada se `enabled=true` (`mcp_tool_settings`) **e** o chamador tiver o escopo. Base: `chat:write`, `models:read`, `embeddings:write`, `web:read`, `usage:read`. Gestão (Fase A): `combos:read`/`combos:write` para `dontstop_combo_*` e `dontstop_provider_list`.
+- **Nenhum segredo via MCP** (credencial de provider/API key): a Fase A cobre combos/catálogo; connect de provider, API keys, endpoints, DLP e proxy ficam para a Fase B com escopos dedicados e fluxo de segredo fora do prompt.
+- Erros: ferramenta desconhecida/não anunciada → `-32602`; execução → `isError:true` sanitizado. Desativar ferramenta remove o anúncio e a chamada falha por escopo; não quebrar o servidor inteiro.
+- Restart: `POST /admin/v1/mcp/restart` (manage) audita e reinicia sessões novas; `stdio` é reiniciado pela IDE. Status/atividade/top ferramentas vêm do runtime; logs/traces não guardam payload/PII; anotações MCP (`readOnlyHint`/`destructiveHint`/`idempotentHint`) obrigatórias.
 
 ## 9. Regras de cache
 

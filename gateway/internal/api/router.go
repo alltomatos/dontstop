@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
+	mcpruntime "github.com/alltomatos/dontstop/gateway/internal/mcp"
 	"github.com/alltomatos/dontstop/gateway/internal/platform/health"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/redis/go-redis/v9"
@@ -35,6 +36,7 @@ type Dependencies struct {
 	AdminComboAI   AdminComboAIService
 	AdminEndpoints AdminEndpointService
 	AdminAuth      AdminAuthService
+	MCP            *mcpruntime.Service
 	Redis          *redis.Client
 }
 
@@ -115,6 +117,16 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("GET /admin/v1/mcp/status", adminMiddleware(adminMCPStatus(deps.AdminMCP)))
 		mux.Handle("PATCH /admin/v1/mcp/settings", adminMiddleware(adminMCPUpdateSettings(deps.AdminMCP)))
 		mux.Handle("PATCH /admin/v1/mcp/tools/{id}", adminMiddleware(adminMCPUpdateTool(deps.AdminMCP)))
+		mux.Handle("GET /admin/v1/mcp/tools", adminMiddleware(adminMCPTools(deps.AdminMCP)))
+		mux.Handle("POST /admin/v1/mcp/restart", adminMiddleware(adminMCPRestart(deps.AdminMCP)))
+		mux.Handle("GET /admin/v1/mcp/activity", adminMiddleware(adminMCPActivity(deps.AdminMCP)))
+	}
+	if deps.Verifier != nil && deps.MCP != nil {
+		streamable := deps.Verifier.Middleware(deps.MCP.Gate("streamable-http", deps.MCP.StreamableHandler()))
+		mux.Handle("/mcp", streamable)
+		sse := deps.Verifier.Middleware(deps.MCP.Gate("sse", deps.MCP.SSEHandler()))
+		mux.Handle("GET /sse", sse)
+		mux.Handle("POST /messages", sse)
 	}
 	if deps.Verifier != nil && deps.AdminCache != nil {
 		mux.Handle("GET /admin/v1/cache/stats", adminMiddleware(adminCacheStats(deps.AdminCache)))

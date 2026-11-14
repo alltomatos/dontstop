@@ -68,6 +68,7 @@ flowchart TB
         ROUTER[Router/Failover]
         PROXY[Proxy Manager]
         USAGE[Usage/Cost]
+        MCP[MCP server<br/>stdio/SSE/streamable]
     end
     subgraph ControlPlane[Control Plane — TS/Next.js]
         ADM[Admin API + Console]
@@ -89,6 +90,9 @@ flowchart TB
     U[Clientes] --> T --> GW
     A[Admin] --> T --> ADM
     GW --> AUTH --> RL --> CACHE --> DLP --> ROUTER --> PROXY
+    GW --> MCP
+    MCP --> ROUTER
+    MCP --> PG & RD
     ROUTER --> P[Provedores]
     PROXY --> W[Webshare] --> P
     GW --> RELAY --> AR[AgentRouter]
@@ -107,6 +111,7 @@ flowchart TB
 | Failover | Circuit breaker → cooldown → próxima conta do mesmo provedor → próximo provider; 400 do cliente é terminal; SSE só antes do primeiro chunk | [03-UML §4](../03-UML.md), [ADR-022](../05-ADRS.md) |
 | Proxy Webshare | Acquire → health/score → CONNECT → report/quarentena | [03-UML §5](../03-UML.md) |
 | AgentRouter (relay) | Gateway → relay sidecar interno → AgentRouter; WAF de fingerprint só passa pelo SDK Python; tradução fail-closed no gateway | ADR-025 |
+| MCP | Bearer/escopo → gate `enabled`+transporte → `initialize`/`tools/list`/`tools/call` → serviço interno → auditoria/trace (sem payload/PII) | [ADR-026](../adr/0026-mcp-runtime-and-management-tools.md) |
 | Lazy loading do console | Shell SSR → skeleton → chunk sob demanda → dados com SWR | [03-UML §6.1](../03-UML.md) |
 | Endpoint + API key | Resolve endpoint/política + escopo da chave → limites → roteamento | [03-UML §6.2](../03-UML.md) |
 | DLP | Scan → decisão (allow/redact/block/audit) → auditoria | [03-UML §6](../03-UML.md) |
@@ -255,6 +260,7 @@ Regras: 1 conta por IP **por provedor** (reuso cross-provider permitido); `manua
 | Proxy | Webshare | ADR-008, ADR-021 |
 | Proxy por provedor | 1 conta/IP por provedor, modo `auto`, poison persistente + re-sync | ADR-024 |
 | AgentRouter relay | Sidecar Python vendorizado (MIT), rede interna, sem porta pública, sem pip em runtime | ADR-025 |
+| MCP | Go SDK oficial; `streamable-http`/`sse`/`stdio`; opt-in; escopos por ferramenta | ADR-016, ADR-026 |
 | DLP | Regex + Presidio | ADR-009 |
 | Orquestração | **Docker Swarm** | ADR-010 |
 | Segredos | AES-256-GCM + envelope | ADR-011 |
@@ -290,6 +296,7 @@ Regras: 1 conta por IP **por provedor** (reuso cross-provider permitido); `manua
 - Auditoria append-only com hash encadeado.
 - Supply chain: lockfile, SBOM, `govulncheck`, gitleaks, Trivy, CodeQL, imagens assinadas.
 - AgentRouter: relay interno sem porta pública/túnel; a chave chega por `x-api-key` (cofre cifrado no gateway); payload/chave nunca logados; o relay recusa chamadas sem chave.
+- MCP: desligado por padrão; HTTP sempre Bearer/escopo; ferramentas filtradas por escopo; sem túnel; logs/traces sem payload/PII.
 
 ## 10. Observabilidade e SLOs
 
@@ -297,6 +304,7 @@ Regras: 1 conta por IP **por provedor** (reuso cross-provider permitido); `manua
 - Métricas: latência p50/p95/p99, RPS, erros por código, saturação (réplicas, Redis, pools), cache hit/miss, failover, saúde de proxy, decisões DLP.
 - **Backend gerenciado** (Datadog; alternativa Azure Monitor) via OTLP; **sem Prometheus/Grafana/Loki/Tempo**.
 - Dashboards/SLOs no backend gerenciado; o console consome agregados e deep links.
+- MCP: spans `mcp.initialize`/`mcp.tools.list`/`mcp.tools.call` (tenant/tool/status) e métricas `mcp.requests`/`mcp.tool.calls`/`mcp.tool.errors`; sem args/PII.
 - Logs estruturados (JSON) sem PII/segredos; amostragem de 10% em traces (100% em erros); cardinalidade limitada.
 
 ### 10.1 Lazy loading e cache em camadas
@@ -335,6 +343,7 @@ Regras: 1 conta por IP **por provedor** (reuso cross-provider permitido); `manua
 | Isolamento de IP por provedor | 1 conta/IP por provedor; poison + re-sync Webshare na falha (ADR-024) |
 | Fallback direto em proxy | Removido: `manual` fail-closed; evita expor o IP real do gateway |
 | WAF/fingerprint do AgentRouter | Relay vendorizado (ADR-025); indisponibilidade/budget são dinâmicos (402/503) |
+| MCP | `SSE` legado; `embeddings`/`web_search` sem backend (erro acionável); gestão sensível (keys/providers) fica para a Fase B (ADR-026) |
 | Cache semântico errar | Threshold alto, TTL curto, feature flag |
 | Time sem Go | Fallback TypeScript documentado (ADR-001) |
 | Plano Webshare/cloud/compliance | Decisões pendentes em [06-ROADMAP-RISCOS](../06-ROADMAP-RISCOS.md) |

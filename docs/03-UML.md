@@ -315,6 +315,51 @@ sequenceDiagram
 
 > **Regra:** endpoint desligado, versão deprecada ou escopo ausente falham antes de qualquer chamada upstream; a decisão é auditada. O API Manager nunca retorna o segredo completo após a criação.
 
+## 6.3 Sequência - MCP (initialize/tools/list/tools/call)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Cliente MCP (Claude/IDE)
+    participant G as Gateway /mcp (Bearer)
+    participant A as auth.Verifier
+    participant S as MCP Server (SDK)
+    participant T as Tool backend
+    participant DB as Postgres/Redis
+    participant O as OTel/Audit
+
+    alt Streamable HTTP
+        C->>G: POST /mcp (initialize)
+    else SSE legado
+        C->>G: GET /sse + POST /messages
+    else stdio
+        C->>G: gateway mcp (DONTSTOP_MCP_API_KEY)
+    end
+    G->>A: valida API key
+    A-->>G: tenant + escopos
+    G->>DB: mcp_settings.enabled + transport
+    alt desligado / transporte divergente
+        G-->>C: 404 (fail-closed, sem upstream)
+    else habilitado
+        G->>S: inicializa sessão (capabilities.tools)
+        S-->>C: initialize result
+        C->>S: tools/list
+        S->>DB: overrides mcp_tool_settings
+        S-->>C: tools filtradas por enabled + escopo
+        C->>S: tools/call (nome + args)
+        S->>T: executa (chat/models/combo/usage/health)
+        T->>DB: dados do tenant (sem cruzar tenants)
+        T-->>S: resultado
+        S->>O: span mcp.tools.call + audit mcp.tool.call (sem payload/PII)
+        S-->>C: content + structuredContent (ou isError)
+    end
+```
+
+> **Regras (ADR-026):** desligado por padrão; HTTP MCP sempre com Bearer/escopo; ferramenta só é anunciada
+> com `enabled=true` e escopo; `tools/call` de ferramenta não anunciada/desconhecida retorna `-32602`; erros de
+> execução retornam `isError:true` sanitizado; logs/traces nunca guardam payload/PII. Fase A: combos com
+> `combos:read/write`, sem segredos via MCP.
+
 ## 7. Diagrama de classes (domínio)
 
 ```mermaid

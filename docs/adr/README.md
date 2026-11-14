@@ -32,3 +32,4 @@ indexar e, no futuro, hospedar ADRs autônomos; não duplique o conteúdo aqui s
 | ADR-023 | Combos nativos com failover na mesma requisição |
 | ADR-024 | Isolamento de IP por provedor, modo `auto` e poison persistente |
 | ADR-025 | Sidecar relay vendorizado para o AgentRouter (WAF de fingerprint) |
+| ADR-026 | MCP runtime no gateway: Go SDK, transportes e ferramentas de gestão |
