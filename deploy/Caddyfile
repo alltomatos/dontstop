@@ -23,6 +23,42 @@ https://{$DONTSTOP_HOST:dontstop.alltomatos.dev.br} {
 	handle /readyz {
 		reverse_proxy gateway:8080
 	}
+	@mcp_post {
+		path /mcp
+		method POST
+	}
+	handle @mcp_post {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+	@mcp_delete {
+		path /mcp
+		method DELETE
+	}
+	handle @mcp_delete {
+		reverse_proxy gateway:8080
+	}
+	@mcp_stream {
+		path /mcp
+		method GET
+		header Accept *text/event-stream*
+	}
+	handle @mcp_stream {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+	handle /sse* {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
+	handle /messages* {
+		reverse_proxy gateway:8080 {
+			flush_interval -1
+		}
+	}
 	handle {
 		reverse_proxy admin:3000
 	}

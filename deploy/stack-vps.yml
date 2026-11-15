@@ -59,7 +59,7 @@ services:
         condition: on-failure
 
   migrate:
-    image: ronaldodavi/dontstop-gateway:combos-20261112
+    image: ronaldodavi/dontstop-gateway:mcp-20261114
     entrypoint: ["/app/migrate"]
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
@@ -75,7 +75,7 @@ services:
         max_attempts: 20
 
   gateway:
-    image: ronaldodavi/dontstop-gateway:combos-20261112
+    image: ronaldodavi/dontstop-gateway:mcp-20261114
     environment:
       PORT: "8080"
       DATABASE_URL_FILE: /run/secrets/database_url
@@ -115,7 +115,7 @@ services:
         max_attempts: 5
 
   admin:
-    image: ronaldodavi/dontstop-admin:combos-20261112
+    image: ronaldodavi/dontstop-admin:mcp-20261114
     environment:
       DONTSTOP_GATEWAY_URL: http://gateway:8080
       DONTSTOP_PUBLIC_BASE_URL: https://dontstop.alltomatos.dev.br
@@ -143,7 +143,7 @@ services:
         max_attempts: 5
 
   agentrouter-relay:
-    image: ${AGENTROUTER_RELAY_IMAGE:-registry/dontstop-agentrouter-relay:latest}
+    image: ${AGENTROUTER_RELAY_IMAGE:-ronaldodavi/dontstop-agentrouter-relay:mcp-20261114}
     environment:
       AGENTROUTER_PORT: "7187"
       AGENTROUTER_BIND: "0.0.0.0"
