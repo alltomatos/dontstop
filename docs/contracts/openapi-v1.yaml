@@ -378,7 +378,6 @@ components:
           maxLength: 256
         tools:
           type: array
-          maxItems: 64
           items:
             $ref: '#/components/schemas/Tool'
         tool_choice:

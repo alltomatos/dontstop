@@ -116,9 +116,6 @@ func validateChatRequest(request provider.ChatRequest) error {
 	if request.MaxTokens < 0 {
 		return fmt.Errorf("max_tokens must be positive")
 	}
-	if len(request.Tools) > 64 {
-		return fmt.Errorf("tools must contain at most 64 items")
-	}
 	for _, tool := range request.Tools {
 		if err := tool.Validate(); err != nil {
 			return err

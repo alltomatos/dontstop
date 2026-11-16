@@ -363,3 +363,37 @@ func TestChatRejectsInvalidToolChoice(t *testing.T) {
 		t.Fatalf("expected 400, got %d", response.Code)
 	}
 }
+
+func TestChatAcceptsManyTools(t *testing.T) {
+	service := &fakeChatService{response: provider.ChatResponse{ID: "chat-1", Model: "gpt-4.1", Content: "ok", FinishReason: "stop"}}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	tools := make([]map[string]any, 0, 70)
+	for index := 0; index < 70; index++ {
+		tools = append(tools, map[string]any{
+			"type": "function",
+			"function": map[string]any{
+				"name":       fmt.Sprintf("tool_%d", index),
+				"parameters": map[string]any{"type": "object"},
+			},
+		})
+	}
+	payload, err := json.Marshal(map[string]any{
+		"model":    "gpt-4.1",
+		"messages": []map[string]any{{"role": "user", "content": "ping"}},
+		"tools":    tools,
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(string(payload)))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	if len(service.request.Tools) != 70 {
+		t.Fatalf("expected 70 tools, got %d", len(service.request.Tools))
+	}
+}
