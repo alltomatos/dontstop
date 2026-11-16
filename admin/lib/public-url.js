@@ -75,6 +75,16 @@ function buildEndpointUrl(base, basePath) {
   return normalizeEndpointBase(`${parsed.origin}${pathFromBase}${extraPath}`);
 }
 
+function buildServiceUrl(base, basePath, path) {
+  const normalized = normalizeUrl(base);
+  if (!normalized) return null;
+  const parsed = new URL(normalized);
+  const pathFromBase = normalizeBasePath(parsed.pathname.replace(/(?:\/v1)+$/i, ""));
+  const extraPath = pathFromBase ? "" : normalizeBasePath(basePath);
+  const suffix = normalizeBasePath(path);
+  return `${parsed.origin}${pathFromBase}${extraPath}${suffix}`;
+}
+
 function resolvePublicEndpoint(options = {}) {
   const env = options.env ?? process.env;
   const headers = options.headers;
@@ -115,6 +125,7 @@ function resolvePublicEndpoint(options = {}) {
 
 module.exports = {
   buildEndpointUrl,
+  buildServiceUrl,
   firstHeaderValue,
   getHeader,
   normalizeBasePath,

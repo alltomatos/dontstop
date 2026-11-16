@@ -6,7 +6,17 @@ import { CopyButton, Toggle } from "@/components/console/ui";
 import { useI18n } from "@/components/console/i18n-provider";
 import type { MCPActivity, MCPStatus } from "@/lib/admin-api";
 
-export function McpView({ initialStatus, initialActivity }: { initialStatus: MCPStatus | null; initialActivity: MCPActivity | null }) {
+export function McpView({
+  initialStatus,
+  initialActivity,
+  streamableUrl,
+  sseUrl
+}: {
+  initialStatus: MCPStatus | null;
+  initialActivity: MCPActivity | null;
+  streamableUrl: string;
+  sseUrl: string;
+}) {
   const { t } = useI18n();
   const [enabled, setEnabled] = useState(initialStatus?.enabled ?? false);
   const [transport, setTransport] = useState<MCPStatus["transport"]>(initialStatus?.transport ?? "streamable-http");
@@ -79,7 +89,7 @@ export function McpView({ initialStatus, initialActivity }: { initialStatus: MCP
     }
   }
 
-  const endpoint = transport === "stdio" ? "gateway mcp" : transport === "sse" ? "https://gateway.dontstop.corp/sse" : "https://gateway.dontstop.corp/mcp";
+  const endpoint = transport === "stdio" ? "gateway mcp" : transport === "sse" ? sseUrl : streamableUrl;
   const enabledScopes = Array.from(new Set(tools.filter(tool => toolState[tool.id] ?? true).map(tool => tool.scope).filter(Boolean)));
   const totalCalls = activity?.total_calls ?? 0;
   const successRate = activity?.success_rate ?? 0;

@@ -19,7 +19,7 @@ Permitir que o operador ative/desative o servidor MCP, escolha o transporte, cop
 │ API Mgr  │ │ Como conectar: 1) gateway mcp 2) configure o cliente       │       │
 │ MCP      │ │ 3) invoque dontstop_chat                                  │       │
 │ Cache    │ │ [stdio] [SSE] [Streamable HTTP]                            │       │
-│ DLP      │ │ https://gateway.../mcp                        [Copiar]    │       │
+│ DLP      │ │ <public-base>/mcp                              [Copiar]    │       │
 │ Custo    │ │ [Processo Online] [PID —] [Uptime 2h14m] [Heartbeat 12s]   │       │
 │ Observ.  │ └──────────────────────────────────────────────────────────────┘       │
 │          │ ┌──────────────────────────────────────────────────────────────┐       │

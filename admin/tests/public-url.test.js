@@ -18,6 +18,13 @@ test("builds an idempotent /v1 endpoint", () => {
   assert.equal(publicUrl.buildEndpointUrl("https://host.example/v1/v1"), "https://host.example/v1");
 });
 
+test("builds service URLs from the same public base without /v1", () => {
+  assert.equal(publicUrl.buildServiceUrl("https://host.example", "", "/mcp"), "https://host.example/mcp");
+  assert.equal(publicUrl.buildServiceUrl("https://host.example/", "/dontstop", "/sse"), "https://host.example/dontstop/sse");
+  assert.equal(publicUrl.buildServiceUrl("https://host.example/dontstop/v1", "", "/mcp"), "https://host.example/dontstop/mcp");
+  assert.equal(publicUrl.buildServiceUrl("https://host.example/v1", "", "/messages"), "https://host.example/messages");
+});
+
 test("configured public URL wins over IP or domain access", () => {
   const config = env({ DONTSTOP_PUBLIC_BASE_URL: "https://ia.example.com/dontstop" });
   const byIp = publicUrl.resolvePublicEndpoint({ env: config, headers: headers({ host: "192.168.0.10:3000" }) });

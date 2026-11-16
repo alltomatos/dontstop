@@ -14,6 +14,7 @@ type EndpointResolution = {
 
 declare const publicUrl: {
   buildEndpointUrl(base: string, basePath?: string | null): string | null;
+  buildServiceUrl(base: string, basePath: string | null | undefined, path: string): string | null;
   firstHeaderValue(value: unknown): string | null;
   getHeader(headers: HeaderBag, name: string): string | null;
   normalizeBasePath(value?: string | null): string;
