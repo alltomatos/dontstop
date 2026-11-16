@@ -115,7 +115,7 @@ services:
         max_attempts: 5
 
   admin:
-    image: ronaldodavi/dontstop-admin:mcp-20261114
+    image: ronaldodavi/dontstop-admin:mcp-20261115
     environment:
       DONTSTOP_GATEWAY_URL: http://gateway:8080
       DONTSTOP_PUBLIC_BASE_URL: https://dontstop.alltomatos.dev.br
