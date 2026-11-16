@@ -59,7 +59,7 @@ services:
         condition: on-failure
 
   migrate:
-    image: ronaldodavi/dontstop-gateway:tools-20261116
+    image: ronaldodavi/dontstop-gateway:tools-20261116b
     entrypoint: ["/app/migrate"]
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
@@ -75,7 +75,7 @@ services:
         max_attempts: 20
 
   gateway:
-    image: ronaldodavi/dontstop-gateway:tools-20261116
+    image: ronaldodavi/dontstop-gateway:tools-20261116b
     environment:
       PORT: "8080"
       DATABASE_URL_FILE: /run/secrets/database_url
