@@ -30,17 +30,23 @@ const maxProviderResponseBytes = 4 << 20
 // form and Parts holds the multimodal form when the caller sent an array. Both
 // are mutually derived: Content is always the joined text of Parts.
 type ChatMessage struct {
-	Role    string        `json:"role"`
-	Content string        `json:"content"`
-	Parts   []ContentPart `json:"-"`
+	Role       string        `json:"role"`
+	Content    string        `json:"content"`
+	Parts      []ContentPart `json:"-"`
+	ToolCalls  []ToolCall    `json:"tool_calls,omitempty"`
+	ToolCallID string        `json:"tool_call_id,omitempty"`
+	Name       string        `json:"name,omitempty"`
 }
 
 // UnmarshalJSON accepts the OpenAI content union: a string, null or an array of
 // content parts.
 func (m *ChatMessage) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Role    string          `json:"role"`
-		Content json.RawMessage `json:"content"`
+		Role       string          `json:"role"`
+		Content    json.RawMessage `json:"content"`
+		ToolCalls  []ToolCall      `json:"tool_calls"`
+		ToolCallID string          `json:"tool_call_id"`
+		Name       string          `json:"name"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
@@ -48,6 +54,9 @@ func (m *ChatMessage) UnmarshalJSON(data []byte) error {
 	m.Role = raw.Role
 	m.Content = ""
 	m.Parts = nil
+	m.ToolCalls = raw.ToolCalls
+	m.ToolCallID = raw.ToolCallID
+	m.Name = raw.Name
 	if len(raw.Content) == 0 || string(raw.Content) == "null" {
 		return nil
 	}
@@ -74,23 +83,30 @@ func (m *ChatMessage) UnmarshalJSON(data []byte) error {
 // OpenAI content array when the caller sent content parts.
 func (m ChatMessage) MarshalJSON() ([]byte, error) {
 	type wire struct {
-		Role    string `json:"role"`
-		Content any    `json:"content"`
+		Role       string     `json:"role"`
+		Content    any        `json:"content"`
+		ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+		ToolCallID string     `json:"tool_call_id,omitempty"`
+		Name       string     `json:"name,omitempty"`
 	}
 	var content any = m.Content
 	if m.Parts != nil {
 		content = m.Parts
 	}
-	return json.Marshal(wire{Role: m.Role, Content: content})
+	return json.Marshal(wire{
+		Role: m.Role, Content: content, ToolCalls: m.ToolCalls, ToolCallID: m.ToolCallID, Name: m.Name,
+	})
 }
 
 // ChatRequest is a provider-neutral chat request for the P0-α slice.
 type ChatRequest struct {
-	Model       string        `json:"model"`
-	Messages    []ChatMessage `json:"messages"`
-	Temperature *float64      `json:"temperature,omitempty"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Stream      bool          `json:"stream,omitempty"`
+	Model       string          `json:"model"`
+	Messages    []ChatMessage   `json:"messages"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	MaxTokens   int             `json:"max_tokens,omitempty"`
+	Stream      bool            `json:"stream,omitempty"`
+	Tools       []Tool          `json:"tools,omitempty"`
+	ToolChoice  json.RawMessage `json:"tool_choice,omitempty"`
 }
 
 // Usage is provider-neutral token usage.
@@ -105,6 +121,7 @@ type ChatResponse struct {
 	ID           string
 	Model        string
 	Content      string
+	ToolCalls    []ToolCall
 	FinishReason string
 	Usage        Usage
 }

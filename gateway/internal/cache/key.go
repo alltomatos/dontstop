@@ -17,6 +17,8 @@ type KeyInput struct {
 	Model         string
 	PromptVersion string
 	Messages      []provider.ChatMessage
+	Tools         []provider.Tool
+	ToolChoice    json.RawMessage
 	Temperature   *float64
 	MaxTokens     int
 }
@@ -34,11 +36,14 @@ func BuildKey(input KeyInput) (string, error) {
 		Model         string                 `json:"model"`
 		PromptVersion string                 `json:"prompt_version"`
 		Messages      []provider.ChatMessage `json:"messages"`
+		Tools         []provider.Tool        `json:"tools,omitempty"`
+		ToolChoice    json.RawMessage        `json:"tool_choice,omitempty"`
 		Temperature   *float64               `json:"temperature"`
 		MaxTokens     int                    `json:"max_tokens"`
 	}{
 		Scope: input.Scope, Model: input.Model, PromptVersion: input.PromptVersion,
-		Messages: input.Messages, Temperature: input.Temperature, MaxTokens: input.MaxTokens,
+		Messages: input.Messages, Tools: input.Tools, ToolChoice: input.ToolChoice,
+		Temperature: input.Temperature, MaxTokens: input.MaxTokens,
 	})
 	if err != nil {
 		return "", fmt.Errorf("encode cache key: %w", err)

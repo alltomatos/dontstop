@@ -292,3 +292,74 @@ func TestChatStreamsSSE(t *testing.T) {
 		t.Fatalf("expected SSE terminator, got %q", response.Body.String())
 	}
 }
+
+func TestChatReturnsToolCalls(t *testing.T) {
+	service := &fakeChatService{response: provider.ChatResponse{
+		ID: "chat-1", Model: "gpt-4.1", FinishReason: "tool_calls",
+		ToolCalls: []provider.ToolCall{{
+			ID: "call_1", Type: "function",
+			Function: provider.ToolCallFunction{Name: "ping", Arguments: `{"x":1}`},
+		}},
+	}}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":"ping"}],"tools":[{"type":"function","function":{"name":"ping","parameters":{"type":"object"}}}]}`
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	if len(service.request.Tools) != 1 || service.request.Tools[0].Function.Name != "ping" {
+		t.Fatalf("tools not decoded: %+v", service.request.Tools)
+	}
+	var payload struct {
+		Choices []struct {
+			Message struct {
+				ToolCalls []provider.ToolCall `json:"tool_calls"`
+			} `json:"message"`
+			FinishReason string `json:"finish_reason"`
+		} `json:"choices"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(payload.Choices[0].Message.ToolCalls) != 1 || payload.Choices[0].Message.ToolCalls[0].ID != "call_1" {
+		t.Fatalf("tool calls missing from response: %+v", payload)
+	}
+	if payload.Choices[0].FinishReason != "tool_calls" {
+		t.Fatalf("unexpected finish reason: %s", payload.Choices[0].FinishReason)
+	}
+}
+
+func TestChatRejectsToolMessageWithoutID(t *testing.T) {
+	service := &fakeChatService{}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":"ping"},{"role":"tool","content":"result"}]}`
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", response.Code, response.Body.String())
+	}
+	if service.calls != 0 {
+		t.Fatal("service must not be called for an invalid tool message")
+	}
+}
+
+func TestChatRejectsInvalidToolChoice(t *testing.T) {
+	service := &fakeChatService{}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":"ping"}],"tool_choice":"always"}`
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", response.Code)
+	}
+}

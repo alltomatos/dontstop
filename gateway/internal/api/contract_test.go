@@ -52,6 +52,12 @@ func TestOpenAPIContractP0Surface(t *testing.T) {
 			t.Fatalf("request schema must require %s", field)
 		}
 	}
+	requestProps := object(t, schema, "properties")
+	for _, field := range []string{"tools", "tool_choice"} {
+		if requestProps[field] == nil {
+			t.Fatalf("request schema must expose %s", field)
+		}
+	}
 
 	responses := object(t, post, "responses")
 	response200 := object(t, responses, "200")

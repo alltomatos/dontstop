@@ -97,6 +97,7 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 		key, err := cache.BuildKey(cache.KeyInput{
 			TenantID: tenantID, Scope: "chat:write", Model: request.Model,
 			PromptVersion: s.promptVersion, Messages: request.Messages,
+			Tools: request.Tools, ToolChoice: request.ToolChoice,
 			Temperature: request.Temperature, MaxTokens: request.MaxTokens,
 		})
 		if err == nil {
@@ -392,6 +393,13 @@ func (s *streamState) chunk(chunk provider.StreamChunk) error {
 	if err := s.ensureHeaders(); err != nil {
 		return err
 	}
+	delta := map[string]any{}
+	if chunk.Content != "" {
+		delta["content"] = chunk.Content
+	}
+	if len(chunk.ToolCalls) > 0 {
+		delta["tool_calls"] = chunk.ToolCalls
+	}
 	payload := map[string]any{
 		"id":      s.id,
 		"object":  "chat.completion.chunk",
@@ -399,12 +407,9 @@ func (s *streamState) chunk(chunk provider.StreamChunk) error {
 		"model":   s.model,
 		"choices": []map[string]any{{
 			"index":         0,
-			"delta":         map[string]string{"content": chunk.Content},
+			"delta":         delta,
 			"finish_reason": nil,
 		}},
-	}
-	if chunk.Content == "" {
-		payload["choices"].([]map[string]any)[0]["delta"] = map[string]string{}
 	}
 	if chunk.FinishReason != "" {
 		payload["choices"].([]map[string]any)[0]["finish_reason"] = chunk.FinishReason

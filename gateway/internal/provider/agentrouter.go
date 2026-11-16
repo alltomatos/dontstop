@@ -88,6 +88,9 @@ func (a *agentRouterAdapter) translatePrompt(ctx context.Context, request ChatRe
 // translateMessage translates the text parts of one message while preserving
 // media parts untouched, so multimodal prompts keep their attachments.
 func (a *agentRouterAdapter) translateMessage(ctx context.Context, message ChatMessage) (ChatMessage, string, error) {
+	if message.Role == "tool" {
+		return message, "", nil
+	}
 	if message.Parts == nil {
 		if strings.TrimSpace(message.Content) == "" {
 			return message, "", nil

@@ -54,7 +54,13 @@ func TestBuildKeyChangesWithModelParamsAndMessages(t *testing.T) {
 		"temperature": func(i *cache.KeyInput) { value := 0.7; i.Temperature = &value },
 		"max_tokens":  func(i *cache.KeyInput) { i.MaxTokens = 200 },
 		"prompt":      func(i *cache.KeyInput) { i.PromptVersion = "v2" },
-		"messages":    func(i *cache.KeyInput) { i.Messages = []provider.ChatMessage{{Role: "user", Content: "Outro"}} },
+		"messages": func(i *cache.KeyInput) {
+			i.Messages = []provider.ChatMessage{{Role: "user", Content: "Outro"}}
+		},
+		"tools": func(i *cache.KeyInput) {
+			i.Tools = []provider.Tool{{Type: "function", Function: provider.ToolFunction{Name: "ping"}}}
+		},
+		"tool_choice": func(i *cache.KeyInput) { i.ToolChoice = []byte(`"required"`) },
 	} {
 		changed := input
 		mutate(&changed)

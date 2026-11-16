@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -11,11 +12,13 @@ type openAIAdapter struct {
 }
 
 type openAIRequest struct {
-	Model       string        `json:"model"`
-	Messages    []ChatMessage `json:"messages"`
-	Temperature *float64      `json:"temperature,omitempty"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Stream      bool          `json:"stream"`
+	Model       string          `json:"model"`
+	Messages    []ChatMessage   `json:"messages"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	MaxTokens   int             `json:"max_tokens,omitempty"`
+	Stream      bool            `json:"stream"`
+	Tools       []Tool          `json:"tools,omitempty"`
+	ToolChoice  json.RawMessage `json:"tool_choice,omitempty"`
 }
 
 type openAIResponse struct {
@@ -23,7 +26,8 @@ type openAIResponse struct {
 	Model   string `json:"model"`
 	Choices []struct {
 		Message struct {
-			Content string `json:"content"`
+			Content   string     `json:"content"`
+			ToolCalls []ToolCall `json:"tool_calls"`
 		} `json:"message"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
@@ -40,6 +44,8 @@ func (a *openAIAdapter) Chat(ctx context.Context, account Account, request ChatR
 		Messages:    request.Messages,
 		Temperature: request.Temperature,
 		MaxTokens:   request.MaxTokens,
+		Tools:       request.Tools,
+		ToolChoice:  request.ToolChoice,
 	}
 	var response openAIResponse
 	err := postJSON(ctx, clientFor(a.client, account), baseURL+"/chat/completions", map[string]string{
@@ -56,6 +62,7 @@ func (a *openAIAdapter) Chat(ctx context.Context, account Account, request ChatR
 		ID:           response.ID,
 		Model:        response.Model,
 		Content:      response.Choices[0].Message.Content,
+		ToolCalls:    response.Choices[0].Message.ToolCalls,
 		FinishReason: normalizeFinishReason(response.Choices[0].FinishReason),
 		Usage:        response.Usage,
 	}, nil
@@ -84,6 +91,8 @@ func (a *openAIAdapter) ChatStream(ctx context.Context, account Account, request
 		Temperature: request.Temperature,
 		MaxTokens:   request.MaxTokens,
 		Stream:      true,
+		Tools:       request.Tools,
+		ToolChoice:  request.ToolChoice,
 	}
 	body, err := postSSE(ctx, clientFor(a.client, account), baseURL+"/chat/completions", map[string]string{
 		"Authorization": "Bearer " + account.APIKey,

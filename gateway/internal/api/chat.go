@@ -65,6 +65,13 @@ func chatCompletions(service ChatService, maxBodyBytes int64) http.HandlerFunc {
 			writeChatError(w, err)
 			return
 		}
+		message := map[string]any{
+			"role":    "assistant",
+			"content": response.Content,
+		}
+		if len(response.ToolCalls) > 0 {
+			message["tool_calls"] = response.ToolCalls
+		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("X-Donstop-Cache", cacheStatus)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -73,11 +80,8 @@ func chatCompletions(service ChatService, maxBodyBytes int64) http.HandlerFunc {
 			"created": time.Now().Unix(),
 			"model":   response.Model,
 			"choices": []map[string]any{{
-				"index": 0,
-				"message": map[string]string{
-					"role":    "assistant",
-					"content": response.Content,
-				},
+				"index":         0,
+				"message":       message,
 				"finish_reason": response.FinishReason,
 			}},
 			"usage": map[string]int{
@@ -102,12 +106,26 @@ func validateChatRequest(request provider.ChatRequest) error {
 		default:
 			return fmt.Errorf("invalid message role %q", message.Role)
 		}
+		if message.Role == "tool" && message.ToolCallID == "" {
+			return fmt.Errorf("tool messages require tool_call_id")
+		}
 	}
 	if request.Temperature != nil && (*request.Temperature < 0 || *request.Temperature > 2) {
 		return fmt.Errorf("temperature must be between 0 and 2")
 	}
 	if request.MaxTokens < 0 {
 		return fmt.Errorf("max_tokens must be positive")
+	}
+	if len(request.Tools) > 64 {
+		return fmt.Errorf("tools must contain at most 64 items")
+	}
+	for _, tool := range request.Tools {
+		if err := tool.Validate(); err != nil {
+			return err
+		}
+	}
+	if err := provider.ValidateToolChoice(request.ToolChoice); err != nil {
+		return err
 	}
 	return nil
 }

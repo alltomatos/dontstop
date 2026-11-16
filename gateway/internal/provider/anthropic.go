@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -17,14 +18,19 @@ type anthropicRequest struct {
 	Messages    []anthropicMessage `json:"messages"`
 	Temperature *float64           `json:"temperature,omitempty"`
 	Stream      bool               `json:"stream"`
+	Tools       []anthropicTool    `json:"tools,omitempty"`
+	ToolChoice  *anthropicChoice   `json:"tool_choice,omitempty"`
 }
 
 type anthropicResponse struct {
 	ID      string `json:"id"`
 	Model   string `json:"model"`
 	Content []struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
+		Type  string          `json:"type"`
+		Text  string          `json:"text"`
+		ID    string          `json:"id"`
+		Name  string          `json:"name"`
+		Input json.RawMessage `json:"input"`
 	} `json:"content"`
 	StopReason string `json:"stop_reason"`
 	Usage      struct {
@@ -41,6 +47,7 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 
 	system := make([]string, 0)
 	messages := anthropicMessages(request.Messages, &system)
+	tools, choice := anthropicTools(request)
 	maxTokens := request.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 1024
@@ -52,6 +59,8 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 		System:      strings.Join(system, "\n"),
 		Messages:    messages,
 		Temperature: request.Temperature,
+		Tools:       tools,
+		ToolChoice:  choice,
 	}
 	var response anthropicResponse
 	err := postJSON(ctx, clientFor(a.client, account), baseURL+"/v1/messages", map[string]string{
@@ -63,15 +72,27 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 	}
 
 	var content strings.Builder
+	toolCalls := make([]ToolCall, 0)
 	for _, block := range response.Content {
-		if block.Type == "text" {
+		switch block.Type {
+		case "text":
 			content.WriteString(block.Text)
+		case "tool_use":
+			arguments := string(block.Input)
+			if len(block.Input) == 0 {
+				arguments = "{}"
+			}
+			toolCalls = append(toolCalls, ToolCall{
+				ID: block.ID, Type: "function",
+				Function: ToolCallFunction{Name: block.Name, Arguments: arguments},
+			})
 		}
 	}
 	return ChatResponse{
 		ID:           response.ID,
 		Model:        response.Model,
 		Content:      content.String(),
+		ToolCalls:    toolCalls,
 		FinishReason: normalizeFinishReason(response.StopReason),
 		Usage: Usage{
 			PromptTokens:     response.Usage.InputTokens,
@@ -80,6 +101,7 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 		},
 	}, nil
 }
+
 func (a *anthropicAdapter) ChatStream(ctx context.Context, account Account, request ChatRequest) (Stream, error) {
 	baseURL := strings.TrimRight(account.BaseURL, "/")
 	if baseURL == "" {
@@ -87,6 +109,7 @@ func (a *anthropicAdapter) ChatStream(ctx context.Context, account Account, requ
 	}
 	system := make([]string, 0)
 	messages := anthropicMessages(request.Messages, &system)
+	tools, choice := anthropicTools(request)
 	maxTokens := request.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 1024
@@ -98,6 +121,8 @@ func (a *anthropicAdapter) ChatStream(ctx context.Context, account Account, requ
 		Messages:    messages,
 		Temperature: request.Temperature,
 		Stream:      true,
+		Tools:       tools,
+		ToolChoice:  choice,
 	}
 	body, err := postSSE(ctx, clientFor(a.client, account), baseURL+"/v1/messages", map[string]string{
 		"x-api-key":         account.APIKey,

@@ -12,6 +12,7 @@ import (
 // StreamChunk is a provider-neutral streaming delta.
 type StreamChunk struct {
 	Content      string
+	ToolCalls    []ToolCallDelta
 	FinishReason string
 	Usage        *Usage
 }
@@ -48,7 +49,8 @@ func (s *openAIStream) Recv(_ context.Context) (StreamChunk, error) {
 			Model   string `json:"model"`
 			Choices []struct {
 				Delta struct {
-					Content string `json:"content"`
+					Content   string          `json:"content"`
+					ToolCalls []ToolCallDelta `json:"tool_calls"`
 				} `json:"delta"`
 				FinishReason string `json:"finish_reason"`
 			} `json:"choices"`
@@ -60,6 +62,7 @@ func (s *openAIStream) Recv(_ context.Context) (StreamChunk, error) {
 		result := StreamChunk{}
 		if len(chunk.Choices) > 0 {
 			result.Content = chunk.Choices[0].Delta.Content
+			result.ToolCalls = chunk.Choices[0].Delta.ToolCalls
 			result.FinishReason = normalizeFinishReason(chunk.Choices[0].FinishReason)
 			if chunk.Choices[0].FinishReason == "" {
 				result.FinishReason = ""
@@ -70,7 +73,7 @@ func (s *openAIStream) Recv(_ context.Context) (StreamChunk, error) {
 			usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 			result.Usage = &usage
 		}
-		if result.Content == "" && result.FinishReason == "" && result.Usage == nil {
+		if result.Content == "" && len(result.ToolCalls) == 0 && result.FinishReason == "" && result.Usage == nil {
 			continue
 		}
 		return result, nil
@@ -107,11 +110,18 @@ func (s *anthropicStream) Recv(_ context.Context) (StreamChunk, error) {
 		data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 		var event struct {
 			Type  string `json:"type"`
+			Index int    `json:"index"`
 			Delta struct {
-				Type       string `json:"type"`
-				Text       string `json:"text"`
-				StopReason string `json:"stop_reason"`
+				Type        string `json:"type"`
+				Text        string `json:"text"`
+				PartialJSON string `json:"partial_json"`
+				StopReason  string `json:"stop_reason"`
 			} `json:"delta"`
+			ContentBlock struct {
+				Type string `json:"type"`
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"content_block"`
 			Message struct {
 				Usage struct {
 					InputTokens int `json:"input_tokens"`
@@ -127,7 +137,20 @@ func (s *anthropicStream) Recv(_ context.Context) (StreamChunk, error) {
 		switch event.Type {
 		case "message_start":
 			s.inputTokens = event.Message.Usage.InputTokens
+		case "content_block_start":
+			if event.ContentBlock.Type == "tool_use" {
+				return StreamChunk{ToolCalls: []ToolCallDelta{{
+					Index: event.Index, ID: event.ContentBlock.ID, Type: "function",
+					Function: ToolCallDeltaFn{Name: event.ContentBlock.Name},
+				}}}, nil
+			}
 		case "content_block_delta":
+			if event.Delta.Type == "input_json_delta" {
+				return StreamChunk{ToolCalls: []ToolCallDelta{{
+					Index:    event.Index,
+					Function: ToolCallDeltaFn{Arguments: event.Delta.PartialJSON},
+				}}}, nil
+			}
 			if event.Delta.Text != "" {
 				return StreamChunk{Content: event.Delta.Text}, nil
 			}
