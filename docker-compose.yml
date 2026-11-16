@@ -53,7 +53,7 @@ services:
       retries: 10
 
   migrate:
-    image: ronaldodavi/dontstop-gateway:onboarding-20261108
+    image: ronaldodavi/dontstop-gateway:multimodal-20261116
     entrypoint: ["/app/migrate"]
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://dontstop:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/dontstop?sslmode=disable}
@@ -65,7 +65,7 @@ services:
     restart: "no"
 
   gateway:
-    image: ronaldodavi/dontstop-gateway:onboarding-20261108
+    image: ronaldodavi/dontstop-gateway:multimodal-20261116
     restart: unless-stopped
     environment:
       PORT: "8080"
