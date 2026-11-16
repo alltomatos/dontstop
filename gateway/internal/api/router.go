@@ -23,6 +23,7 @@ type Dependencies struct {
 	Verifier       *auth.Verifier
 	Models         ModelLister
 	Chat           ChatService
+	MaxChatBody    int64
 	Admin          AdminProviderService
 	AdminProxy     AdminProxyService
 	AdminWebshare  AdminWebshareService
@@ -55,7 +56,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		})))
 	}
 	if deps.Verifier != nil && deps.Chat != nil {
-		mux.Handle("POST /v1/chat/completions", deps.Verifier.Middleware(chatCompletions(deps.Chat)))
+		mux.Handle("POST /v1/chat/completions", deps.Verifier.Middleware(chatCompletions(deps.Chat, deps.MaxChatBody)))
 	}
 	if deps.AdminAuth != nil {
 		mux.Handle("GET /admin/v1/setup/status", adminAuthStatus(deps.AdminAuth))
@@ -174,24 +175,36 @@ func listModels(w http.ResponseWriter, request *http.Request, lister ModelLister
 		return
 	}
 
+	type modelModalities struct {
+		Input  []string `json:"input"`
+		Output []string `json:"output"`
+	}
 	type modelObject struct {
-		ID             string `json:"id"`
-		Object         string `json:"object"`
-		Created        int64  `json:"created"`
-		OwnedBy        string `json:"owned_by"`
-		Origin         string `json:"x-dontstop-origin"`
-		XDonstopStatus string `json:"x-dontstop-status"`
+		ID             string           `json:"id"`
+		Object         string           `json:"object"`
+		Created        int64            `json:"created"`
+		OwnedBy        string           `json:"owned_by"`
+		Origin         string           `json:"x-dontstop-origin"`
+		XDonstopStatus string           `json:"x-dontstop-status"`
+		Modalities     *modelModalities `json:"modalities,omitempty"`
 	}
 	data := make([]modelObject, 0, len(models))
 	for _, model := range models {
-		data = append(data, modelObject{
+		entry := modelObject{
 			ID:             model.ID,
 			Object:         "model",
 			Created:        model.CreatedAt,
 			OwnedBy:        model.OwnedBy,
 			Origin:         model.Origin,
 			XDonstopStatus: model.Status,
-		})
+		}
+		if model.Capabilities != nil {
+			entry.Modalities = &modelModalities{
+				Input:  model.Capabilities.Inputs(),
+				Output: []string{provider.ModalityText},
+			}
+		}
+		data = append(data, entry)
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(map[string]any{

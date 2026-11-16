@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -198,6 +199,7 @@ func (s *Service) resolve(ctx context.Context, candidate routing.Candidate, forc
 }
 
 func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, request provider.ChatRequest) (provider.ChatResponse, routing.AttemptResult, error) {
+	request = limitToCandidate(candidate, request)
 	var forced *proxy.Lease
 	forceDirect := false
 	var lastErr error
@@ -242,6 +244,7 @@ func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, 
 }
 
 func (s *Service) attemptStream(ctx context.Context, candidate routing.Candidate, request provider.ChatRequest, state *streamState) (routing.AttemptResult, error) {
+	request = limitToCandidate(candidate, request)
 	var forced *proxy.Lease
 	forceDirect := false
 	var lastErr error
@@ -340,6 +343,26 @@ func attemptFailureKind(err error) routing.FailureKind {
 		return routing.FailureProxy
 	}
 	return routing.FailureUnknown
+}
+
+// limitToCandidate replaces media parts the selected model cannot accept with
+// a text note, keeping text-only models usable. The catalog capability snapshot
+// travels with the routing candidate, so this stays per-provider on failover.
+func limitToCandidate(candidate routing.Candidate, request provider.ChatRequest) provider.ChatRequest {
+	if candidate.Capabilities == nil {
+		return request
+	}
+	limited, dropped := request.LimitToModalities(*candidate.Capabilities)
+	if len(dropped) == 0 {
+		return limited
+	}
+	slog.Warn("request media degraded",
+		"tenant", candidate.TenantID,
+		"provider", candidate.ProviderName,
+		"model", candidate.ModelID,
+		"modalities", dropped,
+	)
+	return limited
 }
 
 type streamState struct {

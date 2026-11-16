@@ -73,21 +73,54 @@ func (a *agentRouterAdapter) translatePrompt(ctx context.Context, request ChatRe
 	translated.Messages = make([]ChatMessage, len(request.Messages))
 	source := "en"
 	for index, message := range request.Messages {
-		translated.Messages[index] = message
+		converted, messageSource, err := a.translateMessage(ctx, message)
+		if err != nil {
+			return ChatRequest{}, "", err
+		}
+		translated.Messages[index] = converted
+		if message.Role == "user" && messageSource != "" {
+			source = messageSource
+		}
+	}
+	return translated, source, nil
+}
+
+// translateMessage translates the text parts of one message while preserving
+// media parts untouched, so multimodal prompts keep their attachments.
+func (a *agentRouterAdapter) translateMessage(ctx context.Context, message ChatMessage) (ChatMessage, string, error) {
+	if message.Parts == nil {
 		if strings.TrimSpace(message.Content) == "" {
-			continue
+			return message, "", nil
 		}
 		result, err := a.translator.Translate(ctx, message.Content, "en")
 		if err != nil {
 			slog.Warn("agentrouter prompt translation failed", "stage", "prompt", "reason", err.Error())
-			return ChatRequest{}, "", fmt.Errorf("%w: prompt: %v", ErrTranslation, err)
+			return ChatMessage{}, "", fmt.Errorf("%w: prompt: %v", ErrTranslation, err)
 		}
-		translated.Messages[index].Content = result.Text
-		if message.Role == "user" && result.SourceLanguage != "" {
+		message.Content = result.Text
+		return message, result.SourceLanguage, nil
+	}
+
+	parts := make([]ContentPart, len(message.Parts))
+	copy(parts, message.Parts)
+	source := ""
+	for index := range parts {
+		if parts[index].Type != ContentPartText || strings.TrimSpace(parts[index].Text) == "" {
+			continue
+		}
+		result, err := a.translator.Translate(ctx, parts[index].Text, "en")
+		if err != nil {
+			slog.Warn("agentrouter prompt translation failed", "stage", "prompt", "reason", err.Error())
+			return ChatMessage{}, "", fmt.Errorf("%w: prompt: %v", ErrTranslation, err)
+		}
+		parts[index].Text = result.Text
+		if source == "" {
 			source = result.SourceLanguage
 		}
 	}
-	return translated, source, nil
+	message.Parts = parts
+	message.Content = joinTextParts(parts)
+	return message, source, nil
 }
 
 func (a *agentRouterAdapter) translateResponse(ctx context.Context, text, source string) (string, error) {

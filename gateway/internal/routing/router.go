@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -55,6 +56,7 @@ type Candidate struct {
 	ProxyUsernameCipher  []byte
 	ProxyPasswordCipher  []byte
 	ProxyHealthy         bool
+	Capabilities         *provider.Modalities
 }
 
 // Repository lists candidates for a tenant/model.

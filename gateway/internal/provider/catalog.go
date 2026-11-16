@@ -15,12 +15,13 @@ type Pricing struct {
 
 // Model is a public model entry returned by /v1/models.
 type Model struct {
-	ID          string
-	DisplayName string
-	OwnedBy     string
-	Origin      string
-	Status      string
-	CreatedAt   int64
+	ID           string
+	DisplayName  string
+	OwnedBy      string
+	Origin       string
+	Status       string
+	CreatedAt    int64
+	Capabilities *Modalities
 }
 
 // Catalog lists models available to a tenant.
@@ -42,7 +43,8 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 				WHERE pa.provider_id = p.id
 				  AND pa.status = 'active'
 				  AND (pa.cooldown_until IS NULL OR pa.cooldown_until <= now())
-			) THEN 'active' ELSE 'cooldown' END AS status
+			) THEN 'active' ELSE 'cooldown' END AS status,
+			coalesce(pm.capabilities, '{}'::jsonb) AS capabilities
 		FROM provider_models pm
 		JOIN providers p ON p.id = pm.provider_id AND p.tenant_id = pm.tenant_id
 		WHERE pm.tenant_id = $1
@@ -60,7 +62,8 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 				  AND EXISTS (SELECT 1 FROM provider_accounts pa
 				              WHERE pa.tenant_id = cm.tenant_id AND pa.provider_id = cm.provider_id
 				                AND pa.status = 'active' AND (pa.cooldown_until IS NULL OR pa.cooldown_until <= now()))
-			) THEN 'active' ELSE 'degraded' END
+			) THEN 'active' ELSE 'degraded' END,
+			NULL::jsonb
 		FROM combos c
 		WHERE c.tenant_id = $1 AND c.status = 'active'
 		ORDER BY model_id
@@ -73,8 +76,12 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 	models := make([]Model, 0)
 	for rows.Next() {
 		var model Model
-		if err := rows.Scan(&model.ID, &model.DisplayName, &model.OwnedBy, &model.Origin, &model.CreatedAt, &model.Status); err != nil {
+		var capabilities []byte
+		if err := rows.Scan(&model.ID, &model.DisplayName, &model.OwnedBy, &model.Origin, &model.CreatedAt, &model.Status, &capabilities); err != nil {
 			return nil, fmt.Errorf("scan model: %w", err)
+		}
+		if parsed, ok := ParseModalities(capabilities); ok {
+			model.Capabilities = &parsed
 		}
 		models = append(models, model)
 	}

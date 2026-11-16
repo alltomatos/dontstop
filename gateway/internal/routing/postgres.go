@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -38,7 +39,8 @@ func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model str
 		                 AND pp.provider_id = pa.provider_id
 		                 AND pp.proxy_endpoint_id = pe.id
 		                 AND pp.banned_until > now()
-		           )
+		           ),
+		       coalesce(pm.capabilities, '{}'::jsonb)
 		FROM provider_accounts pa
 		JOIN providers p ON p.id = pa.provider_id AND p.tenant_id = pa.tenant_id
 		JOIN provider_models pm ON pm.provider_id = p.id AND pm.tenant_id = pa.tenant_id
@@ -60,6 +62,7 @@ func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model str
 	candidates := make([]Candidate, 0)
 	for rows.Next() {
 		var candidate Candidate
+		var capabilities []byte
 		if err := rows.Scan(
 			&candidate.TenantID,
 			&candidate.AccountID,
@@ -80,10 +83,14 @@ func (r *PostgresRepository) Candidates(ctx context.Context, tenantID, model str
 			&candidate.ProxyUsernameCipher,
 			&candidate.ProxyPasswordCipher,
 			&candidate.ProxyHealthy,
+			&capabilities,
 		); err != nil {
 			return nil, fmt.Errorf("scan routing candidate: %w", err)
 		}
 		candidate.ModelID = model
+		if parsed, ok := provider.ParseModalities(capabilities); ok {
+			candidate.Capabilities = &parsed
+		}
 		candidates = append(candidates, candidate)
 	}
 	if err := rows.Err(); err != nil {
@@ -113,7 +120,8 @@ func (r *PostgresRepository) CandidatesForTarget(ctx context.Context, tenantID, 
 		                 AND pp.provider_id = pa.provider_id
 		                 AND pp.proxy_endpoint_id = pe.id
 		                 AND pp.banned_until > now()
-		           )
+		           ),
+		       coalesce(pm.capabilities, '{}'::jsonb)
 		FROM provider_accounts pa
 		JOIN providers p ON p.id = pa.provider_id AND p.tenant_id = pa.tenant_id
 		JOIN provider_models pm ON pm.provider_id = p.id AND pm.tenant_id = pa.tenant_id
@@ -135,6 +143,7 @@ func (r *PostgresRepository) CandidatesForTarget(ctx context.Context, tenantID, 
 	candidates := make([]Candidate, 0)
 	for rows.Next() {
 		var candidate Candidate
+		var capabilities []byte
 		if err := rows.Scan(
 			&candidate.TenantID, &candidate.AccountID, &candidate.ProviderID,
 			&candidate.ProviderName, &candidate.ProviderKind, &candidate.Priority,
@@ -143,10 +152,14 @@ func (r *PostgresRepository) CandidatesForTarget(ctx context.Context, tenantID, 
 			&candidate.ProxyEndpointID, &candidate.ProxyAddress, &candidate.ProxyPort,
 			&candidate.ProxyCountry, &candidate.ProxyCity, &candidate.ProxyUsernameCipher,
 			&candidate.ProxyPasswordCipher, &candidate.ProxyHealthy,
+			&capabilities,
 		); err != nil {
 			return nil, fmt.Errorf("scan target candidate: %w", err)
 		}
 		candidate.ModelID = model
+		if parsed, ok := provider.ParseModalities(capabilities); ok {
+			candidate.Capabilities = &parsed
+		}
 		candidates = append(candidates, candidate)
 	}
 	if err := rows.Err(); err != nil {

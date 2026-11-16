@@ -20,10 +20,12 @@ type fakeChatService struct {
 	err         error
 	calls       int
 	cacheStatus string
+	request     provider.ChatRequest
 }
 
-func (s *fakeChatService) Chat(context.Context, string, provider.ChatRequest, string) (provider.ChatResponse, string, error) {
+func (s *fakeChatService) Chat(_ context.Context, _ string, request provider.ChatRequest, _ string) (provider.ChatResponse, string, error) {
 	s.calls++
+	s.request = request
 	status := s.cacheStatus
 	if status == "" {
 		status = "bypass"
@@ -31,8 +33,9 @@ func (s *fakeChatService) Chat(context.Context, string, provider.ChatRequest, st
 	return s.response, status, s.err
 }
 
-func (s *fakeChatService) Stream(_ context.Context, _ string, _ provider.ChatRequest, writer http.ResponseWriter) error {
+func (s *fakeChatService) Stream(_ context.Context, _ string, request provider.ChatRequest, writer http.ResponseWriter) error {
 	s.calls++
+	s.request = request
 	writer.Header().Set("Content-Type", "text/event-stream")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte("data: {\"choices\":[]}\n\ndata: [DONE]\n\n"))
@@ -80,8 +83,64 @@ func TestChatRejectsInvalidBody(t *testing.T) {
 
 func TestChatRejectsOversizedBody(t *testing.T) {
 	service := &fakeChatService{}
+	verifier, key := testVerifier(t, []string{"chat:write"})
+	router := api.NewRouter(api.Dependencies{
+		Readiness:   health.NewRegistry(0),
+		Verifier:    verifier,
+		Chat:        service,
+		MaxChatBody: 64,
+	})
+	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":"` + strings.Repeat("a", 128) + `"}]}`
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected 413, got %d: %s", response.Code, response.Body.String())
+	}
+	var payload struct {
+		Error struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if payload.Error.Type != "request_too_large" {
+		t.Fatalf("unexpected error type: %+v", payload)
+	}
+}
+
+func TestChatAcceptsMultipartContent(t *testing.T) {
+	service := &fakeChatService{response: provider.ChatResponse{ID: "chat-1", Model: "gpt-4.1", Content: "ok", FinishReason: "stop"}}
 	router, key := chatRouter(t, service, []string{"chat:write"})
-	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":"` + strings.Repeat("a", 1<<20) + `"}]}`
+	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":[
+		{"type":"text","text":"describe"},
+		{"type":"image_url","image_url":{"url":"data:image/png;base64,AAAA"}}
+	]}]}`
+	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
+	request.Header.Set("Authorization", "Bearer "+key)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	if service.calls != 1 {
+		t.Fatalf("expected service call, got %d", service.calls)
+	}
+	message := service.request.Messages[0]
+	if len(message.Parts) != 2 || message.Parts[1].Modality() != provider.ModalityImage {
+		t.Fatalf("multipart content not decoded: %+v", message)
+	}
+}
+
+func TestChatRejectsUnknownContentPart(t *testing.T) {
+	service := &fakeChatService{}
+	router, key := chatRouter(t, service, []string{"chat:write"})
+	body := `{"model":"gpt-4.1","messages":[{"role":"user","content":[{"type":"hologram"}]}]}`
 	request := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
 	request.Header.Set("Authorization", "Bearer "+key)
 	response := httptest.NewRecorder()
@@ -89,6 +148,9 @@ func TestChatRejectsOversizedBody(t *testing.T) {
 
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", response.Code)
+	}
+	if service.calls != 0 {
+		t.Fatal("service must not be called for invalid content parts")
 	}
 }
 func TestChatMapsTranslationError(t *testing.T) {

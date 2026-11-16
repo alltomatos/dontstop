@@ -97,7 +97,7 @@ func run(logger *slog.Logger, stdio bool) error {
 	defer func() { _ = telemetryProvider.Shutdown(context.Background()) }()
 
 	readiness := health.NewRegistry(readinessTimeout)
-	deps := api.Dependencies{Readiness: readiness}
+	deps := api.Dependencies{Readiness: readiness, MaxChatBody: cfg.MaxChatBodyBytes}
 	var pool *pgxpool.Pool
 	var providerService *admin.ProviderService
 	var webshareService *admin.WebshareService

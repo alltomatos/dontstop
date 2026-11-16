@@ -11,12 +11,12 @@ type anthropicAdapter struct {
 }
 
 type anthropicRequest struct {
-	Model       string        `json:"model"`
-	MaxTokens   int           `json:"max_tokens"`
-	System      string        `json:"system,omitempty"`
-	Messages    []ChatMessage `json:"messages"`
-	Temperature *float64      `json:"temperature,omitempty"`
-	Stream      bool          `json:"stream"`
+	Model       string             `json:"model"`
+	MaxTokens   int                `json:"max_tokens"`
+	System      string             `json:"system,omitempty"`
+	Messages    []anthropicMessage `json:"messages"`
+	Temperature *float64           `json:"temperature,omitempty"`
+	Stream      bool               `json:"stream"`
 }
 
 type anthropicResponse struct {
@@ -40,14 +40,7 @@ func (a *anthropicAdapter) Chat(ctx context.Context, account Account, request Ch
 	}
 
 	system := make([]string, 0)
-	messages := make([]ChatMessage, 0, len(request.Messages))
-	for _, message := range request.Messages {
-		if message.Role == "system" {
-			system = append(system, message.Content)
-			continue
-		}
-		messages = append(messages, message)
-	}
+	messages := anthropicMessages(request.Messages, &system)
 	maxTokens := request.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 1024
@@ -93,14 +86,7 @@ func (a *anthropicAdapter) ChatStream(ctx context.Context, account Account, requ
 		baseURL = "https://api.anthropic.com"
 	}
 	system := make([]string, 0)
-	messages := make([]ChatMessage, 0, len(request.Messages))
-	for _, message := range request.Messages {
-		if message.Role == "system" {
-			system = append(system, message.Content)
-			continue
-		}
-		messages = append(messages, message)
-	}
+	messages := anthropicMessages(request.Messages, &system)
 	maxTokens := request.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 1024

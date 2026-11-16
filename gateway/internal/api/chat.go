@@ -19,7 +19,14 @@ type ChatService interface {
 	Stream(ctx context.Context, tenantID string, request provider.ChatRequest, writer http.ResponseWriter) error
 }
 
-func chatCompletions(service ChatService) http.HandlerFunc {
+// DefaultMaxChatBodyBytes allows multimodal payloads (images, audio and PDFs
+// embedded as base64) while keeping a hard cap. Override with MAX_CHAT_BODY_BYTES.
+const DefaultMaxChatBodyBytes int64 = 32 << 20
+
+func chatCompletions(service ChatService, maxBodyBytes int64) http.HandlerFunc {
+	if maxBodyBytes <= 0 {
+		maxBodyBytes = DefaultMaxChatBodyBytes
+	}
 	return func(w http.ResponseWriter, request *http.Request) {
 		principal, ok := auth.PrincipalFromContext(request.Context())
 		if !ok || !principal.HasScope("chat:write") {
@@ -27,10 +34,16 @@ func chatCompletions(service ChatService) http.HandlerFunc {
 			return
 		}
 
-		request.Body = http.MaxBytesReader(w, request.Body, 1<<20)
+		request.Body = http.MaxBytesReader(w, request.Body, maxBodyBytes)
 		var payload provider.ChatRequest
 		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
-			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid JSON body")
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				writeAPIError(w, http.StatusRequestEntityTooLarge, "request_too_large",
+					fmt.Sprintf("request body exceeds the %d byte limit", maxBodyBytes))
+				return
+			}
+			writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "invalid JSON body: "+err.Error())
 			return
 		}
 		if err := validateChatRequest(payload); err != nil {

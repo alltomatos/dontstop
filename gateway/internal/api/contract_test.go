@@ -59,10 +59,33 @@ func TestOpenAPIContractP0Surface(t *testing.T) {
 	if responseContent["text/event-stream"] == nil || responseContent["application/json"] == nil {
 		t.Fatal("200 response must expose JSON and SSE")
 	}
-	for _, status := range []string{"401", "403", "429"} {
+	for _, status := range []string{"401", "403", "413", "429"} {
 		if responses[status] == nil {
 			t.Fatalf("missing error response %s", status)
 		}
+	}
+
+	schemas := object(t, components, "schemas")
+	chatMessage := object(t, schemas, "ChatMessage")
+	contentSchema := object(t, object(t, chatMessage, "properties"), "content")
+	oneOf, ok := contentSchema["oneOf"].([]any)
+	if !ok || len(oneOf) != 2 {
+		t.Fatalf("ChatMessage.content must accept string or content parts: %v", contentSchema)
+	}
+	contentPart := object(t, schemas, "ContentPart")
+	partTypeSchema := object(t, object(t, contentPart, "properties"), "type")
+	enum := stringSlice(t, partTypeSchema, "enum")
+	for _, kind := range []string{"text", "image_url", "input_audio", "file"} {
+		if !contains(enum, kind) {
+			t.Fatalf("ContentPart.type must include %s, got %v", kind, enum)
+		}
+	}
+	if object(t, object(t, contentPart, "properties"), "file") == nil {
+		t.Fatal("ContentPart must describe file parts")
+	}
+	model := object(t, schemas, "Model")
+	if object(t, model, "properties")["modalities"] == nil {
+		t.Fatal("Model must expose modalities")
 	}
 
 	schemes := object(t, components, "securitySchemes")

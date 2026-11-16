@@ -78,11 +78,12 @@ func TestModelsRequiresModelsReadScope(t *testing.T) {
 
 func TestModelsReturnsCatalog(t *testing.T) {
 	verifier, key := testVerifier(t, []string{"models:read"})
+	vision := provider.Modalities{Text: true, Image: true, PDF: true}
 	router := api.NewRouter(api.Dependencies{
 		Readiness: health.NewRegistry(0),
 		Verifier:  verifier,
 		Models: fakeLister{models: []provider.Model{
-			{ID: "gpt-4.1", DisplayName: "GPT-4.1", OwnedBy: "openai", Origin: "native", Status: "active"},
+			{ID: "gpt-4.1", DisplayName: "GPT-4.1", OwnedBy: "openai", Origin: "native", Status: "active", Capabilities: &vision},
 			{ID: "claude-sonnet-4", DisplayName: "Claude Sonnet 4", OwnedBy: "anthropic", Status: "cooldown"},
 		}},
 	})
@@ -103,6 +104,10 @@ func TestModelsReturnsCatalog(t *testing.T) {
 			OwnedBy        string `json:"owned_by"`
 			Origin         string `json:"x-dontstop-origin"`
 			XDonstopStatus string `json:"x-dontstop-status"`
+			Modalities     *struct {
+				Input  []string `json:"input"`
+				Output []string `json:"output"`
+			} `json:"modalities"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
@@ -114,7 +119,16 @@ func TestModelsReturnsCatalog(t *testing.T) {
 	if body.Data[0].Origin != "native" {
 		t.Fatalf("unexpected model origin: %+v", body.Data[0])
 	}
+	if body.Data[0].Modalities == nil {
+		t.Fatalf("expected modalities for capability-aware model: %+v", body.Data[0])
+	}
+	if len(body.Data[0].Modalities.Input) != 3 || body.Data[0].Modalities.Input[1] != provider.ModalityImage {
+		t.Fatalf("unexpected modalities: %+v", body.Data[0].Modalities)
+	}
 	if body.Data[1].ID != "claude-sonnet-4" || body.Data[1].XDonstopStatus != "cooldown" {
 		t.Fatalf("unexpected model: %+v", body.Data[1])
+	}
+	if body.Data[1].Modalities != nil {
+		t.Fatalf("unknown capabilities must omit modalities: %+v", body.Data[1])
 	}
 }

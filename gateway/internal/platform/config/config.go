@@ -30,6 +30,7 @@ type Config struct {
 	NATSURL              string
 	AgentRouterRelayURL  string
 	WebshareSyncInterval time.Duration
+	MaxChatBodyBytes     int64
 }
 
 // Load reads and validates process configuration.
@@ -42,6 +43,13 @@ func Load() (Config, error) {
 		NATSURL:              secretValue("NATS_URL"),
 		AgentRouterRelayURL:  strings.TrimSpace(secretValue("AGENTROUTER_RELAY_URL")),
 		WebshareSyncInterval: time.Hour,
+	}
+	if raw := os.Getenv("MAX_CHAT_BODY_BYTES"); raw != "" {
+		bytes, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || bytes <= 0 {
+			return Config{}, fmt.Errorf("invalid MAX_CHAT_BODY_BYTES %q: expected a positive integer", raw)
+		}
+		cfg.MaxChatBodyBytes = bytes
 	}
 	if raw := os.Getenv("WEBSHARE_SYNC_INTERVAL"); raw != "" {
 		interval, err := time.ParseDuration(raw)

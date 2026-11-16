@@ -112,3 +112,23 @@ func TestLoadRejectsInvalidPort(t *testing.T) {
 		t.Fatal("expected an error for an invalid port")
 	}
 }
+
+func TestLoadReadsMaxChatBodyBytes(t *testing.T) {
+	t.Setenv("MAX_CHAT_BODY_BYTES", "1048576")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.MaxChatBodyBytes != 1048576 {
+		t.Fatalf("unexpected body limit: %d", cfg.MaxChatBodyBytes)
+	}
+}
+
+func TestLoadRejectsInvalidMaxChatBodyBytes(t *testing.T) {
+	t.Setenv("MAX_CHAT_BODY_BYTES", "0")
+
+	if _, err := config.Load(); err == nil {
+		t.Fatal("expected an error for a non-positive body limit")
+	}
+}

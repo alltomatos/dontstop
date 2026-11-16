@@ -26,10 +26,62 @@ var (
 
 const maxProviderResponseBytes = 4 << 20
 
-// ChatMessage is a provider-neutral chat message.
+// ChatMessage is a provider-neutral chat message. Content holds the plain text
+// form and Parts holds the multimodal form when the caller sent an array. Both
+// are mutually derived: Content is always the joined text of Parts.
 type ChatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    string        `json:"role"`
+	Content string        `json:"content"`
+	Parts   []ContentPart `json:"-"`
+}
+
+// UnmarshalJSON accepts the OpenAI content union: a string, null or an array of
+// content parts.
+func (m *ChatMessage) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Role    string          `json:"role"`
+		Content json.RawMessage `json:"content"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	m.Role = raw.Role
+	m.Content = ""
+	m.Parts = nil
+	if len(raw.Content) == 0 || string(raw.Content) == "null" {
+		return nil
+	}
+	var text string
+	if err := json.Unmarshal(raw.Content, &text); err == nil {
+		m.Content = text
+		return nil
+	}
+	var parts []ContentPart
+	if err := json.Unmarshal(raw.Content, &parts); err != nil {
+		return fmt.Errorf("content must be a string or an array of content parts")
+	}
+	for index := range parts {
+		if err := parts[index].Validate(); err != nil {
+			return fmt.Errorf("content[%d]: %w", index, err)
+		}
+	}
+	m.Parts = parts
+	m.Content = joinTextParts(parts)
+	return nil
+}
+
+// MarshalJSON keeps the scalar form for plain text messages and emits the
+// OpenAI content array when the caller sent content parts.
+func (m ChatMessage) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		Role    string `json:"role"`
+		Content any    `json:"content"`
+	}
+	var content any = m.Content
+	if m.Parts != nil {
+		content = m.Parts
+	}
+	return json.Marshal(wire{Role: m.Role, Content: content})
 }
 
 // ChatRequest is a provider-neutral chat request for the P0-α slice.

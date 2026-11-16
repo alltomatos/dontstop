@@ -145,6 +145,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/RequestTooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
         '500':
@@ -242,6 +244,17 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    RequestTooLarge:
+      description: Corpo da requisição excede o limite configurado em MAX_CHAT_BODY_BYTES
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              type: request_too_large
+              message: request body exceeds the 33554432 byte limit
+              request_id: req_01
     RateLimited:
       description: Limite de taxa excedido
       headers:
@@ -307,6 +320,22 @@ components:
         x-dontstop-status:
           type: string
           enum: [active, cooldown, degraded]
+        modalities:
+          type: object
+          description: |
+            Modalidades de entrada suportadas. Presente apenas quando o
+            catálogo tem metadados de capacidade para o modelo.
+          properties:
+            input:
+              type: array
+              items:
+                type: string
+                enum: [text, image, audio, video, pdf]
+            output:
+              type: array
+              items:
+                type: string
+                enum: [text]
     ChatCompletionRequest:
       type: object
       required: [model, messages]
@@ -388,7 +417,7 @@ components:
       properties:
         type:
           type: string
-          enum: [text, image_url, input_audio]
+          enum: [text, image_url, input_audio, file]
         text:
           type: string
         image_url:
@@ -396,7 +425,7 @@ components:
           properties:
             url:
               type: string
-              format: uri
+              description: URL HTTP(S) ou data URL em base64.
             detail:
               type: string
               enum: [auto, low, high]
@@ -408,6 +437,16 @@ components:
             format:
               type: string
               enum: [wav, mp3]
+        file:
+          type: object
+          description: Documento (PDF/texto/imagem) em data URL ou referência de arquivo.
+          properties:
+            filename:
+              type: string
+            file_data:
+              type: string
+            file_id:
+              type: string
     Tool:
       type: object
       required: [type, function]
@@ -547,6 +586,7 @@ components:
                 - permission_error
                 - not_found_error
                 - rate_limit_error
+                - request_too_large
                 - api_error
                 - timeout_error
             message:
