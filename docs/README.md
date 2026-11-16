@@ -42,6 +42,7 @@ A arquitetura inicial é **single-tenant (instância única)**, mas o modelo de 
 | — | [Combos do dontstop](reference/COMBOS.md) | Modelo, validações, seleção, failover, API, IA assistida e critérios de aceite |
 | — | [Guia do usuário](user-guide/README.md) | Guias por página/modal em 6 idiomas, com imagens, alt e fallback |
 | — | [Referência: Endpoints/API Manager](reference/ENDPOINTS-API-MANAGER-REFERENCIAS.md) | Como 9Router e OmniRoute tratam endpoints e API keys; o que adotar/evitar |
+| — | [API keys no console](reference/API-KEYS.md) | Mapa UI → Next → gateway, campos, segredo único, auditoria e testes |
 | — | [Referência: MCP](reference/MCP-REFERENCIAS.md) | Como 9Router e OmniRoute expõem MCP; decisões do dontstop |
 | — | [Referência: Proxy Webshare](reference/WEBSHARE-PROXY-PLAN.md) | Estudo da API, comparativo 9Router/OmniRoute, plano por etapas e riscos do proxy por conta |
 

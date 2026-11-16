@@ -590,7 +590,7 @@ erDiagram
 | `api_key_approvals` | Aprovação corporativa | P1; status `pending/approved/rejected`; auditoria |
 | `api_key_groups` | Grupos de chaves (P1) | `(tenant_id, name)` único; `is_active` pausa grants sem remover denies |
 | `api_key_group_rules` | Allow/deny por modelo/provider | `access_type` (`allow/deny`); deny tem precedência; padrão de modelo |
-| `api_keys` (atributos) | Limites e ciclo de vida | `rate_limits` (RPM/TPM), `access_schedule` (dias/horário/tz), `ip_allowlist`, `max_sessions`, `key_cipher` (se reveal), `is_banned`, `revoked_at`; `expires_at NULL` = sem expiração (se a política permitir); `user_id` opcional para P2 (não exposto na UI do P0) |
+| `api_keys` (atributos) | Limites, rede e ciclo de vida | `ip_allowlist` (text[]), `rpm_limit`, `tpm_limit`, `usd_monthly_limit`, `usd_daily_limit`, `usd_weekly_limit`, `rotated_at`, `revoked_at`; `expires_at NULL` = sem expiração; escopos em `scopes` |
 
 > **Configuração em cache:** o gateway mantém o endpoint + políticas em Redis (TTL curto) e invalida por pub/sub quando o Admin altera. A fonte de verdade é o Postgres.
 

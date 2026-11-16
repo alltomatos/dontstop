@@ -306,10 +306,18 @@ export interface AdminAPIKey {
   name: string;
   prefix: string;
   scopes: string[];
-  expires_at?: string;
-  revoked_at?: string;
+  status: "active" | "revoked" | "expired";
+  ip_allowlist: string[];
+  rpm_limit: number | null;
+  tpm_limit: number | null;
+  usd_monthly_limit: number | null;
+  usd_daily_limit: number | null;
+  usd_weekly_limit: number | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+  last_rotated_at: string | null;
   created_at: string;
-  last_used_at?: string;
+  last_used_at: string | null;
   key?: string;
 }
 

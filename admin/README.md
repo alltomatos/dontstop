@@ -65,3 +65,9 @@ O mockup estático continua em `design-system/mockups/console.html` e pode ser s
 ```bash
 python -m http.server 8765 --bind 127.0.0.1
 ```
+
+## API Manager (real)
+
+A página `/api-manager` consome `/api/admin/api-keys` e `/api/admin/api-keys/scopes`. O mapa completo
+UI → Next → gateway, campos, validação, segredo único e auditoria está em
+[`docs/reference/API-KEYS.md`](../docs/reference/API-KEYS.md).

@@ -106,7 +106,11 @@ func NewRouter(deps Dependencies) http.Handler {
 	}
 	if deps.Verifier != nil && deps.AdminKeys != nil {
 		mux.Handle("GET /admin/v1/api-keys", adminMiddleware(adminAPIKeysList(deps.AdminKeys)))
+		mux.Handle("GET /admin/v1/api-keys/scopes", adminMiddleware(adminAPIKeyScopes(deps.AdminKeys)))
 		mux.Handle("POST /admin/v1/api-keys", adminMiddleware(adminAPIKeysCreate(deps.AdminKeys)))
+		mux.Handle("GET /admin/v1/api-keys/{id}", adminMiddleware(adminAPIKeysGet(deps.AdminKeys)))
+		mux.Handle("PUT /admin/v1/api-keys/{id}", adminMiddleware(adminAPIKeysUpdate(deps.AdminKeys)))
+		mux.Handle("POST /admin/v1/api-keys/{id}/rotate", adminMiddleware(adminAPIKeysRotate(deps.AdminKeys)))
 		mux.Handle("POST /admin/v1/api-keys/{id}/revoke", adminMiddleware(adminAPIKeysRevoke(deps.AdminKeys)))
 	}
 	if deps.Verifier != nil && deps.AdminUsage != nil {
