@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,6 +27,19 @@ var (
 )
 
 const maxProviderResponseBytes = 4 << 20
+
+const (
+	// chatResponseTimeout bounds non-streaming completions. http.Client.Timeout
+	// must not be used for providers: it also bounds reading a streamed SSE body,
+	// which silently truncated long generations.
+	chatResponseTimeout     = 3 * time.Minute
+	providerDialTimeout     = 10 * time.Second
+	providerTLSHandshake    = 10 * time.Second
+	providerHeaderTimeout   = 60 * time.Second
+	providerIdleConnTimeout = 90 * time.Second
+	// providerStreamIdleTimeout aborts a stream that stops yielding bytes.
+	providerStreamIdleTimeout = 2 * time.Minute
+)
 
 // ChatMessage is a provider-neutral chat message. Content holds the plain text
 // form and Parts holds the multimodal form when the caller sent an array. Both
@@ -163,10 +178,23 @@ func NewAdapterWithTranslator(kind string, translator Translator) (Adapter, erro
 }
 
 func defaultClient() *http.Client {
-	return &http.Client{Timeout: 60 * time.Second}
+	return &http.Client{Transport: providerTransport()}
+}
+
+// providerTransport applies per-phase deadlines so a stalled connection fails
+// fast without capping the total lifetime of a streamed response.
+func providerTransport() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DialContext = (&net.Dialer{Timeout: providerDialTimeout, KeepAlive: 30 * time.Second}).DialContext
+	transport.TLSHandshakeTimeout = providerTLSHandshake
+	transport.ResponseHeaderTimeout = providerHeaderTimeout
+	transport.IdleConnTimeout = providerIdleConnTimeout
+	return transport
 }
 
 func postJSON(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, target any, proxyEnabled bool) error {
+	ctx, cancel := context.WithTimeout(ctx, chatResponseTimeout)
+	defer cancel()
 	response, err := doProviderRequest(ctx, client, url, headers, payload, "application/json", proxyEnabled)
 	if err != nil {
 		return err
@@ -184,7 +212,65 @@ func postSSE(ctx context.Context, client *http.Client, url string, headers map[s
 	if err != nil {
 		return nil, err
 	}
-	return response.Body, nil
+	return newIdleTimeoutReadCloser(response.Body, providerStreamIdleTimeout), nil
+}
+
+// idleTimeoutReadCloser closes a streamed response body once it stops yielding
+// bytes for idle. It replaces http.Client.Timeout for SSE, which would otherwise
+// abort the whole generation at a fixed wall-clock deadline.
+type idleTimeoutReadCloser struct {
+	body   io.ReadCloser
+	idle   time.Duration
+	timer  *time.Timer
+	mu     sync.Mutex
+	err    error
+	closed bool
+}
+
+func newIdleTimeoutReadCloser(body io.ReadCloser, idle time.Duration) io.ReadCloser {
+	if idle <= 0 {
+		return body
+	}
+	reader := &idleTimeoutReadCloser{body: body, idle: idle}
+	reader.timer = time.AfterFunc(idle, reader.expire)
+	return reader
+}
+
+func (r *idleTimeoutReadCloser) expire() {
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
+		return
+	}
+	r.err = fmt.Errorf("%w: upstream stream idle for %s", ErrProviderUnavailable, r.idle)
+	r.mu.Unlock()
+	_ = r.body.Close()
+}
+
+func (r *idleTimeoutReadCloser) Read(p []byte) (int, error) {
+	n, err := r.body.Read(p)
+	r.mu.Lock()
+	if n > 0 && !r.closed && r.err == nil {
+		r.timer.Reset(r.idle)
+	}
+	expired := r.err
+	r.mu.Unlock()
+	if err != nil && expired != nil {
+		return n, expired
+	}
+	return n, err
+}
+
+func (r *idleTimeoutReadCloser) Close() error {
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
+		return nil
+	}
+	r.closed = true
+	r.mu.Unlock()
+	r.timer.Stop()
+	return r.body.Close()
 }
 
 func doProviderRequest(ctx context.Context, client *http.Client, url string, headers map[string]string, payload any, accept string, proxyEnabled bool) (*http.Response, error) {

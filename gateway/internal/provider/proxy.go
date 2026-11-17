@@ -165,16 +165,16 @@ var proxyClients sync.Map
 // ClientForProxy returns a cached HTTP client routed through proxyURL.
 func ClientForProxy(proxyURL string, timeout time.Duration) *http.Client {
 	if proxyURL == "" {
-		return &http.Client{Timeout: timeout}
+		return &http.Client{Timeout: timeout, Transport: providerTransport()}
 	}
 	if cached, ok := proxyClients.Load(proxyURL); ok {
 		return cached.(*http.Client)
 	}
 	parsed, err := url.Parse(proxyURL)
 	if err != nil {
-		return &http.Client{Timeout: timeout}
+		return &http.Client{Timeout: timeout, Transport: providerTransport()}
 	}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport := providerTransport()
 	transport.Proxy = http.ProxyURL(parsed)
 	client := &http.Client{Timeout: timeout, Transport: transport}
 	actual, _ := proxyClients.LoadOrStore(proxyURL, client)
@@ -185,9 +185,7 @@ func clientFor(base *http.Client, account Account) *http.Client {
 	if account.ProxyURL == "" {
 		return base
 	}
-	timeout := 60 * time.Second
-	if base != nil && base.Timeout > 0 {
-		timeout = base.Timeout
-	}
-	return ClientForProxy(account.ProxyURL, timeout)
+	// No client-level timeout: non-streaming requests carry their own context
+	// deadline and streamed bodies are bounded by the idle watchdog instead.
+	return ClientForProxy(account.ProxyURL, 0)
 }

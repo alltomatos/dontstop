@@ -498,9 +498,11 @@ func (s *streamState) chunk(chunk provider.StreamChunk) error {
 
 func (s *streamState) errorEvent() {
 	_ = writeEvent(s.writer, map[string]any{
-		"error": map[string]string{
-			"type":    "api_error",
-			"message": "upstream stream failed",
+		"error": map[string]any{
+			"type":      "api_error",
+			"code":      "upstream_stream_interrupted",
+			"message":   "upstream stream failed",
+			"retryable": true,
 		},
 	})
 }
