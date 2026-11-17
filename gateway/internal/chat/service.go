@@ -32,7 +32,7 @@ type AccountRouter interface {
 
 // ComboResolver resolves an active combo into concrete targets.
 type ComboResolver interface {
-	ResolveTargets(ctx context.Context, tenantID, slug string) ([]routing.ComboTarget, int, error)
+	ResolveTargets(ctx context.Context, tenantID, slug string) (routing.ComboTargets, error)
 }
 
 // UsageRecorder persists request usage and cost.
@@ -57,6 +57,7 @@ type Service struct {
 	recorder      UsageRecorder
 	proxies       ProxyResolver
 	combos        ComboResolver
+	media         provider.MediaFetcher
 }
 
 // NewService creates a chat service.
@@ -69,8 +70,12 @@ func NewService(router AccountRouter, decrypter routing.Decrypter, adapters func
 		cache:         exactCache,
 		promptVersion: promptVersion,
 		recorder:      recorder,
+		media:         provider.NewRemoteMediaFetcher(),
 	}
 }
+
+// SetMediaFetcher overrides the fetch used to inline remote image URLs.
+func (s *Service) SetMediaFetcher(fetcher provider.MediaFetcher) { s.media = fetcher }
 
 // SetComboResolver enables combo/<slug> models.
 func (s *Service) SetComboResolver(resolver ComboResolver) { s.combos = resolver }
@@ -86,6 +91,11 @@ func (s *Service) Chat(ctx context.Context, tenantID string, request provider.Ch
 			return cached, "bypass", nil
 		}
 	}
+	inlined, err := s.inlineMedia(ctx, request)
+	if err != nil {
+		return provider.ChatResponse{}, "", err
+	}
+	request = inlined
 
 	if slug, ok := comboSlug(request.Model); ok {
 		return s.chatCombo(ctx, tenantID, request, slug, started)
@@ -153,7 +163,13 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 	defer span.End()
 	span.SetAttributes(attribute.String("gen_ai.request.model", request.Model))
 	started := time.Now()
+	inlined, inlineErr := s.inlineMedia(ctx, request)
+	if inlineErr != nil {
+		return inlineErr
+	}
+	request = inlined
 	state := &streamState{writer: writer, id: newCompletionID(), model: request.Model, created: time.Now().Unix()}
+	state.combo = isComboModel(request.Model)
 	if slug, ok := comboSlug(request.Model); ok {
 		return s.streamCombo(ctx, tenantID, request, slug, state, started)
 	}
@@ -225,6 +241,8 @@ func (s *Service) attemptChat(ctx context.Context, candidate routing.Candidate, 
 		}
 		providerSpan.End()
 		if err == nil {
+			result.Provider = candidate.ProviderName
+			result.MemberModel = candidate.ModelID
 			s.proxySuccess(ctx, candidate.TenantID, lease)
 			return result, routing.AttemptResult{}, nil
 		}
@@ -262,6 +280,8 @@ func (s *Service) attemptStream(ctx context.Context, candidate routing.Candidate
 		}
 		stream, err := adapter.ChatStream(providerCtx, account, attemptRequest)
 		if err == nil {
+			state.provider = candidate.ProviderName
+			state.member = candidate.ModelID
 			err = s.consumeStream(ctx, stream, state)
 		}
 		if err != nil {
@@ -339,6 +359,27 @@ func rotateTarget(next proxy.Lease) (bool, *proxy.Lease) {
 	return false, &next
 }
 
+// inlineMedia resolves remote image URLs into data URLs before routing so
+// providers that cannot fetch URLs still receive vision input.
+func (s *Service) inlineMedia(ctx context.Context, request provider.ChatRequest) (provider.ChatRequest, error) {
+	if s.media == nil {
+		return request, nil
+	}
+	inlined, count, err := provider.InlineRemoteMedia(ctx, request, s.media)
+	if err != nil {
+		return provider.ChatRequest{}, err
+	}
+	if count > 0 {
+		slog.Info("remote media inlined", "images", count)
+	}
+	return inlined, nil
+}
+
+func isComboModel(model string) bool {
+	_, ok := comboSlug(model)
+	return ok
+}
+
 func attemptFailureKind(err error) routing.FailureKind {
 	if errors.Is(err, provider.ErrProxyRequired) {
 		return routing.FailureProxy
@@ -367,12 +408,15 @@ func limitToCandidate(candidate routing.Candidate, request provider.ChatRequest)
 }
 
 type streamState struct {
-	writer  http.ResponseWriter
-	id      string
-	model   string
-	created int64
-	started bool
-	usage   provider.Usage
+	writer   http.ResponseWriter
+	id       string
+	model    string
+	created  int64
+	started  bool
+	usage    provider.Usage
+	provider string
+	member   string
+	combo    bool
 }
 
 func (s *streamState) ensureHeaders() error {
@@ -384,6 +428,15 @@ func (s *streamState) ensureHeaders() error {
 	s.writer.Header().Set("Connection", "keep-alive")
 	s.writer.Header().Set("X-Accel-Buffering", "no")
 	s.writer.Header().Set("X-Donstop-Cache", "bypass")
+	if s.provider != "" {
+		s.writer.Header().Set("X-Donstop-Provider", s.provider)
+	}
+	if s.member != "" {
+		s.writer.Header().Set("X-Donstop-Model", s.member)
+		if s.combo {
+			s.writer.Header().Set("X-Donstop-Combo-Member", s.member)
+		}
+	}
 	s.writer.WriteHeader(http.StatusOK)
 	s.started = true
 	return nil
@@ -500,14 +553,14 @@ func comboSlug(model string) (string, bool) {
 }
 
 type comboAccountRouter interface {
-	RouteTargets(ctx context.Context, tenantID string, targets []routing.ComboTarget, attempt routing.Attempt) (routing.Candidate, error)
+	RouteTargets(ctx context.Context, tenantID string, targets []routing.ComboTarget, maxAttempts int, attempt routing.Attempt) (routing.Candidate, error)
 }
 
 func (s *Service) chatCombo(ctx context.Context, tenantID string, request provider.ChatRequest, slug string, started time.Time) (provider.ChatResponse, string, error) {
 	if s.combos == nil {
 		return provider.ChatResponse{}, "", routing.ErrComboNotFound
 	}
-	targets, _, err := s.combos.ResolveTargets(ctx, tenantID, slug)
+	resolved, err := s.combos.ResolveTargets(ctx, tenantID, slug)
 	if err != nil {
 		return provider.ChatResponse{}, "", err
 	}
@@ -516,7 +569,7 @@ func (s *Service) chatCombo(ctx context.Context, tenantID string, request provid
 		return provider.ChatResponse{}, "", routing.ErrComboExhausted
 	}
 	var response provider.ChatResponse
-	selected, err := router.RouteTargets(ctx, tenantID, targets, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+	selected, err := router.RouteTargets(ctx, tenantID, resolved.Targets, resolved.MaxAttempts, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		result, outcome, err := s.attemptChat(ctx, candidate, request)
 		if err == nil {
 			response = result
@@ -535,7 +588,7 @@ func (s *Service) streamCombo(ctx context.Context, tenantID string, request prov
 	if s.combos == nil {
 		return routing.ErrComboNotFound
 	}
-	targets, _, err := s.combos.ResolveTargets(ctx, tenantID, slug)
+	resolved, err := s.combos.ResolveTargets(ctx, tenantID, slug)
 	if err != nil {
 		return err
 	}
@@ -543,7 +596,7 @@ func (s *Service) streamCombo(ctx context.Context, tenantID string, request prov
 	if !ok {
 		return routing.ErrComboExhausted
 	}
-	selected, err := router.RouteTargets(ctx, tenantID, targets, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+	selected, err := router.RouteTargets(ctx, tenantID, resolved.Targets, resolved.MaxAttempts, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		return s.attemptStream(ctx, candidate, request, state)
 	})
 	if err == nil {

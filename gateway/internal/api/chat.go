@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
@@ -71,6 +72,15 @@ func chatCompletions(service ChatService, maxBodyBytes int64) http.HandlerFunc {
 		}
 		if len(response.ToolCalls) > 0 {
 			message["tool_calls"] = response.ToolCalls
+		}
+		if response.Provider != "" {
+			w.Header().Set("X-Donstop-Provider", response.Provider)
+		}
+		if response.MemberModel != "" {
+			w.Header().Set("X-Donstop-Model", response.MemberModel)
+			if strings.HasPrefix(payload.Model, "combo/") {
+				w.Header().Set("X-Donstop-Combo-Member", response.MemberModel)
+			}
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("X-Donstop-Cache", cacheStatus)
@@ -149,6 +159,8 @@ func writeChatError(w http.ResponseWriter, err error) {
 			return
 		}
 		writeAPIError(w, http.StatusBadGateway, "api_error", "upstream provider failed")
+	case errors.Is(err, provider.ErrRemoteMedia):
+		writeAPIError(w, http.StatusBadRequest, "invalid_request_error", "failed to fetch remote media")
 	case errors.Is(err, provider.ErrTranslation):
 		writeAPIError(w, http.StatusBadGateway, "translation_error", "prompt or response translation failed")
 	case errors.Is(err, context.DeadlineExceeded):
