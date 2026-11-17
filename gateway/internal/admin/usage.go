@@ -8,12 +8,30 @@ import (
 )
 
 // CostSummary is the aggregate cost/usage window.
+//
+// Two sources are combined so the console never mixes them silently:
+//   - usage_daily holds billable upstream requests (cache hits are not recorded
+//     there, because a hit never reaches a provider), so Requests/Tokens/Cost
+//     describe real upstream work only.
+//   - requests holds every finished call, including the ones served from cache,
+//     which is where CacheHits comes from.
+//
+// TotalRequests is the honest denominator: Requests + CacheHits.
 type CostSummary struct {
-	Days      int     `json:"days"`
-	CostUSD   float64 `json:"cost_usd"`
-	Requests  int64   `json:"requests"`
-	TokensIn  int64   `json:"tokens_in"`
-	TokensOut int64   `json:"tokens_out"`
+	Days                 int     `json:"days"`
+	PeriodStart          string  `json:"period_start,omitempty"`
+	PeriodEnd            string  `json:"period_end,omitempty"`
+	DaysWithData         int     `json:"days_with_data"`
+	CostUSD              float64 `json:"cost_usd"`
+	Requests             int64   `json:"requests"`
+	CacheHits            int64   `json:"cache_hits"`
+	TotalRequests        int64   `json:"total_requests"`
+	TokensIn             int64   `json:"tokens_in"`
+	TokensOut            int64   `json:"tokens_out"`
+	TokensTotal          int64   `json:"tokens_total"`
+	Errors               int64   `json:"errors"`
+	ErrorRate            float64 `json:"error_rate"`
+	AvgCostPerRequestUSD float64 `json:"avg_cost_per_request_usd"`
 }
 
 // CostByProvider is cost grouped by provider.
@@ -22,6 +40,8 @@ type CostByProvider struct {
 	ProviderName string  `json:"provider_name"`
 	CostUSD      float64 `json:"cost_usd"`
 	Requests     int64   `json:"requests"`
+	Tokens       int64   `json:"tokens"`
+	Errors       int64   `json:"errors"`
 }
 
 // CostByDay is cost grouped by day.
@@ -29,6 +49,8 @@ type CostByDay struct {
 	Day      string  `json:"day"`
 	CostUSD  float64 `json:"cost_usd"`
 	Requests int64   `json:"requests"`
+	Tokens   int64   `json:"tokens"`
+	Errors   int64   `json:"errors"`
 }
 
 // CostByModel is cost grouped by model.
@@ -77,19 +99,53 @@ func (s *UsageService) CostReport(ctx context.Context, tenantID string, days int
 	}
 	var report CostReport
 	report.Summary.Days = days
+	var periodStart, periodEnd *string
+	var daysWithData int64
 	if err := s.pool.QueryRow(ctx, `
 		SELECT COALESCE(sum(cost_usd), 0)::float8,
 		       COALESCE(sum(requests), 0)::bigint,
 		       COALESCE(sum(tokens_in), 0)::bigint,
-		       COALESCE(sum(tokens_out), 0)::bigint
+		       COALESCE(sum(tokens_out), 0)::bigint,
+		       COALESCE(sum(errors), 0)::bigint,
+		       min(day)::text,
+		       max(day)::text,
+		       count(DISTINCT day)::bigint
 		FROM usage_daily
 		WHERE tenant_id = $1 AND day >= current_date - ($2::int - 1)
-	`, tenantID, days).Scan(&report.Summary.CostUSD, &report.Summary.Requests, &report.Summary.TokensIn, &report.Summary.TokensOut); err != nil {
+	`, tenantID, days).Scan(
+		&report.Summary.CostUSD, &report.Summary.Requests,
+		&report.Summary.TokensIn, &report.Summary.TokensOut,
+		&report.Summary.Errors, &periodStart, &periodEnd, &daysWithData,
+	); err != nil {
 		return CostReport{}, fmt.Errorf("query cost summary: %w", err)
 	}
+	if periodStart != nil {
+		report.Summary.PeriodStart = *periodStart
+	}
+	if periodEnd != nil {
+		report.Summary.PeriodEnd = *periodEnd
+	}
+	report.Summary.DaysWithData = int(daysWithData)
+	report.Summary.TokensTotal = report.Summary.TokensIn + report.Summary.TokensOut
+	if report.Summary.Requests > 0 {
+		report.Summary.ErrorRate = float64(report.Summary.Errors) / float64(report.Summary.Requests)
+		report.Summary.AvgCostPerRequestUSD = report.Summary.CostUSD / float64(report.Summary.Requests)
+	}
+	if err := s.pool.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE cache_status = 'hit')::bigint
+		FROM requests
+		WHERE tenant_id = $1 AND created_at >= current_date - ($2::int - 1) * interval '1 day'
+	`, tenantID, days).Scan(&report.Summary.CacheHits); err != nil {
+		return CostReport{}, fmt.Errorf("query cached requests: %w", err)
+	}
+	report.Summary.TotalRequests = report.Summary.Requests + report.Summary.CacheHits
 
 	providerRows, err := s.pool.Query(ctx, `
-		SELECT u.provider_id::text, p.name, COALESCE(sum(u.cost_usd), 0)::float8, COALESCE(sum(u.requests), 0)::bigint
+		SELECT u.provider_id::text, p.name,
+		       COALESCE(sum(u.cost_usd), 0)::float8,
+		       COALESCE(sum(u.requests), 0)::bigint,
+		       COALESCE(sum(u.tokens_in + u.tokens_out), 0)::bigint,
+		       COALESCE(sum(u.errors), 0)::bigint
 		FROM usage_daily u
 		JOIN providers p ON p.id = u.provider_id AND p.tenant_id = u.tenant_id
 		WHERE u.tenant_id = $1 AND u.day >= current_date - ($2::int - 1)
@@ -102,7 +158,7 @@ func (s *UsageService) CostReport(ctx context.Context, tenantID string, days int
 	report.ByProvider = make([]CostByProvider, 0)
 	for providerRows.Next() {
 		var row CostByProvider
-		if err := providerRows.Scan(&row.ProviderID, &row.ProviderName, &row.CostUSD, &row.Requests); err != nil {
+		if err := providerRows.Scan(&row.ProviderID, &row.ProviderName, &row.CostUSD, &row.Requests, &row.Tokens, &row.Errors); err != nil {
 			providerRows.Close()
 			return CostReport{}, fmt.Errorf("scan cost by provider: %w", err)
 		}
@@ -114,7 +170,11 @@ func (s *UsageService) CostReport(ctx context.Context, tenantID string, days int
 	}
 
 	dayRows, err := s.pool.Query(ctx, `
-		SELECT day::text, COALESCE(sum(cost_usd), 0)::float8, COALESCE(sum(requests), 0)::bigint
+		SELECT day::text,
+		       COALESCE(sum(cost_usd), 0)::float8,
+		       COALESCE(sum(requests), 0)::bigint,
+		       COALESCE(sum(tokens_in + tokens_out), 0)::bigint,
+		       COALESCE(sum(errors), 0)::bigint
 		FROM usage_daily
 		WHERE tenant_id = $1 AND day >= current_date - ($2::int - 1)
 		GROUP BY day
@@ -126,7 +186,7 @@ func (s *UsageService) CostReport(ctx context.Context, tenantID string, days int
 	report.ByDay = make([]CostByDay, 0)
 	for dayRows.Next() {
 		var row CostByDay
-		if err := dayRows.Scan(&row.Day, &row.CostUSD, &row.Requests); err != nil {
+		if err := dayRows.Scan(&row.Day, &row.CostUSD, &row.Requests, &row.Tokens, &row.Errors); err != nil {
 			dayRows.Close()
 			return CostReport{}, fmt.Errorf("scan cost by day: %w", err)
 		}

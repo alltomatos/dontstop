@@ -42,7 +42,8 @@ tenant desligado ou transporte divergente → **`404`** (fail-closed, sem chamar
 | `dontstop_models` | `models:read` | `readOnlyHint=true` | Catálogo do tenant. |
 | `dontstop_embeddings` | `embeddings:write` | `readOnlyHint=true` | Enquanto não houver backend: `isError` acionável. |
 | `dontstop_web_search` | `web:read` | `readOnlyHint=true`, `openWorldHint=true` | Enquanto não houver backend: `isError` acionável. |
-| `dontstop_usage` | `usage:read` | `readOnlyHint=true` | Custo/uso agregado do tenant. |
+| `dontstop_usage` | `usage:read` | `readOnlyHint=true` | Custo/uso agregado do tenant, incluindo janela coberta e hits de cache. |
+| `dontstop_cache` | `usage:read` | `readOnlyHint=true` | Hit/miss/bypass agregados e série diária de hit rate do tenant. |
 | `dontstop_health` | (autenticado) | `readOnlyHint=true` | Liveness/readiness sem segredo. |
 
 ### 4.2 Gestão - Fase A (ADR-026)

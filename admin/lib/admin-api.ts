@@ -333,10 +333,27 @@ export async function getApiKeys(): Promise<AdminAPIKey[] | null> {
 }
 
 
+export interface CostSummary {
+  days: number;
+  period_start?: string;
+  period_end?: string;
+  days_with_data: number;
+  cost_usd: number;
+  requests: number;
+  cache_hits: number;
+  total_requests: number;
+  tokens_in: number;
+  tokens_out: number;
+  tokens_total: number;
+  errors: number;
+  error_rate: number;
+  avg_cost_per_request_usd: number;
+}
+
 export interface CostReport {
-  summary: { days: number; cost_usd: number; requests: number; tokens_in: number; tokens_out: number };
-  by_provider: Array<{ provider_id: string; provider_name: string; cost_usd: number; requests: number }>;
-  by_day: Array<{ day: string; cost_usd: number; requests: number }>;
+  summary: CostSummary;
+  by_provider: Array<{ provider_id: string; provider_name: string; cost_usd: number; requests: number; tokens: number; errors: number }>;
+  by_day: Array<{ day: string; cost_usd: number; requests: number; tokens: number; errors: number }>;
   by_model: Array<{ model: string; cost_usd: number; requests: number; tokens: number }>;
 }
 
@@ -422,11 +439,25 @@ export async function getMcpActivity(hours = 24): Promise<MCPActivity | null> {
 
 
 export interface CacheStats {
+  days: number;
   hits: number;
   misses: number;
+  bypass: number;
+  cacheable: number;
   requests: number;
   hit_rate: number;
-  avg_latency_ms: number;
+  hit_latency_ms: number;
+  miss_latency_ms: number;
+  latency_saved_ms: number;
+  tokens_reused: number;
+}
+
+export interface CacheDay {
+  day: string;
+  hits: number;
+  misses: number;
+  bypass: number;
+  hit_rate: number;
 }
 
 export interface CacheEvent {
@@ -437,11 +468,27 @@ export interface CacheEvent {
   tokens: number;
 }
 
+export interface CacheReport {
+  stats: CacheStats;
+  by_day: CacheDay[];
+  events: CacheEvent[];
+}
+
 export async function getCacheStats(days = 1): Promise<CacheStats | null> {
   const response = await adminRequest(`/admin/v1/cache/stats?days=${days}`);
   if (!response?.ok) return null;
   try {
     return await response.json() as CacheStats;
+  } catch {
+    return null;
+  }
+}
+
+export async function getCacheReport(days = 7): Promise<CacheReport | null> {
+  const response = await adminRequest(`/admin/v1/cache/report?days=${days}`);
+  if (!response?.ok) return null;
+  try {
+    return await response.json() as CacheReport;
   } catch {
     return null;
   }

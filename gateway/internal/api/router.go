@@ -134,6 +134,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		mux.Handle("POST /messages", sse)
 	}
 	if deps.Verifier != nil && deps.AdminCache != nil {
+		mux.Handle("GET /admin/v1/cache/report", adminMiddleware(adminCacheReport(deps.AdminCache)))
 		mux.Handle("GET /admin/v1/cache/stats", adminMiddleware(adminCacheStats(deps.AdminCache)))
 		mux.Handle("GET /admin/v1/cache/events", adminMiddleware(adminCacheEvents(deps.AdminCache)))
 	}

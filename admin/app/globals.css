@@ -229,10 +229,11 @@ code, .mono, .num { font-family: "Fira Code", monospace; font-variant-numeric: t
 .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .muted { color: var(--muted-fg); }
 
-.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; }
 .kpi .label { color: var(--muted-fg); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
 .kpi .value { font-size: 26px; font-weight: 600; margin: 6px 0 2px; }
 .kpi .delta { font-size: 12px; color: var(--success); }
+.kpi .hint { font-size: 12px; color: var(--muted-fg); }
 .two { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-top: 16px; }
 
 .language-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border: 0; margin: 0; padding: 0; }

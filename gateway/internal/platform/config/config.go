@@ -10,6 +10,10 @@ import (
 
 const defaultPort = 8080
 
+// defaultCacheL1TTL keeps the in-process cache short enough that a stale entry
+// can never outlive the invalidation window that matters for chat traffic.
+const defaultCacheL1TTL = 10 * time.Second
+
 func secretValue(name string) string {
 	if path := os.Getenv(name + "_FILE"); path != "" {
 		data, err := os.ReadFile(path)
@@ -31,6 +35,8 @@ type Config struct {
 	AgentRouterRelayURL  string
 	WebshareSyncInterval time.Duration
 	MaxChatBodyBytes     int64
+	CacheL1TTL           time.Duration
+	CacheL1MaxEntries    int
 }
 
 // Load reads and validates process configuration.
@@ -43,6 +49,21 @@ func Load() (Config, error) {
 		NATSURL:              secretValue("NATS_URL"),
 		AgentRouterRelayURL:  strings.TrimSpace(secretValue("AGENTROUTER_RELAY_URL")),
 		WebshareSyncInterval: time.Hour,
+		CacheL1TTL:           defaultCacheL1TTL,
+	}
+	if raw := os.Getenv("CACHE_L1_TTL"); raw != "" {
+		ttl, err := time.ParseDuration(raw)
+		if err != nil || ttl < 0 {
+			return Config{}, fmt.Errorf("invalid CACHE_L1_TTL %q: expected a non-negative duration", raw)
+		}
+		cfg.CacheL1TTL = ttl
+	}
+	if raw := os.Getenv("CACHE_L1_MAX_ENTRIES"); raw != "" {
+		entries, err := strconv.Atoi(raw)
+		if err != nil || entries <= 0 {
+			return Config{}, fmt.Errorf("invalid CACHE_L1_MAX_ENTRIES %q: expected a positive integer", raw)
+		}
+		cfg.CacheL1MaxEntries = entries
 	}
 	if raw := os.Getenv("MAX_CHAT_BODY_BYTES"); raw != "" {
 		bytes, err := strconv.ParseInt(raw, 10, 64)

@@ -244,6 +244,8 @@
 - (+) Melhor TTI, memória e custo; cache mais eficiente.
 - (−) Mais complexidade de invalidação e necessidade de testes de cold start; lazy loading não pode atrasar o primeiro token.
 
+**Estado atual (gateway):** L1 in-process (10 s, `CACHE_L1_TTL`) + L2 Redis (1 h) no chat streaming e não streaming; sem camada semântica. Invalidações limpam o L1 local e são propagadas entre réplicas por Redis pub/sub. O hit rate do console considera apenas tráfego cacheável (hits + misses); bypass de combo fica fora do denominador.
+
 ---
 
 ## ADR-014 — Identidade corporativa: OIDC/SAML, MFA e RBAC

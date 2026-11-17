@@ -71,6 +71,20 @@ func (f fakeUsage) CostReport(context.Context, string, int) (admin.CostReport, e
 	return f.report, f.err
 }
 
+type fakeCache struct {
+	stats  admin.CacheStats
+	series []admin.CacheDay
+	err    error
+}
+
+func (f fakeCache) Stats(context.Context, string, int) (admin.CacheStats, error) {
+	return f.stats, f.err
+}
+
+func (f fakeCache) ByDay(context.Context, string, int) ([]admin.CacheDay, error) {
+	return f.series, f.err
+}
+
 type fakeCombos struct {
 	tenantID string
 	created  admin.ComboInput
@@ -382,11 +396,16 @@ func TestModelsAndUsageTools(t *testing.T) {
 		Store:  &fakeStore{},
 		Models: fakeModels{models: []provider.Model{{ID: "model-1", DisplayName: "Model 1"}}},
 		Usage:  fakeUsage{report: admin.CostReport{Summary: admin.CostSummary{Days: 30}}},
+		Cache: fakeCache{
+			stats:  admin.CacheStats{Days: 7, Hits: 3, Misses: 1, Bypass: 9, Cacheable: 4, HitRate: 0.75},
+			series: []admin.CacheDay{{Day: "2026-11-16", Hits: 3, Misses: 1, Bypass: 9, HitRate: 0.75}},
+		},
 	})
 	principal := auth.Principal{TenantID: "tenant", Scopes: []string{"models:read", "usage:read"}}
 	modelsTool, _ := catalog.Find("dontstop_models")
 	usageTool, _ := catalog.Find("dontstop_usage")
-	session := connectInMemory(t, service.NewServer(principal, []catalog.Tool{modelsTool, usageTool}))
+	cacheTool, _ := catalog.Find("dontstop_cache")
+	session := connectInMemory(t, service.NewServer(principal, []catalog.Tool{modelsTool, usageTool, cacheTool}))
 
 	modelsResult, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "dontstop_models"})
 	if err != nil || modelsResult.IsError {
@@ -395,6 +414,39 @@ func TestModelsAndUsageTools(t *testing.T) {
 	usageResult, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "dontstop_usage", Arguments: map[string]any{"days": 7}})
 	if err != nil || usageResult.IsError {
 		t.Fatalf("usage tool: err=%v result=%+v", err, usageResult)
+	}
+	cacheResult, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "dontstop_cache", Arguments: map[string]any{"days": 7}})
+	if err != nil || cacheResult.IsError {
+		t.Fatalf("cache tool: err=%v result=%+v", err, cacheResult)
+	}
+	encoded, err := json.Marshal(cacheResult.StructuredContent)
+	if err != nil {
+		t.Fatalf("encode cache result: %v", err)
+	}
+	for _, want := range []string{`"hit_rate":0.75`, `"bypass":9`, `"by_day":[`, `"day":"2026-11-16"`} {
+		if !strings.Contains(string(encoded), want) {
+			t.Fatalf("cache tool payload missing %s: %s", want, encoded)
+		}
+	}
+}
+
+func TestCacheToolRequiresUsageScope(t *testing.T) {
+	cacheTool, ok := catalog.Find("dontstop_cache")
+	if !ok {
+		t.Fatal("cache tool missing")
+	}
+	if cacheTool.Scope != "usage:read" {
+		t.Fatalf("cache tool scope = %q, want usage:read", cacheTool.Scope)
+	}
+	service := NewService(Dependencies{Store: &fakeStore{}, Cache: fakeCache{}})
+	allowed, err := service.AllowedTools(context.Background(), auth.Principal{TenantID: "tenant", Scopes: []string{"models:read"}})
+	if err != nil {
+		t.Fatalf("allowed tools: %v", err)
+	}
+	for _, tool := range allowed {
+		if tool.ID == "dontstop_cache" {
+			t.Fatal("cache tool must not be announced without usage:read")
+		}
 	}
 }
 

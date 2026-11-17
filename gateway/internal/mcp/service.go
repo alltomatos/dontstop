@@ -29,6 +29,12 @@ type UsageService interface {
 	CostReport(ctx context.Context, tenantID string, days int) (admin.CostReport, error)
 }
 
+// CacheService returns tenant cache aggregates.
+type CacheService interface {
+	Stats(ctx context.Context, tenantID string, days int) (admin.CacheStats, error)
+	ByDay(ctx context.Context, tenantID string, days int) ([]admin.CacheDay, error)
+}
+
 // ComboService is the subset of combo administration used by MCP tools.
 type ComboService interface {
 	List(ctx context.Context, tenantID string) ([]admin.Combo, error)
@@ -53,6 +59,7 @@ type Dependencies struct {
 	Chat   ChatService
 	Models ModelLister
 	Usage  UsageService
+	Cache  CacheService
 	Combos ComboService
 	Logger *slog.Logger
 }
@@ -63,6 +70,7 @@ type Service struct {
 	chat   ChatService
 	models ModelLister
 	usage  UsageService
+	cache  CacheService
 	combos ComboService
 	logger *slog.Logger
 }
@@ -78,6 +86,7 @@ func NewService(deps Dependencies) *Service {
 		chat:   deps.Chat,
 		models: deps.Models,
 		usage:  deps.Usage,
+		cache:  deps.Cache,
 		combos: deps.Combos,
 		logger: logger,
 	}

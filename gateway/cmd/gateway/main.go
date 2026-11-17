@@ -104,6 +104,7 @@ func run(logger *slog.Logger, stdio bool) error {
 	var comboService *admin.ComboService
 	var usageRecorder *usage.Recorder
 	var outbox *usage.OutboxPublisher
+	var cacheSubscription func(context.Context, func(error))
 	if cfg.DatabaseURL != "" {
 		dbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		var err error
@@ -151,7 +152,8 @@ func run(logger *slog.Logger, stdio bool) error {
 		deps.AdminUsage = usageService
 		mcpAdmin := admin.NewMCPService(pool)
 		deps.AdminMCP = mcpAdmin
-		deps.AdminCache = admin.NewCacheService(pool)
+		cacheService := admin.NewCacheService(pool)
+		deps.AdminCache = cacheService
 		deps.AdminDLP = admin.NewDLPService(pool)
 		comboService = admin.NewComboService(pool)
 		deps.AdminCombos = comboService
@@ -161,7 +163,15 @@ func run(logger *slog.Logger, stdio bool) error {
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		coordinator := proxycoord.NewCoordinator(proxycoord.NewPostgresRepository(pool), proxycoord.NewRedisState(redisConn), box)
 		coordinator.SetPoolRefresher(webshareService)
-		chatService := chat.NewService(router, box, provider.NewAdapter, store, cache.NewRedisExactCache(redisConn), "v1", usageRecorder)
+		exactCache := cache.NewLayeredCache(
+			cache.NewRedisExactCache(redisConn),
+			redisConn,
+			cache.LayeredOptions{TTL: cfg.CacheL1TTL, MaxEntries: cfg.CacheL1MaxEntries},
+		)
+		if layered, ok := exactCache.(*cache.LayeredCache); ok {
+			cacheSubscription = layered.RunSubscription
+		}
+		chatService := chat.NewService(router, box, provider.NewAdapter, store, exactCache, "v1", usageRecorder)
 		chatService.SetProxyResolver(coordinator)
 		chatService.SetComboResolver(routing.NewComboRepository(pool))
 		deps.Chat = chatService
@@ -170,6 +180,7 @@ func run(logger *slog.Logger, stdio bool) error {
 			Chat:   chatService,
 			Models: deps.Models,
 			Usage:  usageService,
+			Cache:  cacheService,
 			Combos: comboService,
 			Logger: logger,
 		})
@@ -210,6 +221,11 @@ func run(logger *slog.Logger, stdio bool) error {
 	if outbox != nil {
 		go outbox.Run(ctx, time.Second, func(err error) {
 			logger.Warn("usage outbox publish failed", "error", err)
+		})
+	}
+	if cacheSubscription != nil {
+		go cacheSubscription(ctx, func(err error) {
+			logger.Warn("cache invalidation subscription failed", "error", err)
 		})
 	}
 

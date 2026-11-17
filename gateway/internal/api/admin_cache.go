@@ -11,6 +11,7 @@ import (
 // AdminCacheService exposes cache aggregates.
 type AdminCacheService interface {
 	Stats(ctx context.Context, tenantID string, days int) (admin.CacheStats, error)
+	ByDay(ctx context.Context, tenantID string, days int) ([]admin.CacheDay, error)
 	Events(ctx context.Context, tenantID string, limit int) ([]admin.CacheEvent, error)
 }
 
@@ -26,6 +27,32 @@ func adminCacheStats(service AdminCacheService) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, stats)
+	}
+}
+
+func adminCacheReport(service AdminCacheService) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		principal, ok := requireManage(w, request)
+		if !ok {
+			return
+		}
+		days := daysParam(request, 7)
+		stats, err := service.Stats(request.Context(), principal.TenantID, days)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to load cache stats")
+			return
+		}
+		series, err := service.ByDay(request.Context(), principal.TenantID, days)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to load cache series")
+			return
+		}
+		events, err := service.Events(request.Context(), principal.TenantID, 20)
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, "api_error", "failed to load cache events")
+			return
+		}
+		writeJSON(w, http.StatusOK, admin.CacheReport{Stats: stats, ByDay: series, Events: events})
 	}
 }
 

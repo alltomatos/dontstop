@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/alltomatos/dontstop/gateway/internal/admin"
 	"github.com/alltomatos/dontstop/gateway/internal/auth"
 	"github.com/alltomatos/dontstop/gateway/internal/mcp/catalog"
 	"github.com/alltomatos/dontstop/gateway/internal/provider"
@@ -59,6 +60,8 @@ func (s *Service) registerTools(server *sdkmcp.Server, principal auth.Principal,
 			auditedTool(server, s, principal, tool, unavailableHandler[emptyInput]("web search backend is not configured"))
 		case "dontstop_usage":
 			auditedTool(server, s, principal, tool, s.usageHandler(principal.TenantID))
+		case "dontstop_cache":
+			auditedTool(server, s, principal, tool, s.cacheHandler(principal.TenantID))
 		case "dontstop_health":
 			auditedTool(server, s, principal, tool, healthHandler)
 		case "dontstop_combo_catalog":
@@ -188,8 +191,36 @@ func (s *Service) usageHandler(tenantID string) sdkmcp.ToolHandlerFor[usageInput
 	}
 }
 
-func healthHandler(_ context.Context, _ *sdkmcp.CallToolRequest, _ emptyInput) (*sdkmcp.CallToolResult, any, error) {
-	return toolResult(map[string]any{"status": "ok"})
+// cacheReport is the MCP cache payload: aggregates plus the daily series.
+type cacheReport struct {
+	Stats admin.CacheStats `json:"stats"`
+	ByDay []admin.CacheDay `json:"by_day"`
+}
+
+func (s *Service) cacheHandler(tenantID string) sdkmcp.ToolHandlerFor[usageInput, any] {
+	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, input usageInput) (*sdkmcp.CallToolResult, any, error) {
+		if s.cache == nil {
+			return nil, nil, errors.New("cache service is not configured")
+		}
+		days := input.Days
+		if days <= 0 {
+			days = 7
+		}
+		stats, err := s.cache.Stats(ctx, tenantID, days)
+		if err != nil {
+			s.logger.Warn("mcp cache stats failed", "tenant_id", tenantID, "error", err)
+			return nil, nil, errors.New("failed to load cache stats")
+		}
+		series, err := s.cache.ByDay(ctx, tenantID, days)
+		if err != nil {
+			s.logger.Warn("mcp cache series failed", "tenant_id", tenantID, "error", err)
+			return nil, nil, errors.New("failed to load cache series")
+		}
+		return toolResult(cacheReport{Stats: stats, ByDay: series})
+	}
+}
+
+func healthHandler(_ context.Context, _ *sdkmcp.CallToolRequest, _ emptyInput) (*sdkmcp.CallToolResult, any, error) {	return toolResult(map[string]any{"status": "ok"})
 }
 
 func unavailableHandler[In any](message string) sdkmcp.ToolHandlerFor[In, any] {

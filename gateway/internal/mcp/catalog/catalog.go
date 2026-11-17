@@ -39,6 +39,10 @@ var Tools = []Tool{
 		Description: "Read aggregated usage and cost for the tenant.",
 	},
 	{
+		ID: "dontstop_cache", Name: "dontstop_cache", Scope: "usage:read", ReadOnly: true,
+		Description: "Read cache hit/miss/bypass aggregates and the daily hit-rate series for the tenant.",
+	},
+	{
 		ID: "dontstop_health", Name: "dontstop_health", ReadOnly: true,
 		Description: "Report MCP runtime liveness without exposing secrets.",
 	},

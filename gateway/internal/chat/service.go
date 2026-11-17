@@ -157,12 +157,19 @@ func (s *Service) Stream(ctx context.Context, tenantID string, request provider.
 	if slug, ok := comboSlug(request.Model); ok {
 		return s.streamCombo(ctx, tenantID, request, slug, state, started)
 	}
+	cacheKey := s.buildCacheKey(tenantID, request)
+	if handled, err := s.replayCachedStream(ctx, tenantID, request, cacheKey, state, started); handled {
+		span.SetAttributes(attribute.String("cache.status", cacheStatusHit))
+		return err
+	}
 	selected, err := s.router.Route(ctx, tenantID, request.Model, func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
 		return s.attemptStream(ctx, candidate, request, state)
 	})
 	if err == nil {
-		s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", "bypass", state.usage, time.Since(started))
+		s.storeStreamResponse(ctx, tenantID, selected, request, cacheKey, state)
+		s.recordUsage(ctx, tenantID, selected.ProviderID, selected.AccountID, request.Model, "success", state.cacheStatus, state.usage, time.Since(started))
 	}
+	span.SetAttributes(attribute.String("cache.status", state.cacheStatus))
 	return err
 }
 
@@ -303,6 +310,7 @@ func (s *Service) consumeStream(ctx context.Context, stream provider.Stream, sta
 			return nil
 		}
 		if err != nil {
+			state.failed = true
 			if state.started {
 				state.errorEvent()
 				state.done()
@@ -367,12 +375,17 @@ func limitToCandidate(candidate routing.Candidate, request provider.ChatRequest)
 }
 
 type streamState struct {
-	writer  http.ResponseWriter
-	id      string
-	model   string
-	created int64
-	started bool
-	usage   provider.Usage
+	writer       http.ResponseWriter
+	id           string
+	model        string
+	created      int64
+	started      bool
+	failed       bool
+	cacheStatus  string
+	usage        provider.Usage
+	finishReason string
+	content      strings.Builder
+	toolCalls    map[int]*provider.ToolCall
 }
 
 func (s *streamState) ensureHeaders() error {
@@ -383,7 +396,7 @@ func (s *streamState) ensureHeaders() error {
 	s.writer.Header().Set("Cache-Control", "no-cache")
 	s.writer.Header().Set("Connection", "keep-alive")
 	s.writer.Header().Set("X-Accel-Buffering", "no")
-	s.writer.Header().Set("X-Donstop-Cache", "bypass")
+	s.writer.Header().Set("X-Donstop-Cache", normalizeCacheStatus(s.cacheStatus))
 	s.writer.WriteHeader(http.StatusOK)
 	s.started = true
 	return nil
@@ -393,6 +406,11 @@ func (s *streamState) chunk(chunk provider.StreamChunk) error {
 	if err := s.ensureHeaders(); err != nil {
 		return err
 	}
+	s.content.WriteString(chunk.Content)
+	if chunk.FinishReason != "" {
+		s.finishReason = chunk.FinishReason
+	}
+	s.recordToolCalls(chunk.ToolCalls)
 	delta := map[string]any{}
 	if chunk.Content != "" {
 		delta["content"] = chunk.Content
