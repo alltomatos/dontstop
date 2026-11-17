@@ -98,11 +98,23 @@ func NewRouter(repository Repository, breaker Breaker) *Router {
 	}
 }
 
-// SetMaxAttempts bounds upstream attempts per request.
+// SetMaxAttempts bounds upstream attempts per request. The hard ceiling is 8.
 func (r *Router) SetMaxAttempts(max int) {
-	if max > 0 {
-		r.maxAttempts = max
+	switch {
+	case max <= 0:
+		return
+	case max > 8:
+		max = 8
 	}
+	r.maxAttempts = max
+}
+
+// attemptLimit applies a per-request budget without exceeding the router ceiling.
+func (r *Router) attemptLimit(requested int) int {
+	if requested > 0 && requested < r.maxAttempts {
+		return requested
+	}
+	return r.maxAttempts
 }
 
 // SetRandomSource makes weighted selection deterministic in tests.
@@ -114,6 +126,7 @@ func (r *Router) SetRandomSource(source rand.Source) {
 func (r *Router) Route(ctx context.Context, tenantID, model string, attempt Attempt) (Candidate, error) {
 	ctx, span := tracer.Start(ctx, "routing.failover")
 	defer span.End()
+	limit := r.attemptLimit(0)
 	span.SetAttributes(
 		attribute.String("dontstop.tenant_id", tenantID),
 		attribute.String("gen_ai.request.model", model),
@@ -132,7 +145,7 @@ func (r *Router) Route(ctx context.Context, tenantID, model string, attempt Atte
 	attempts := 0
 	failovers := 0
 	for _, candidate := range ordered {
-		if attempts >= r.maxAttempts {
+		if attempts >= limit {
 			break
 		}
 		if err := ctx.Err(); err != nil {
@@ -194,9 +207,11 @@ type TargetRepository interface {
 }
 
 // RouteTargets selects a combo member and fails over across members/accounts.
-func (r *Router) RouteTargets(ctx context.Context, tenantID string, targets []ComboTarget, attempt Attempt) (Candidate, error) {
+// maxAttempts is the combo budget; it can only tighten the router ceiling.
+func (r *Router) RouteTargets(ctx context.Context, tenantID string, targets []ComboTarget, maxAttempts int, attempt Attempt) (Candidate, error) {
 	ctx, span := tracer.Start(ctx, "routing.combo")
 	defer span.End()
+	limit := r.attemptLimit(maxAttempts)
 	repository, ok := r.repository.(TargetRepository)
 	if !ok {
 		return Candidate{}, fmt.Errorf("routing repository does not support combo targets")
@@ -208,7 +223,7 @@ func (r *Router) RouteTargets(ctx context.Context, tenantID string, targets []Co
 	attempts := 0
 	failovers := 0
 	for _, target := range targets {
-		if attempts >= r.maxAttempts {
+		if attempts >= limit {
 			break
 		}
 		candidates, err := repository.CandidatesForTarget(ctx, tenantID, target.ProviderID, target.ModelID)
@@ -216,7 +231,7 @@ func (r *Router) RouteTargets(ctx context.Context, tenantID string, targets []Co
 			return Candidate{}, fmt.Errorf("list combo candidates: %w", err)
 		}
 		for _, candidate := range r.order(candidates) {
-			if attempts >= r.maxAttempts {
+			if attempts >= limit {
 				break
 			}
 			if err := ctx.Err(); err != nil {

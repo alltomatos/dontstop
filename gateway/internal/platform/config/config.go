@@ -37,6 +37,7 @@ type Config struct {
 	MaxChatBodyBytes     int64
 	CacheL1TTL           time.Duration
 	CacheL1MaxEntries    int
+	MaxRoutingAttempts   int
 }
 
 // Load reads and validates process configuration.
@@ -50,6 +51,7 @@ func Load() (Config, error) {
 		AgentRouterRelayURL:  strings.TrimSpace(secretValue("AGENTROUTER_RELAY_URL")),
 		WebshareSyncInterval: time.Hour,
 		CacheL1TTL:           defaultCacheL1TTL,
+		MaxRoutingAttempts:   5,
 	}
 	if raw := os.Getenv("CACHE_L1_TTL"); raw != "" {
 		ttl, err := time.ParseDuration(raw)
@@ -64,6 +66,13 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("invalid CACHE_L1_MAX_ENTRIES %q: expected a positive integer", raw)
 		}
 		cfg.CacheL1MaxEntries = entries
+	}
+	if raw := os.Getenv("MAX_ROUTING_ATTEMPTS"); raw != "" {
+		attempts, err := strconv.Atoi(raw)
+		if err != nil || attempts < 1 || attempts > 8 {
+			return Config{}, fmt.Errorf("invalid MAX_ROUTING_ATTEMPTS %q: expected an integer between 1 and 8", raw)
+		}
+		cfg.MaxRoutingAttempts = attempts
 	}
 	if raw := os.Getenv("MAX_CHAT_BODY_BYTES"); raw != "" {
 		bytes, err := strconv.ParseInt(raw, 10, 64)

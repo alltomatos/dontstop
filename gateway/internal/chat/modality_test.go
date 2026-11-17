@@ -47,8 +47,14 @@ func multimodalRequest() provider.ChatRequest {
 	}
 }
 
+type stubMediaFetcher struct{}
+
+func (stubMediaFetcher) Fetch(context.Context, string) (string, []byte, error) {
+	return "image/png", []byte("stub"), nil
+}
+
 func capabilityService(adapter provider.Adapter, modalities *provider.Modalities) *chat.Service {
-	return chat.NewService(
+	service := chat.NewService(
 		capabilityRouter{candidate: routing.Candidate{
 			TenantID:         "tenant-1",
 			AccountID:        "account-1",
@@ -63,6 +69,8 @@ func capabilityService(adapter provider.Adapter, modalities *provider.Modalities
 		func(string) (provider.Adapter, error) { return adapter, nil },
 		nil, nil, "v1", nil,
 	)
+	service.SetMediaFetcher(stubMediaFetcher{})
+	return service
 }
 
 func TestChatDegradesMediaWhenModelIsTextOnly(t *testing.T) {

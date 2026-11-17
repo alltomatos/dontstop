@@ -132,3 +132,23 @@ func TestLoadRejectsInvalidMaxChatBodyBytes(t *testing.T) {
 		t.Fatal("expected an error for a non-positive body limit")
 	}
 }
+
+func TestLoadReadsMaxRoutingAttempts(t *testing.T) {
+	t.Setenv("MAX_ROUTING_ATTEMPTS", "8")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if cfg.MaxRoutingAttempts != 8 {
+		t.Fatalf("unexpected attempts: %d", cfg.MaxRoutingAttempts)
+	}
+}
+
+func TestLoadRejectsInvalidMaxRoutingAttempts(t *testing.T) {
+	t.Setenv("MAX_ROUTING_ATTEMPTS", "9")
+
+	if _, err := config.Load(); err == nil {
+		t.Fatal("expected an error for attempts above 8")
+	}
+}

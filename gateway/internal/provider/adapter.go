@@ -124,6 +124,8 @@ type ChatResponse struct {
 	ToolCalls    []ToolCall
 	FinishReason string
 	Usage        Usage
+	Provider     string
+	MemberModel  string
 }
 
 // Account is the runtime credential/endpoint selected for a provider.

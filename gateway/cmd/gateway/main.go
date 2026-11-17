@@ -160,6 +160,7 @@ func run(logger *slog.Logger, stdio bool) error {
 		deps.AdminComboAI = admin.NewComboAIService(pool, providerService, comboService)
 		deps.AdminEndpoints = admin.NewEndpointService()
 		router := routing.NewRouter(routing.NewPostgresRepository(pool), routing.NewRedisBreaker(redisConn, routing.BreakerConfig{}))
+		router.SetMaxAttempts(cfg.MaxRoutingAttempts)
 		store := chat.NewRedisIdempotencyStore(redisConn, 24*time.Hour)
 		coordinator := proxycoord.NewCoordinator(proxycoord.NewPostgresRepository(pool), proxycoord.NewRedisState(redisConn), box)
 		coordinator.SetPoolRefresher(webshareService)

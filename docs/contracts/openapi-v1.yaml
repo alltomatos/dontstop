@@ -116,6 +116,10 @@ paths:
               $ref: '#/components/headers/X-Request-Id'
             X-Donstop-Provider:
               $ref: '#/components/headers/X-Donstop-Provider'
+            X-Donstop-Model:
+              $ref: '#/components/headers/X-Donstop-Model'
+            X-Donstop-Combo-Member:
+              $ref: '#/components/headers/X-Donstop-Combo-Member'
             X-Donstop-Cache:
               $ref: '#/components/headers/X-Donstop-Cache'
             X-RateLimit-Limit:
@@ -189,6 +193,14 @@ components:
         type: string
     X-Donstop-Provider:
       description: Provider que atendeu a requisição.
+      schema:
+        type: string
+    X-Donstop-Model:
+      description: Modelo upstream que atendeu a requisicao.
+      schema:
+        type: string
+    X-Donstop-Combo-Member:
+      description: Membro do combo que atendeu a requisicao (provider/model).
       schema:
         type: string
     X-Donstop-Cache:
@@ -424,7 +436,7 @@ components:
           properties:
             url:
               type: string
-              description: URL HTTP(S) ou data URL em base64.
+              description: URL HTTP(S) baixada e inlinada pelo gateway, ou data URL em base64.
             detail:
               type: string
               enum: [auto, low, high]

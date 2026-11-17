@@ -63,7 +63,19 @@ func (c *Catalog) ListModels(ctx context.Context, tenantID string) ([]Model, err
 				              WHERE pa.tenant_id = cm.tenant_id AND pa.provider_id = cm.provider_id
 				                AND pa.status = 'active' AND (pa.cooldown_until IS NULL OR pa.cooldown_until <= now()))
 			) THEN 'active' ELSE 'degraded' END,
-			NULL::jsonb
+			coalesce((
+				SELECT jsonb_build_object(
+					'text_input', coalesce(bool_or(coalesce((pm2.capabilities->>'text_input')::boolean, false)), false),
+					'image_input', coalesce(bool_or(coalesce((pm2.capabilities->>'image_input')::boolean, false)), false),
+					'audio_input', coalesce(bool_or(coalesce((pm2.capabilities->>'audio_input')::boolean, false)), false),
+					'video_input', coalesce(bool_or(coalesce((pm2.capabilities->>'video_input')::boolean, false)), false)
+				)
+				FROM combo_members cm2
+				JOIN providers p2 ON p2.id = cm2.provider_id AND p2.tenant_id = cm2.tenant_id
+				JOIN provider_models pm2 ON pm2.tenant_id = cm2.tenant_id AND pm2.provider_id = cm2.provider_id AND pm2.model_id = cm2.model_id
+				WHERE cm2.tenant_id = c.tenant_id AND cm2.combo_id = c.id
+				  AND cm2.enabled = true AND p2.enabled = true AND pm2.active = true
+			), '{}'::jsonb)
 		FROM combos c
 		WHERE c.tenant_id = $1 AND c.status = 'active'
 		ORDER BY model_id

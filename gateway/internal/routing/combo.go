@@ -23,6 +23,13 @@ type ComboTarget struct {
 	Weight     int
 }
 
+// ComboTargets is the resolved combo plus the per-combo attempt budget.
+type ComboTargets struct {
+	Targets     []ComboTarget
+	Revision    int
+	MaxAttempts int
+}
+
 // ComboRepository resolves active combos for the data plane.
 type ComboRepository struct {
 	pool *pgxpool.Pool
@@ -35,18 +42,18 @@ func NewComboRepository(pool *pgxpool.Pool) *ComboRepository {
 
 // ResolveTargets returns eligible members ordered for this request. The cursor
 // is advanced atomically in PostgreSQL so multiple replicas share rotation.
-func (r *ComboRepository) ResolveTargets(ctx context.Context, tenantID, slug string) ([]ComboTarget, int, error) {
+func (r *ComboRepository) ResolveTargets(ctx context.Context, tenantID, slug string) (ComboTargets, error) {
 	var comboID, strategy string
-	var revision int
+	var revision, maxAttempts int
 	err := r.pool.QueryRow(ctx, `
-		SELECT id::text, revision, strategy FROM combos
+		SELECT id::text, revision, strategy, max_attempts FROM combos
 		WHERE tenant_id = $1 AND slug = $2 AND status = 'active'
-	`, tenantID, slug).Scan(&comboID, &revision, &strategy)
+	`, tenantID, slug).Scan(&comboID, &revision, &strategy, &maxAttempts)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, 0, ErrComboNotFound
+		return ComboTargets{}, ErrComboNotFound
 	}
 	if err != nil {
-		return nil, 0, fmt.Errorf("load combo: %w", err)
+		return ComboTargets{}, fmt.Errorf("load combo: %w", err)
 	}
 	var cursor int64
 	if strategy == "round_robin" || strategy == "priority_round_robin" {
@@ -55,7 +62,7 @@ func (r *ComboRepository) ResolveTargets(ctx context.Context, tenantID, slug str
 			WHERE tenant_id = $1 AND id = $2::uuid
 			RETURNING cursor
 		`, tenantID, comboID).Scan(&cursor); err != nil {
-			return nil, 0, fmt.Errorf("advance combo cursor: %w", err)
+			return ComboTargets{}, fmt.Errorf("advance combo cursor: %w", err)
 		}
 	}
 	rows, err := r.pool.Query(ctx, `
@@ -71,24 +78,26 @@ func (r *ComboRepository) ResolveTargets(ctx context.Context, tenantID, slug str
 		ORDER BY cm.priority, cm.position
 	`, tenantID, comboID)
 	if err != nil {
-		return nil, 0, fmt.Errorf("query combo members: %w", err)
+		return ComboTargets{}, fmt.Errorf("query combo members: %w", err)
 	}
 	defer rows.Close()
 	targets := make([]ComboTarget, 0)
 	for rows.Next() {
 		var target ComboTarget
 		if err := rows.Scan(&target.ProviderID, &target.ModelID, &target.Priority, &target.Position, &target.Weight); err != nil {
-			return nil, 0, fmt.Errorf("scan combo member: %w", err)
+			return ComboTargets{}, fmt.Errorf("scan combo member: %w", err)
 		}
 		targets = append(targets, target)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("iterate combo members: %w", err)
+		return ComboTargets{}, fmt.Errorf("iterate combo members: %w", err)
 	}
 	if len(targets) == 0 {
-		return nil, revision, ErrComboExhausted
+		return ComboTargets{Revision: revision, MaxAttempts: maxAttempts}, ErrComboExhausted
 	}
-	return rotateTargets(targets, strategy, cursor), revision, nil
+	return ComboTargets{
+		Targets: rotateTargets(targets, strategy, cursor), Revision: revision, MaxAttempts: maxAttempts,
+	}, nil
 }
 
 func rotateTargets(targets []ComboTarget, strategy string, cursor int64) []ComboTarget {
