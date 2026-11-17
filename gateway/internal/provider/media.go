@@ -83,6 +83,8 @@ func (f *RemoteMediaFetcher) Fetch(ctx context.Context, rawURL string) (string, 
 	if err != nil {
 		return "", nil, err
 	}
+	request.Header.Set("User-Agent", "dontstop-gateway/0.1 (+https://dontstop.alltomatos.dev.br)")
+	request.Header.Set("Accept", "image/*")
 	response, err := f.client.Do(request)
 	if err != nil {
 		return "", nil, err
