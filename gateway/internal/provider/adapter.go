@@ -316,6 +316,9 @@ func doProviderRequest(ctx context.Context, client *http.Client, url string, hea
 		case response.StatusCode == http.StatusPaymentRequired:
 			return nil, ErrProviderQuota
 		case response.StatusCode == http.StatusTooManyRequests:
+			if looksLikeQuota(snippet) {
+				return nil, ErrProviderQuota
+			}
 			return nil, ErrProviderRateLimited
 		case response.StatusCode >= 500:
 			return nil, fmt.Errorf("%w: status %d", ErrProviderUnavailable, response.StatusCode)
@@ -324,6 +327,25 @@ func doProviderRequest(ctx context.Context, client *http.Client, url string, hea
 		}
 	}
 	return response, nil
+}
+
+// looksLikeQuota reports whether an upstream error body carries a quota or
+// credit-exhaustion signal that must trigger long cooldown and failover, even
+// when the status is a generic 429. See ADR-022.
+func looksLikeQuota(body []byte) bool {
+	text := strings.ToLower(string(body))
+	for _, signal := range []string{
+		"insufficient_quota",
+		"billing_hard_limit_reached",
+		"gousagelimiterror",
+		"go usage limit exceeded",
+		"insufficient account funds",
+	} {
+		if strings.Contains(text, signal) {
+			return true
+		}
+	}
+	return false
 }
 
 // looksLikeBan reports whether a 403 body carries an IP/region ban signal.

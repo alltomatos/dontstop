@@ -19,12 +19,10 @@ import (
 // replica immediately and is broadcast to the others through Redis pub/sub, so
 // no replica keeps serving an entry that was invalidated elsewhere.
 type LayeredCache struct {
-	l2            ExactCache
-	pubsub        redis.UniversalClient
-	local         *localCache
-	invalidateCh  string
-	subscribeOnce sync.Once
-	subscribeErr  error
+	l2           ExactCache
+	pubsub       redis.UniversalClient
+	local        *localCache
+	invalidateCh string
 }
 
 // LayeredOptions configures the L1 layer.

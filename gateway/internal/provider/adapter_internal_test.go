@@ -42,7 +42,7 @@ func TestProviderClientHasNoWallClockTimeout(t *testing.T) {
 func TestIdleTimeoutReadCloserAbortsStalledStream(t *testing.T) {
 	body := newBlockingBody()
 	reader := newIdleTimeoutReadCloser(body, 20*time.Millisecond)
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	start := time.Now()
 	_, err := reader.Read(make([]byte, 8))
@@ -60,7 +60,7 @@ func TestIdleTimeoutReadCloserAbortsStalledStream(t *testing.T) {
 func TestIdleTimeoutReadCloserDeliversData(t *testing.T) {
 	body := newBlockingBody()
 	reader := newIdleTimeoutReadCloser(body, time.Second)
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	body.chunks <- "data: hello\n\n"
 	buffer := make([]byte, 32)
