@@ -3,14 +3,71 @@ package routing_test
 import (
 	"context"
 	"errors"
+	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/alltomatos/dontstop/gateway/internal/platform/database"
+	"github.com/alltomatos/dontstop/gateway/internal/provider"
 	"github.com/alltomatos/dontstop/gateway/internal/routing"
 	"github.com/alltomatos/dontstop/gateway/migrations"
 )
+
+func TestRouteFailsOverWhenPrimaryAccountHitsQuota(t *testing.T) {
+	primary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":{"type":"GoUsageLimitError","message":"Go usage limit exceeded"}}`))
+	}))
+	defer primary.Close()
+	secondary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"id":"chatcmpl_2","object":"chat.completion","created":1762387200,"model":"shared-model",
+			"choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],
+			"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}
+		}`))
+	}))
+	defer secondary.Close()
+
+	breaker := newRecordingBreaker()
+	breaker.allowed["account-primary"] = true
+	breaker.allowed["account-secondary"] = true
+	repository := staticRepository{candidates: []routing.Candidate{
+		{AccountID: "account-primary", ProviderID: "provider-a", Priority: 10, Weight: 1, BaseURL: primary.URL},
+		{AccountID: "account-secondary", ProviderID: "provider-a", Priority: 20, Weight: 1, BaseURL: secondary.URL},
+	}}
+	router := routing.NewRouter(repository, breaker)
+	router.SetRandomSource(rand.NewSource(1))
+	adapter, err := provider.NewAdapter("openai")
+	if err != nil {
+		t.Fatalf("new adapter: %v", err)
+	}
+
+	selected, err := router.Route(context.Background(), "tenant-1", "shared-model", func(ctx context.Context, candidate routing.Candidate) (routing.AttemptResult, error) {
+		_, err := adapter.Chat(ctx, provider.Account{BaseURL: candidate.BaseURL, APIKey: "key"}, provider.ChatRequest{
+			Model: "shared-model", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}},
+		})
+		if err != nil {
+			return routing.AttemptResult{Failure: routing.ClassifyProviderError(err)}, err
+		}
+		return routing.AttemptResult{}, nil
+	})
+	if err != nil {
+		t.Fatalf("expected failover to succeed on the second account: %v", err)
+	}
+	if selected.AccountID != "account-secondary" {
+		t.Fatalf("expected secondary account, got %s", selected.AccountID)
+	}
+	if breaker.failures["account-primary"] != routing.FailureQuota {
+		t.Fatalf("expected quota cooldown on primary, got %s", breaker.failures["account-primary"])
+	}
+	if !breaker.success["account-secondary"] {
+		t.Fatal("expected success recorded for secondary account")
+	}
+}
 
 func TestRouteFailsOverAcrossAccountsOfSameProvider(t *testing.T) {
 	url := os.Getenv("TEST_DATABASE_URL")

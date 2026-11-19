@@ -188,6 +188,42 @@ func TestAnthropicAdapterStreamsContent(t *testing.T) {
 	}
 }
 
+func TestAdaptersClassifyQuotaByBody(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+		body   string
+		want   error
+	}{
+		{"opencode go usage limit", http.StatusTooManyRequests, `{"error":{"type":"GoUsageLimitError","message":"Go usage limit exceeded"}}`, provider.ErrProviderQuota},
+		{"insufficient quota", http.StatusTooManyRequests, `{"error":{"type":"insufficient_quota","message":"You exceeded your current quota"}}`, provider.ErrProviderQuota},
+		{"billing hard limit reached", http.StatusTooManyRequests, `{"error":{"message":"billing_hard_limit_reached"}}`, provider.ErrProviderQuota},
+		{"insufficient account funds", http.StatusPaymentRequired, `Insufficient account funds`, provider.ErrProviderQuota},
+		{"transient rate limit", http.StatusTooManyRequests, `{"error":{"message":"Rate limit exceeded"}}`, provider.ErrProviderRateLimited},
+		{"endpoint unavailable", http.StatusTooManyRequests, `{"error":{"code":429,"message":"Upstream request failed: Endpoint is unavailable."}}`, provider.ErrProviderRateLimited},
+		{"server error stays unavailable", http.StatusBadGateway, `{"error":{"message":"upstream failure"}}`, provider.ErrProviderUnavailable},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(test.status)
+				_, _ = w.Write([]byte(test.body))
+			}))
+			defer server.Close()
+			adapter, err := provider.NewAdapter("openai")
+			if err != nil {
+				t.Fatalf("new adapter: %v", err)
+			}
+			_, err = adapter.Chat(context.Background(), provider.Account{BaseURL: server.URL, APIKey: "key"}, provider.ChatRequest{
+				Model: "gpt-4.1", Messages: []provider.ChatMessage{{Role: "user", Content: "Oi"}},
+			})
+			if !errors.Is(err, test.want) {
+				t.Fatalf("status %d body %s: expected %v, got %v", test.status, test.body, test.want, err)
+			}
+		})
+	}
+}
+
 func TestAdaptersMapProviderErrors(t *testing.T) {
 	tests := []struct {
 		status int
