@@ -35,7 +35,7 @@ func TestMCPServicePersistsSettingsAndTools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("status: %v", err)
 	}
-	if status.Enabled || status.Transport != "stdio" || len(status.Tools) != 15 {
+	if status.Enabled || status.Transport != "stdio" || len(status.Tools) != 16 {
 		t.Fatalf("unexpected defaults: %+v", status)
 	}
 	enabled := true

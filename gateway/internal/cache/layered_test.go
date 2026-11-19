@@ -14,8 +14,8 @@ type stubL2 struct {
 	found      bool
 	gets       int
 	sets       int
-	invalidas  int
-	setErr     error
+	invalidates int
+	setErr      error
 	invalidate error
 }
 
@@ -30,7 +30,7 @@ func (s *stubL2) Set(context.Context, string, cache.Meta, cache.Entry, time.Dura
 }
 
 func (s *stubL2) Invalidate(context.Context, string, string, string) (int64, error) {
-	s.invalidas++
+	s.invalidates++
 	return 1, s.invalidate
 }
 

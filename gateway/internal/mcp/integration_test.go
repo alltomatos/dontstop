@@ -41,8 +41,8 @@ func TestServiceUsesPersistedToolOverridesAndAudit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("allowed tools: %v", err)
 	}
-	if len(tools) != 15 {
-		t.Fatalf("expected 15 tools, got %d", len(tools))
+	if len(tools) != 16 {
+		t.Fatalf("expected 16 tools, got %d", len(tools))
 	}
 	if _, err := store.UpdateTool(ctx, tenantID, "test", "dontstop_chat", false); err != nil {
 		t.Fatalf("disable tool: %v", err)
@@ -51,8 +51,8 @@ func TestServiceUsesPersistedToolOverridesAndAudit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("allowed tools after override: %v", err)
 	}
-	if len(tools) != 14 {
-		t.Fatalf("expected 14 tools, got %d", len(tools))
+	if len(tools) != 15 {
+		t.Fatalf("expected 15 tools, got %d", len(tools))
 	}
 	if err := store.RecordAudit(ctx, tenantID, "key", "mcp.tool.call", map[string]any{"tool": "dontstop_health", "status": "ok", "duration_ms": int64(4)}); err != nil {
 		t.Fatalf("record audit: %v", err)
